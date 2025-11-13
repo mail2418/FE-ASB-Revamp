@@ -1,16 +1,18 @@
-'use client';
+'use client'
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
-  FileText, 
-  CheckSquare,
+  Building2, 
+  Route,
+  Droplets,
   Menu,
   X,
   ChevronDown,
-  User
+  User,
+  Calendar
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -27,19 +29,19 @@ const navigation = [
   {
     name: 'Usulan Bangunan Gedung',
     href: '/usulan/bangunan-gedung',
-    icon: FileText,
+    icon: Building2,
     current: false,
   },
   {
     name: 'Usulan Jalan',
     href: '/usulan/jalan',
-    icon: FileText,
+    icon: Route,
     current: false,
   },
   {
     name: 'Usulan Saluran',
     href: '/usulan/saluran',
-    icon: CheckSquare,
+    icon: Droplets,
     current: false,
   },
 ];
@@ -49,6 +51,13 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
 
+  // Get current date
+  const currentDate = new Date().toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
   // Mock user data - in production, this would come from authentication
   const user = {
     name: 'Nama Akun',
@@ -57,7 +66,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -66,10 +75,10 @@ export default function DashboardLayout({ children }: LayoutProps) {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed positioning for both mobile and desktop */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-linear-to-b from-orange-500 to-orange-600 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-linear-to-b from-orange-500 to-orange-600 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -87,7 +96,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-2 py-4">
+          <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -119,9 +128,9 @@ export default function DashboardLayout({ children }: LayoutProps) {
       </div>
 
       {/* Main content area */}
-      <div className="lg:pl-64 flex flex-col flex-1">
+      <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top header */}
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <header className="relative z-30 bg-white border-b border-gray-200 shrink-0">
           <div className="px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 items-center justify-between">
               {/* Mobile menu button */}
@@ -141,58 +150,69 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 </h2>
               </div>
 
-              {/* User menu */}
-              <div className="relative">
-                <button
-                  type="button"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  aria-expanded={userMenuOpen}
-                  aria-haspopup="true"
-                >
-                  <div className="text-right hidden sm:block">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.name}
-                    </div>
-                    <div className="text-xs text-gray-500">{user.role}</div>
-                  </div>
-                  <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                </button>
+              {/* Date and User menu */}
+              <div className="flex items-center gap-4">
+                {/* Date display */}
+                <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
+                  <Calendar className="h-4 w-4" />
+                  <span>Data terakhir diperbarui: {currentDate}</span>
+                </div>
 
-                {/* Dropdown menu */}
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Profile
-                    </a>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Settings
-                    </a>
-                    <hr className="my-1" />
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Sign out
-                    </a>
-                  </div>
-                )}
+                {/* User menu */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    aria-expanded={userMenuOpen}
+                    aria-haspopup="true"
+                  >
+                    <div className="text-right hidden sm:block">
+                      <div className="text-sm font-medium text-gray-900">
+                        {user.name}
+                      </div>
+                      <div className="text-xs text-gray-500">{user.role}</div>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg font-bold shadow-sm">
+                      N
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                  </button>
+
+                  {/* Dropdown menu */}
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Profile
+                      </a>
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Settings
+                      </a>
+                      <hr className="my-1" />
+                      <a
+                        href="#"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        Sign out
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Main content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        {/* Main content with scroll */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );
