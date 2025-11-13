@@ -116,7 +116,7 @@ export default function DashboardTable({
                       key={filter}
                       onClick={() => handleFilterSelect(filter)}
                       className={cn(
-                        'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
+                        'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-black',
                         selectedFilter === filter && 'bg-gray-50 font-medium'
                       )}
                     >

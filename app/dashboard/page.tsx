@@ -1,8 +1,9 @@
-'use client'
+'use client';
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { Info } from 'lucide-react';
 import type { UsulanData } from '@/types';
+import { ChartContainer, ChartGrid } from '@/components/Charts/ChartContainer';
 
 // Dynamic imports for charts to avoid SSR issues
 const BarChart = dynamic(() => import('@/components/Charts/BarChart'), {
@@ -37,14 +38,14 @@ const donutChartData1 = [
 
 const donutChartData2 = [
   { name: 'Item 1', value: 40, color: '#3b82f6' },
-  { name: 'Item 2', value: 30, color: '#10b981' },
+  { name: 'Item 2', value: 30, color: '#22c55e' },
   { name: 'Item 3', value: 30, color: '#84cc16' },
 ];
 
 const donutChartData3 = [
   { name: 'Item 1', value: 65.5, color: '#06b6d4' },
-  { name: 'Item 2', value: 22.7, color: '#6366f1' },
-  { name: 'Item 3', value: 11.8, color: '#8b5cf6' },
+  { name: 'Item 2', value: 22.7, color: '#8b5cf6' },
+  { name: 'Item 3', value: 11.8, color: '#a855f7' },
 ];
 
 const tableData: UsulanData[] = [
@@ -136,96 +137,98 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts Grid - Responsive Layout */}
+      <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
         {/* Bar Chart Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Dashboard Usulan</h3>
-            <button className="text-sm text-teal-600 hover:text-teal-700 font-medium">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Dashboard Usulan</h3>
+            <button className="text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium">
               View Details →
             </button>
           </div>
-          <BarChart data={barChartData} />
+          <div className="h-[250px] sm:h-[300px]">
+            <BarChart data={barChartData} height={250} />
+          </div>
         </div>
 
-        {/* Status Charts */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        {/* Status Charts Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">
             Prosentase Status Usulan
           </h3>
           
-          <div className="grid grid-cols-3 gap-4">
+          {/* Responsive Grid: Stack on mobile, 3 columns on desktop */}
+          <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-3 lg:gap-4">
             {/* Chart 1 */}
-            <div className="relative">
-              <DonutChart
-                data={donutChartData1}
-                height={180}
-                showLegend={false}
-              />
-              
-              <div className="mt-2 space-y-1">
-                {donutChartData1.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-gray-600">{item.name}</span>
-                    </div>
-                    <span className="text-gray-800 font-medium">{item.value}%</span>
-                  </div>
-                ))}
+            <div className="bg-gray-50 rounded-lg p-3 relative">
+              <div className="absolute top-2 right-2 z-10">
+                <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
+                  T
+                </span>
+              </div>
+              <div className="h-[200px] sm:h-40">
+                <DonutChart
+                  data={donutChartData1}
+                  height={140}
+                  showLegend={true}
+                  showLabels={false}
+                />
               </div>
             </div>
 
             {/* Chart 2 */}
-            <div className="relative">
-              <DonutChart
-                data={donutChartData2}
-                height={180}
-                showLegend={false}
-              />
-              
-              <div className="mt-2 space-y-1">
-                {donutChartData2.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-gray-600">{item.name}</span>
-                    </div>
-                    <span className="text-gray-800 font-medium">{item.value}%</span>
-                  </div>
-                ))}
+            <div className="bg-gray-50 rounded-lg p-3 relative">
+              <div className="absolute top-2 right-2 z-10">
+                <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
+                  T
+                </span>
+              </div>
+              <div className="h-[200px] sm:h-40">
+                <DonutChart
+                  data={donutChartData2}
+                  height={140}
+                  showLegend={true}
+                  showLabels={false}
+                />
               </div>
             </div>
 
             {/* Chart 3 */}
-            <div className="relative">
-              <DonutChart
-                data={donutChartData3}
-                height={180}
-                showLegend={false}
-              />
-              
-              <div className="mt-2 space-y-1">
-                {donutChartData3.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1">
-                      <div 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-gray-600">{item.name}</span>
-                    </div>
-                    <span className="text-gray-800 font-medium">{item.value}%</span>
+            <div className="bg-gray-50 rounded-lg p-3 relative">
+              <div className="absolute top-2 right-2 z-10">
+                <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
+                  T
+                </span>
+              </div>
+              <div className="h-[200px] sm:h-40">
+                <DonutChart
+                  data={donutChartData3}
+                  height={140}
+                  showLegend={true}
+                  showLabels={false}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile-only: Show combined legend below all charts */}
+          <div className="mt-4 sm:hidden border-t pt-4">
+            <p className="text-xs text-gray-500 mb-2">Keterangan:</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {[...donutChartData1, ...donutChartData2, ...donutChartData3]
+                .filter((item, index, self) => 
+                  index === self.findIndex(t => t.name === item.name)
+                )
+                .map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-1">
+                    <div 
+                      className="w-2 h-2 rounded-full shrink-0" 
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-gray-600">{item.name}</span>
                   </div>
                 ))}
-              </div>
             </div>
           </div>
         </div>
