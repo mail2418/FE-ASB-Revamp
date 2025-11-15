@@ -1,0 +1,278 @@
+'use client';
+import React, { useState, useMemo } from 'react';
+import { 
+  Search, 
+  ChevronDown, 
+  Download,
+  Eye,
+  MoreVertical,
+  Check,
+  X as CloseIcon
+} from 'lucide-react';
+import type { UsulanBangunanGedung, FilterUsulanBangunan } from '@/types/usulan-bangunan';
+import { cn } from '@/lib/utils';
+
+interface UsulanBangunanTableProps {
+  data: UsulanBangunanGedung[];
+  onFilterChange?: (filters: FilterUsulanBangunan) => void;
+  onAddNew?: () => void;
+}
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const statusConfig = {
+    'Sukses': {
+      bg: 'bg-green-100',
+      text: 'text-green-800',
+      icon: <Check className="w-3 h-3" />,
+    },
+    'Tolak': {
+      bg: 'bg-red-100',
+      text: 'text-red-800',
+      icon: <CloseIcon className="w-3 h-3" />,
+    },
+    'Proses': {
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
+      icon: null,
+    },
+    'Draft': {
+      bg: 'bg-gray-100',
+      text: 'text-gray-800',
+      icon: null,
+    },
+  };
+
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['Draft'];
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
+        config.bg,
+        config.text
+      )}
+    >
+      {config.icon}
+      {status}
+    </span>
+  );
+};
+
+const JenisBadge = ({ jenis }: { jenis: string }) => {
+  const jenisConfig = {
+    'Pembangunan': {
+      bg: 'bg-green-50',
+      text: 'text-green-700',
+      border: 'border-green-200',
+    },
+    'Pemeliharaan': {
+      bg: 'bg-orange-50',
+      text: 'text-orange-700',
+      border: 'border-orange-200',
+    },
+  };
+
+  const config = jenisConfig[jenis as keyof typeof jenisConfig] || jenisConfig['Pembangunan'];
+
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={cn(
+          'inline-block w-2 h-2 rounded-full',
+          jenis === 'Pembangunan' ? 'bg-green-500' : 'bg-orange-500'
+        )}
+      />
+      <span className={cn('text-sm', config.text)}>{jenis}</span>
+      <ChevronDown className="w-3 h-3 text-gray-400" />
+    </div>
+  );
+};
+
+export default function UsulanBangunanTable({
+  data,
+  onFilterChange,
+  onAddNew,
+}: UsulanBangunanTableProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedJenis, setSelectedJenis] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [isJenisDropdownOpen, setIsJenisDropdownOpen] = useState(false);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (onFilterChange) {
+      onFilterChange({ 
+        search: value,
+        jenis: selectedJenis as any,
+        status: selectedStatus as any,
+      });
+    }
+  };
+
+  const handleJenisFilter = (jenis: string) => {
+    setSelectedJenis(jenis);
+    setIsJenisDropdownOpen(false);
+    if (onFilterChange) {
+      onFilterChange({ 
+        search: searchTerm,
+        jenis: jenis as any,
+        status: selectedStatus as any,
+      });
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Filter usulan by</h3>
+          <button
+            onClick={onAddNew}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+          >
+            <span className="text-lg">+</span>
+            Tambah Usulan
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-blue-50/50 border-b border-gray-200">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Jenis
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Uraian
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Lokasi
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Klasifikasi
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Satuan
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Nilai BKF
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Surat Permohonan
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Surat Rekomendasi
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.map((item) => (
+              <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <JenisBadge jenis={item.jenis} />
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900">{item.uraian}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900">{item.lokasi}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{item.klasifikasi}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{item.satuan}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <select className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500">
+                    <option>{formatCurrency(item.nilaiBkf)}</option>
+                  </select>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {item.suratPermohonan ? (
+                    <a
+                      href={item.suratPermohonan}
+                      className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-sm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="text-xs bg-red-100 text-red-600 px-1 rounded">PDF</span>
+                    </a>
+                  ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <StatusBadge status={item.status} />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {item.suratRekomendasi ? (
+                    <a
+                      href={item.suratRekomendasi}
+                      className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-sm"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="text-xs bg-red-100 text-red-600 px-1 rounded">PDF</span>
+                    </a>
+                  ) : item.status === 'Proses' ? (
+                    <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors">
+                      Proses
+                    </button>
+                  ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-700">
+            Menampilkan <span className="font-medium">{data.length}</span> dari{' '}
+            <span className="font-medium">{data.length}</span> hasil
+          </p>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50" disabled>
+              Previous
+            </button>
+            <button className="px-3 py-1 text-sm bg-teal-500 text-white rounded hover:bg-teal-600">
+              1
+            </button>
+            <button className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900">
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
