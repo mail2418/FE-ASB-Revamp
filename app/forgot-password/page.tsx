@@ -1,21 +1,21 @@
 import { Metadata } from 'next';
-import SignInForm from '@/components/auth/SignInForm';
+import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 
 export const metadata: Metadata = {
-  title: 'Sign In | ASB Revamp Dashboard',
-  description: 'Sign in to access the ASB Revamp Dashboard for managing building proposals',
-  robots: 'noindex, nofollow', // Prevent indexing of auth pages
+  title: 'Forgot Password | ASB Revamp Dashboard',
+  description: 'Request password reset assistance for ASB Revamp Dashboard',
+  robots: 'noindex, nofollow',
 };
 
-export default function SignInPage() {
+export default function ForgotPasswordPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-linear-to-br from-orange-50 via-white to-orange-50 p-4">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-grid-pattern opacity-5" />
       
-      {/* Sign In Card */}
+      {/* Forgot Password Card */}
       <div className="w-full max-w-md relative z-10">
-        <SignInForm />
+        <ForgotPasswordForm />
       </div>
 
       {/* Footer */}
