@@ -78,7 +78,7 @@ const mockData: UsulanBangunanGedung[] = [
   },
 ];
 
-// Chart data - from API in production
+// Chart data
 const barChartData = [
   { name: 'Item 1', value: 8 },
   { name: 'Item 2', value: 12 },
@@ -175,7 +175,7 @@ export default function UsulanBangunanGedungPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Usulan</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard Usulan Saluran</h1>
           <p className="text-sm text-gray-500 mt-1">
             Kelola usulan bangunan gedung dari berbagai instansi
           </p>
