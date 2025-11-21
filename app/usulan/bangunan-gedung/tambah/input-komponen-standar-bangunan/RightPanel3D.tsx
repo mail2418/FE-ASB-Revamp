@@ -3,9 +3,12 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky, Environment, ContactShadows } from '@react-three/drei';
-import BuildingContainer from './3DComponents/BuildingContainer';
+import BuildingContainer from '@/components/UsulanBangunan/3DComponents/BuildingContainer';
+import { useBuildingContext } from './BuildingContext';
 
 export default function RightPanel3D() {
+  const { formState } = useBuildingContext();
+
   return (
     <div className="w-full h-full">
       <Canvas camera={{ position: [10, 10, 10], fov: 50 }} fallback={<div>WebGL Not Support</div>}>
@@ -14,9 +17,10 @@ export default function RightPanel3D() {
           <ambientLight intensity={0.5} />
           <directionalLight
             castShadow
-            position={[10, 20, 15]}
-            intensity={1.5}
-            shadow-mapSize={[1024, 1024]}
+            position={[10, 20, 10]}
+            intensity={1}
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
           >
             <orthographicCamera attach="shadow-camera" args={[-10, 10, 10, -10]} />
           </directionalLight>
@@ -24,13 +28,13 @@ export default function RightPanel3D() {
           {/* <Environment preset="city" /> */}
 
           {/* The main container for our dynamic building parts */}
-          <BuildingContainer />
+          <BuildingContainer formState={formState} />
 
           {/* Ground shadows for realism */}
           <ContactShadows position={[0, 0, 0]} opacity={0.6} scale={20} blur={1.5} far={4.5} />
           
           {/* User controls to rotate/zoom */}
-          <OrbitControls minPolarAngle={0} maxPolarAngle={Math.PI / 2.1} makeDefault />
+          <OrbitControls enablePan enableZoom enableRotate />
         </Suspense>
       </Canvas>
 

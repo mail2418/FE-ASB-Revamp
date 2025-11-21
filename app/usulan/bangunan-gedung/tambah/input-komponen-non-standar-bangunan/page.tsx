@@ -1,13 +1,15 @@
+'use client';
+
 import React from 'react';
-import { BuildingProvider } from './BuildingContext';
+import { NonStandardBuildingProvider } from './BuildingContext';
 import LeftPanelForm from './LeftPanelForm';
 import RightPanel3D from './RightPanel3D';
 
-// This is a Server Component by default
+// This is a Client Component
 export default function InputKomponenNonStandarPage() {
   return (
     // Wrap Client Components in the Provider
-    <BuildingProvider>
+    <NonStandardBuildingProvider>
       <main className="flex flex-col lg:flex-row h-screen max-h-screen overflow-hidden bg-gray-100">
         {/* Left Panel - Scrollable Form Area */}
         <div className="w-full lg:w-3/5 h-full overflow-y-auto border-r border-gray-200 bg-white p-6">
@@ -23,6 +25,6 @@ export default function InputKomponenNonStandarPage() {
            <RightPanel3D />
         </div>
       </main>
-    </BuildingProvider>
+    </NonStandardBuildingProvider>
   );
 }

@@ -148,7 +148,8 @@ export default function LeftPanelForm() {
           Previous
         </button>
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault()
             // Save state
             localStorage.setItem('usulan_bangunan_standar_components', JSON.stringify(formState));
             // Navigate to next page

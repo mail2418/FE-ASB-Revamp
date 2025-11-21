@@ -69,6 +69,8 @@ export function BuildingProvider({ children }: { children: ReactNode }) {
 
 export function useBuildingContext() {
   const context = useContext(BuildingContext);
+  console.log("context render standar");
+  console.info(context);
   if (context === undefined) {
     throw new Error('useBuildingContext must be used within a BuildingProvider');
   }

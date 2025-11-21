@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useBuildingContext } from '../BuildingContext';
+import { BuildingFormState } from '@/types/building-form';
 import * as THREE from 'three';
 
 // --- SUB-COMPONENTS FOR SPECIFIC BUILDING PARTS ---
@@ -137,8 +137,11 @@ const AtapPart = ({ percentage, levelOffset, variant }: { percentage: number, le
 
 // --- MAIN CONTAINER COMPONENT ---
 
-export default function BuildingContainer() {
-  const { formState } = useBuildingContext();
+interface BuildingContainerProps {
+  formState: BuildingFormState;
+}
+
+export default function BuildingContainer({ formState }: BuildingContainerProps) {
 
   // Animate rotation slightly for "alive" feel or use OrbitControls
   const groupRef = useRef<THREE.Group>(null);
