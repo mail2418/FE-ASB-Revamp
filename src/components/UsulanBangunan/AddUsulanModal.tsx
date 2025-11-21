@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, Upload, AlertCircle } from 'lucide-react';
 import type { UsulanBangunanGedung } from '@/types/usulan-bangunan';
 import { cn } from '@/lib/utils';
+import Router from 'next/router';
 
 interface AddUsulanModalProps {
   isOpen: boolean;
@@ -111,9 +112,12 @@ export default function AddUsulanModal({
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Tambah Usulan Baru</h2>
+              <h2 className="text-xl font-bold text-gray-900 cursor-pointer">Tambah Usulan Baru</h2>
               <button
-                onClick={handleClose}
+                onClick={(e:any)=>{
+                  e.preventDefault();
+                  Router.push('/tambah')
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-5 h-5" />

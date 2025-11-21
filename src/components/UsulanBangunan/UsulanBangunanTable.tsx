@@ -137,7 +137,7 @@ export default function UsulanBangunanTable({
           <h3 className="text-lg font-semibold text-gray-900">Filter usulan by</h3>
           <button
             onClick={onAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium cursor-pointer"
           >
             <span className="text-lg">+</span>
             Tambah Usulan
