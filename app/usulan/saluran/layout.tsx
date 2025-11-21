@@ -48,6 +48,7 @@ const navigation = [
 
 export default function DashboardLayout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
 
@@ -78,14 +79,24 @@ export default function DashboardLayout({ children }: LayoutProps) {
       {/* Sidebar - Fixed positioning for both mobile and desktop */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-linear-to-b from-orange-500 to-orange-600 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          'fixed inset-y-0 left-0 z-50 bg-linear-to-b from-orange-500 to-orange-600 transform transition-all duration-300 ease-in-out lg:relative lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64',
+          // On large screens: collapsed by default, expanded on hover
+          'lg:translate-x-0',
+          isHovered ? 'lg:w-64' : 'lg:w-16'
         )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <div className="flex h-full flex-col">
           {/* Logo/Brand */}
           <div className="flex h-16 items-center justify-between px-4 bg-white/10">
-            <h1 className="text-xl font-bold text-white">Dashboard</h1>
+            <h1 className={cn(
+              "text-xl font-bold text-white transition-opacity duration-300",
+              isHovered ? "opacity-100" : "lg:opacity-0"
+            )}>
+              Dashboard
+            </h1>
             <button
               type="button"
               className="lg:hidden text-white"
@@ -114,12 +125,18 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 >
                   <Icon
                     className={cn(
-                      'mr-3 h-5 w-5 shrink-0',
-                      isActive ? 'text-white' : 'text-white/80'
+                      'h-5 w-5 shrink-0',
+                      isActive ? 'text-white' : 'text-white/80',
+                      isHovered ? 'mr-3' : 'lg:mr-0'
                     )}
                     aria-hidden="true"
                   />
-                  {item.name}
+                  <span className={cn(
+                    "transition-all duration-300",
+                    isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden"
+                  )}>
+                    {item.name}
+                  </span>
                 </Link>
               );
             })}

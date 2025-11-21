@@ -58,6 +58,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_NAME: 'ASB Revamp Dashboard',
     NEXT_PUBLIC_APP_VERSION: '1.0.0',
   },
+  transpilePackages: ['three'],
 };
 
 export default nextConfig;

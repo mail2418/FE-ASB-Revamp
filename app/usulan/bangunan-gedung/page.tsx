@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Building2, TrendingUp, FileText, CheckCircle } from 'lucide-react';
 import type { UsulanBangunanGedung, FilterUsulanBangunan } from '@/types/usulan-bangunan';
 
@@ -18,10 +19,6 @@ const DonutChart = dynamic(() => import('@/components/Charts/DonutChart'), {
 const UsulanBangunanTable = dynamic(() => import('@/components/UsulanBangunan/UsulanBangunanTable'), {
   ssr: false,
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
-});
-
-const AddUsulanModal = dynamic(() => import('@/components/UsulanBangunan/AddUsulanModal'), {
-  ssr: false,
 });
 
 // Mock data - in production this would come from API
@@ -106,10 +103,10 @@ const donutChartData3 = [
 ];
 
 export default function UsulanBangunanGedungPage() {
+  const router = useRouter();
   const [data, setData] = useState(mockData);
   const [filteredData, setFilteredData] = useState(mockData);
   const [isLoading, setIsLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Handle filter changes
   const handleFilterChange = (filters: FilterUsulanBangunan) => {
@@ -137,27 +134,7 @@ export default function UsulanBangunanGedungPage() {
 
   // Handle add new proposal
   const handleAddNew = () => {
-    setIsModalOpen(true);
-  };
-
-  // Handle form submit
-  const handleSubmit = (formData: Partial<UsulanBangunanGedung>) => {
-    const newUsulan: UsulanBangunanGedung = {
-      id: `${data.length + 1}`,
-      jenis: formData.jenis || 'Pembangunan',
-      uraian: formData.uraian || '',
-      lokasi: formData.lokasi || '',
-      klasifikasi: formData.klasifikasi || 'Gedung Negara Sederhana',
-      satuan: formData.satuan || 'm2',
-      nilaiBkf: formData.nilaiBkf || 0,
-      sumberPembiayaan: formData.sumberPembiayaan || 'APBD',
-      status: 'Draft',
-      createdAt: new Date(),
-    };
-    
-    const updatedData = [newUsulan, ...data];
-    setData(updatedData);
-    setFilteredData(updatedData);
+    router.push('/usulan/bangunan-gedung/tambah');
   };
 
   // Calculate statistics
@@ -280,13 +257,6 @@ export default function UsulanBangunanGedungPage() {
         data={filteredData}
         onFilterChange={handleFilterChange}
         onAddNew={handleAddNew}
-      />
-
-      {/* Add Usulan Modal */}
-      <AddUsulanModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleSubmit}
       />
     </div>
   );

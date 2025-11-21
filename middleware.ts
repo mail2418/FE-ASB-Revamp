@@ -19,17 +19,17 @@ export function middleware(request: NextRequest) {
   // Check if the current path is an auth route
   const isAuthRoute = authRoutes.includes(pathname);
   
-  // Redirect unauthenticated users to sign in
-  if (isProtectedRoute && !authToken) {
-    const signInUrl = new URL('/', request.url);
-    signInUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(signInUrl);
-  }
+//   // Redirect unauthenticated users to sign in
+//   if (isProtectedRoute && !authToken) {
+//     const signInUrl = new URL('/', request.url);
+//     signInUrl.searchParams.set('redirect', pathname);
+//     return NextResponse.redirect(signInUrl);
+//   }
   
-  // Redirect authenticated users away from auth pages
-  if (isAuthRoute && authToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+//   // Redirect authenticated users away from auth pages
+//   if (isAuthRoute && authToken) {
+//     return NextResponse.redirect(new URL('/dashboard', request.url));
+//   }
   
   // Add security headers to all responses
   const response = NextResponse.next();

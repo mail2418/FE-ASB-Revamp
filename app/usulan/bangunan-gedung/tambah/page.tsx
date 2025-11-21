@@ -93,6 +93,25 @@ export default function TambahUsulanBangunanGedung() {
     },
   ]);
 
+  // Load saved state on mount
+  React.useEffect(() => {
+    const savedData = localStorage.getItem('usulan_bangunan_new_entry');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.formData) {
+          // Note: File objects cannot be stored in localStorage, so suratPermohonan will be null
+          setFormData(prev => ({ ...prev, ...parsed.formData, suratPermohonan: null }));
+        }
+        if (parsed.floors) {
+          setFloors(parsed.floors);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved form data', e);
+      }
+    }
+  }, []);
+
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -135,14 +154,25 @@ export default function TambahUsulanBangunanGedung() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Save to localStorage
+      // We exclude file object as it can't be serialized
+      const dataToSave = {
+        formData: { ...formData, suratPermohonan: null },
+        floors
+      };
+      localStorage.setItem('usulan_bangunan_new_entry', JSON.stringify(dataToSave));
 
-    console.log('Form Data:', formData);
-    console.log('Floors:', floors);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Redirect to list page
-    router.push('/usulan/bangunan-gedung');
+      // Redirect to next step
+      router.push('/usulan/bangunan-gedung/tambah/input-komponen-standar-bangunan');
+    } catch (error) {
+      console.error('Error saving data:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Get floor option details
@@ -160,7 +190,7 @@ export default function TambahUsulanBangunanGedung() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 cursor-pointer">
             Tambah Usulan Belanja Bangunan Gedung
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -182,7 +212,7 @@ export default function TambahUsulanBangunanGedung() {
             <div className="space-y-6">
               {/* Jenis */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-black mb-2">
                   Jenis :
                 </label>
                 <div className="relative">
@@ -539,7 +569,7 @@ export default function TambahUsulanBangunanGedung() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
           >
             {isSubmitting ? (
               <>
@@ -548,7 +578,7 @@ export default function TambahUsulanBangunanGedung() {
               </>
             ) : (
               <>
-                <Save className="h-4 w-4" />
+                <Save className="h-4 w-4 " />
                 Simpan
               </>
             )}
