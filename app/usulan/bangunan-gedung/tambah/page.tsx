@@ -23,10 +23,18 @@ interface Floor {
 
 // Floor options
 const jenisLantaiOptions = [
-  { value: 'lantai-1', label: 'Lantai 1', color: 'bg-green-500' },
-  { value: 'lantai-2', label: 'Lantai 2', color: 'bg-yellow-500' },
-  { value: 'lantai-3', label: 'Lantai 3', color: 'bg-red-500' },
-  { value: 'lantai-4', label: 'Lantai 4', color: 'bg-gray-400' },
+  { value: 'lantai-1', label: 'Lantai 1'},
+  { value: 'lantai-2', label: 'Lantai 2'},
+  { value: 'lantai-3', label: 'Lantai 3'},
+  { value: 'lantai-4', label: 'Lantai 4'},
+  { value: 'lantai-5', label: 'Lantai 5'},
+  { value: 'lantai-6', label: 'Lantai 6'},
+  { value: 'lantai-7', label: 'Lantai 7'},
+  { value: 'lantai-8', label: 'Lantai 8'},
+  { value: 'lantai-9', label: 'Lantai 9'},
+  { value: 'lantai-10', label: 'Lantai 10'},
+  { value: 'basement-1', label: 'Basement 1'},
+  { value: 'basement-2', label: 'Basement 2'},
 ];
 
 const fungsiLantaiOptions = [
@@ -56,42 +64,23 @@ export default function TambahUsulanBangunanGedung() {
     jumlahLantai: '1',
     kodeRekeningBelanja1: '',
     kodeRekeningBelanja2: '',
-    klasifikasi: 'Gedung Negara Tidak Sederhana',
+    klasifikasi: '',
     nilaiASB: '',
     suratPermohonan: null as File | null,
   });
 
-  // Floors state
-  const [floors, setFloors] = useState<Floor[]>([
-    {
-      id: '1',
-      jenisLantai: 'lantai-1',
-      fungsiLantai: 'kantor',
-      luas: '250',
-      notes: 'completed',
-    },
-    {
-      id: '2',
-      jenisLantai: 'lantai-2',
-      fungsiLantai: 'sekolah',
-      luas: '200',
-      notes: 'completed',
-    },
-    {
-      id: '3',
-      jenisLantai: 'lantai-3',
-      fungsiLantai: 'laboratorium',
-      luas: '200',
-      notes: 'completed',
-    },
-    {
-      id: '4',
-      jenisLantai: '',
-      fungsiLantai: 'igd-icu',
-      luas: '150',
-      notes: 'completed',
-    },
-  ]);
+  // Calculation states
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationError, setCalculationError] = useState('');
+
+  // Floors state - start with 1 empty floor
+  const [floors, setFloors] = useState<Floor[]>([{
+    id: '1',
+    jenisLantai: '',
+    fungsiLantai: '',
+    luas: '',
+    notes: '',
+  }]);
 
   // Load saved state on mount
   React.useEffect(() => {
@@ -148,6 +137,81 @@ export default function TambahUsulanBangunanGedung() {
       floor.id === id ? { ...floor, [field]: value } : floor
     ));
   };
+
+  // Handle jumlahLantai change - regenerate floors array
+  const handleJumlahLantaiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newValue = e.target.value;
+    setFormData(prev => ({ ...prev, jumlahLantai: newValue }));
+    
+    const numFloors = parseInt(newValue);
+    const newFloors: Floor[] = Array.from({ length: numFloors }, (_, i) => ({
+      id: `${i + 1}`,
+      jenisLantai: `lantai-${i + 1}`,
+      fungsiLantai: '',
+      luas: '',
+      notes: '',
+    }));
+    
+    setFloors(newFloors);
+    // Reset calculated values when floors change
+    setFormData(prev => ({ ...prev, klasifikasi: '', nilaiASB: '' }));
+  };
+
+  // Check if all floors are filled
+  const areAllFloorsFilled = () => {
+    return floors.every(floor => 
+      floor.jenisLantai && floor.fungsiLantai && floor.luas && floor.notes
+    );
+  };
+
+  // Calculate Klasifikasi and Nilai ASB from backend
+  const calculateKlasifikasiAndASB = async () => {
+    if (!areAllFloorsFilled()) {
+      return;
+    }
+
+    setIsCalculating(true);
+    setCalculationError('');
+
+    try {
+      // API call to backend for calculation
+      const response = await fetch('/api/calculate-asb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ floors }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Calculation failed');
+      }
+
+      const data = await response.json();
+      
+      setFormData(prev => ({
+        ...prev,
+        klasifikasi: data.klasifikasi || 'Gedung Negara Tidak Sederhana',
+        nilaiASB: data.nilaiASB || 'Rp 5.600.000 / m2',
+      }));
+    } catch (error) {
+      console.error('Calculation error:', error);
+      setCalculationError('Gagal menghitung klasifikasi dan nilai ASB');
+      // Set default values on error
+      setFormData(prev => ({
+        ...prev,
+        klasifikasi: 'Gedung Negara Tidak Sederhana',
+        nilaiASB: 'Rp 5.600.000 / m2',
+      }));
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  // Auto-calculate when all floors are filled
+  React.useEffect(() => {
+    if (areAllFloorsFilled()) {
+      calculateKlasifikasiAndASB();
+    }
+  }, [floors]);
 
   // Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,7 +319,7 @@ export default function TambahUsulanBangunanGedung() {
                   onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-                  placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+                  placeholder="Masukkan deskripsi aktivitas"
                 />
               </div>
 
@@ -270,7 +334,7 @@ export default function TambahUsulanBangunanGedung() {
                   onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-                  placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+                  placeholder="Masukkan lokasi"
                 />
               </div>
 
@@ -283,7 +347,7 @@ export default function TambahUsulanBangunanGedung() {
                   <select
                     name="jumlahLantai"
                     value={formData.jumlahLantai}
-                    onChange={handleInputChange}
+                    onChange={handleJumlahLantaiChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
@@ -438,9 +502,6 @@ export default function TambahUsulanBangunanGedung() {
                                       </option>
                                     ))}
                                   </select>
-                                  {jenisOption && (
-                                    <div className={`absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${jenisOption.color}`} />
-                                  )}
                                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none" />
                                 </div>
                               </td>
@@ -504,17 +565,23 @@ export default function TambahUsulanBangunanGedung() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Klasifikasi:
                 </label>
-                <div className="space-y-2">
-                  <div className="bg-yellow-100 px-4 py-2 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Gedung Negara</span>
+                {isCalculating ? (
+                  <div className="bg-gray-100 px-4 py-3 rounded-lg flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
+                    <span className="text-sm text-gray-600">Menghitung...</span>
                   </div>
+                ) : formData.klasifikasi ? (
                   <div className="bg-yellow-100 px-4 py-2 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">Tidak Sederhana</span>
+                    <span className="text-sm font-medium text-gray-700">{formData.klasifikasi}</span>
                   </div>
-                </div>
-                <p className="text-xs text-red-400 italic mt-1">
-                  *generating Klasifikasi & Nilai ASB
-                </p>
+                ) : (
+                  <div className="bg-gray-100 px-4 py-2 rounded-lg">
+                    <span className="text-sm text-gray-500 italic">Lengkapi data lantai untuk menghitung klasifikasi</span>
+                  </div>
+                )}
+                {calculationError && (
+                  <p className="text-xs text-red-500 mt-1">{calculationError}</p>
+                )}
               </div>
 
               {/* Nilai ASB */}
@@ -522,11 +589,22 @@ export default function TambahUsulanBangunanGedung() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nilai ASB :
                 </label>
-                <div className="bg-yellow-100 px-4 py-3 rounded-lg">
-                  <span className="text-sm font-medium text-gray-700">
-                    Rp 5.600.000 / m2
-                  </span>
-                </div>
+                {isCalculating ? (
+                  <div className="bg-gray-100 px-4 py-3 rounded-lg flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
+                    <span className="text-sm text-gray-600">Menghitung...</span>
+                  </div>
+                ) : formData.nilaiASB ? (
+                  <div className="bg-yellow-100 px-4 py-3 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">
+                      {formData.nilaiASB}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-gray-100 px-4 py-3 rounded-lg">
+                    <span className="text-sm text-gray-500 italic">Lengkapi data lantai untuk menghitung nilai ASB</span>
+                  </div>
+                )}
               </div>
 
               {/* Upload Surat Permohonan */}

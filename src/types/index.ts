@@ -21,7 +21,6 @@ export interface UsulanData {
   uraian: string;
   spek: string;
   satuan: string;
-  satuan2: string;
   status: 'Sedang Diproses' | 'Sukses' | 'Ditolak' | 'Menunggu';
   createdAt?: Date;
   updatedAt?: Date;

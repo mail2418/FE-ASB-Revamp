@@ -88,6 +88,46 @@ const JenisBadge = ({ jenis }: { jenis: string }) => {
   );
 };
 
+const NilaiBkfBadge = ({ status }: { status: string }) => {
+  const statusConfig = {
+    'Sudah': {
+      bg: 'bg-green-100',
+      text: 'text-green-800',
+      border: 'border-green-200',
+    },
+    'Belum': {
+      bg: 'bg-gray-100',
+      text: 'text-gray-800',
+      border: 'border-gray-200',
+    },
+    'Tolak': {
+      bg: 'bg-red-100',
+      text: 'text-red-800',
+      border: 'border-red-200',
+    },
+    'Sedang': {
+      bg: 'bg-yellow-100',
+      text: 'text-yellow-800',
+      border: 'border-yellow-200',
+    },
+  };
+
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['Belum'];
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border',
+        config.bg,
+        config.text,
+        config.border
+      )}
+    >
+      {status}
+    </span>
+  );
+};
+
 export default function UsulanBangunanTable({
   data,
   onFilterChange,
@@ -97,6 +137,27 @@ export default function UsulanBangunanTable({
   const [selectedJenis, setSelectedJenis] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isJenisDropdownOpen, setIsJenisDropdownOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [editingData, setEditingData] = useState<UsulanBangunanGedung[]>(data);
+
+  // Get user role from cookie
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userDataCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('userData='));
+      
+      if (userDataCookie) {
+        const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
+        setUserRole(userData.role);
+      }
+    }
+  }, []);
+
+  // Update local data when props change
+  React.useEffect(() => {
+    setEditingData(data);
+  }, [data]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -127,6 +188,18 @@ export default function UsulanBangunanTable({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
+  };
+
+  // Handle nilaiBkf change (only for verifikator)
+  const handleNilaiBkfChange = (itemId: string, newValue: string) => {
+    setEditingData(prev => 
+      prev.map(item => 
+        item.id === itemId 
+          ? { ...item, nilaiBkf: newValue as any }
+          : item
+      )
+    );
+    // In production, this would also call an API to update the backend
   };
 
   return (
@@ -183,7 +256,7 @@ export default function UsulanBangunanTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((item) => (
+            {editingData.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <JenisBadge jenis={item.jenis} />
@@ -201,9 +274,20 @@ export default function UsulanBangunanTable({
                   <div className="text-sm text-gray-900">{item.satuan}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <select className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500">
-                    <option>{formatCurrency(item.nilaiBkf)}</option>
-                  </select>
+                  {userRole === 'verifikator' ? (
+                    <select 
+                      value={editingData.find(d => d.id === item.id)?.nilaiBkf || item.nilaiBkf}
+                      onChange={(e) => handleNilaiBkfChange(item.id, e.target.value)}
+                      className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white cursor-pointer"
+                    >
+                      <option value="Sudah">Sudah</option>
+                      <option value="Belum">Belum</option>
+                      <option value="Tolak">Tolak</option>
+                      <option value="Sedang">Sedang</option>
+                    </select>
+                  ) : (
+                    <NilaiBkfBadge status={item.nilaiBkf} />
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {item.suratPermohonan ? (

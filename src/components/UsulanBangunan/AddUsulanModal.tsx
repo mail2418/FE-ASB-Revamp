@@ -22,7 +22,7 @@ export default function AddUsulanModal({
     lokasi: '',
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
-    nilaiBkf: 0,
+    nilaiBkf: 'Belum',
     sumberPembiayaan: 'APBD',
     status: 'Draft',
   });
@@ -47,8 +47,8 @@ export default function AddUsulanModal({
     if (!formData.lokasi) {
       newErrors.lokasi = 'Lokasi wajib diisi';
     }
-    if (!formData.nilaiBkf || formData.nilaiBkf <= 0) {
-      newErrors.nilaiBkf = 'Nilai BKF harus lebih dari 0';
+    if (!formData.nilaiBkf) {
+      newErrors.nilaiBkf = 'Status BKF wajib dipilih';
     }
 
     setErrors(newErrors);
@@ -83,7 +83,7 @@ export default function AddUsulanModal({
       lokasi: '',
       klasifikasi: 'Gedung Negara Sederhana',
       satuan: 'm2',
-      nilaiBkf: 0,
+      nilaiBkf: 'Belum',
       sumberPembiayaan: 'APBD',
       status: 'Draft',
     });
@@ -251,23 +251,26 @@ export default function AddUsulanModal({
                 </select>
               </div>
 
-              {/* Nilai BKF */}
+              {/* Status BKF */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nilai BKF <span className="text-red-500">*</span>
+                  Status BKF <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="number"
+                <select
                   value={formData.nilaiBkf}
                   onChange={(e) =>
-                    setFormData({ ...formData, nilaiBkf: Number(e.target.value) })
+                    setFormData({ ...formData, nilaiBkf: e.target.value as any })
                   }
                   className={cn(
                     'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500',
                     errors.nilaiBkf ? 'border-red-500' : 'border-gray-300'
                   )}
-                  placeholder="0"
-                />
+                >
+                  <option value="Sedang">Sedang</option>
+                  <option value="Sudah">Sudah</option>
+                  <option value="Belum">Belum</option>
+                  <option value="Tolak">Tolak</option>
+                </select>
                 {errors.nilaiBkf && (
                   <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />

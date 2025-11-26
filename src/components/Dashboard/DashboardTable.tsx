@@ -70,86 +70,70 @@ export default function DashboardTable({
   onFilterChange,
   className,
 }: DashboardTableProps) {
-  const [filterOpen, setFilterOpen] = React.useState(false);
-  const [selectedFilter, setSelectedFilter] = React.useState('all');
+  const [jenisFilterOpen, setJenisFilterOpen] = React.useState(false);
+  const [statusFilterOpen, setStatusFilterOpen] = React.useState(false);
+  const [selectedJenisFilter, setSelectedJenisFilter] = React.useState('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     if (onFilterChange) {
-      onFilterChange({ search: value, status: selectedFilter });
+      onFilterChange({ 
+        search: value, 
+        jenis: selectedJenisFilter,
+        status: selectedStatusFilter 
+      });
     }
   };
 
-  const handleFilterSelect = (filter: string) => {
-    setSelectedFilter(filter);
+  const handleJenisFilterSelect = (filter: string) => {
+    setSelectedJenisFilter(filter);
     if (onFilterChange) {
-      onFilterChange({ search: searchTerm, status: filter });
+      onFilterChange({ 
+        search: searchTerm, 
+        jenis: filter,
+        status: selectedStatusFilter 
+      });
     }
-    setFilterOpen(false);
+    setJenisFilterOpen(false);
+  };
+
+  const handleStatusFilterSelect = (filter: string) => {
+    setSelectedStatusFilter(filter);
+    if (onFilterChange) {
+      onFilterChange({ 
+        search: searchTerm, 
+        jenis: selectedJenisFilter,
+        status: filter 
+      });
+    }
+    setStatusFilterOpen(false);
   };
 
   return (
     <div className={cn('bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden', className)}>
-      {/* Header */}
-      <div className="bg-linear-to-r from-teal-500 to-teal-600 px-6 py-4">
+      {/* Header with Project Info and Search */}
+      <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <h3 className="text-white font-semibold text-lg">Filter usulan by</h3>
-            <div className="relative">
-              <button
-                onClick={() => setFilterOpen(!filterOpen)}
-                className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-              >
-                <Filter className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  {selectedFilter === 'all' ? 'Semua Status' : selectedFilter}
-                </span>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              
-              {filterOpen && (
-                <div className="absolute top-full mt-2 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                  {['all', 'Sukses', 'Sedang Diproses', 'Ditolak', 'Menunggu'].map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => handleFilterSelect(filter)}
-                      className={cn(
-                        'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors text-black',
-                        selectedFilter === filter && 'bg-gray-50 font-medium'
-                      )}
-                    >
-                      {filter === 'all' ? 'Semua Status' : filter}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="flex gap-2">
             <button className="bg-white text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-              Project: New car
-            </button>
-            <button className="bg-white text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-              Project: New campaign
+              Proyek: Pengadaan Bangunan Gedung ABCDE di Jl. ABCDE
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={handleSearch}
-            placeholder="Cari usulan..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          />
+          
+          {/* Search Bar */}
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder="Cari usulan..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+            />
+          </div>
         </div>
       </div>
 
@@ -159,7 +143,36 @@ export default function DashboardTable({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Jenis
+                <div className="flex items-center gap-2">
+                  <span>Jenis</span>
+                  <div className="relative">
+                    <button
+                      onClick={() => setJenisFilterOpen(!jenisFilterOpen)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors normal-case font-normal text-gray-700"
+                    >
+                      <Filter className="h-3 w-3" />
+                      {selectedJenisFilter === 'all' ? 'Semua' : selectedJenisFilter}
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                    
+                    {jenisFilterOpen && (
+                      <div className="absolute top-full mt-1 left-0 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                        {['all', 'Umum', 'Bangunan', 'Jalan'].map((filter) => (
+                          <button
+                            key={filter}
+                            onClick={() => handleJenisFilterSelect(filter)}
+                            className={cn(
+                              'w-full text-left px-3 py-2 text-xs hover:bg-gray-100 transition-colors text-gray-700',
+                              selectedJenisFilter === filter && 'bg-gray-50 font-medium'
+                            )}
+                          >
+                            {filter === 'all' ? 'Semua' : filter}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Uraian
@@ -171,10 +184,36 @@ export default function DashboardTable({
                 Satuan
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Satuan
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+                <div className="flex items-center gap-2">
+                  <span>Status</span>
+                  <div className="relative">
+                    <button
+                      onClick={() => setStatusFilterOpen(!statusFilterOpen)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors normal-case font-normal text-gray-700"
+                    >
+                      <Filter className="h-3 w-3" />
+                      {selectedStatusFilter === 'all' ? 'Semua' : selectedStatusFilter}
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                    
+                    {statusFilterOpen && (
+                      <div className="absolute top-full mt-1 left-0 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                        {['all', 'Sukses', 'Sedang Diproses', 'Ditolak', 'Menunggu'].map((filter) => (
+                          <button
+                            key={filter}
+                            onClick={() => handleStatusFilterSelect(filter)}
+                            className={cn(
+                              'w-full text-left px-3 py-2 text-xs hover:bg-gray-100 transition-colors text-gray-700',
+                              selectedStatusFilter === filter && 'bg-gray-50 font-medium'
+                            )}
+                          >
+                            {filter === 'all' ? 'Semua' : filter}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </th>
             </tr>
           </thead>
@@ -196,11 +235,6 @@ export default function DashboardTable({
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-gray-100 text-gray-800">
                     {item.satuan}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-gray-100 text-gray-800">
-                    {item.satuan2}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">

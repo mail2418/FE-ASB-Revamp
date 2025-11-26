@@ -15,6 +15,7 @@ interface BarChartProps {
   data: Array<{
     name: string;
     value: number;
+    color?: string;
   }>;
   height?: number;
   className?: string;
@@ -66,7 +67,7 @@ export default function BarChartComponent({
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
           <Bar dataKey="value" radius={[8, 8, 0, 0]}>
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={barColor} />
+              <Cell key={`cell-${index}`} fill={entry.color? entry.color : barColor} />
             ))}
           </Bar>
         </BarChart>

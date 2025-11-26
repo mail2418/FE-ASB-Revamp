@@ -67,7 +67,40 @@ export default function SummaryPage() {
     sum + (comp?.percentage || 0), 0) / (Object.keys(nonStandardComponents).length || 1);
 
   const handleVerify = () => {
-    // Navigate back to usulan list or trigger verification
+    // Compile all form data into a complete usulan object
+    const newUsulan = {
+      id: `usulan_${Date.now()}`, // Generate unique ID
+      jenis: basicData?.jenisBangunan || 'Pembangunan',
+      uraian: basicData?.namaBangunan || 'Usulan Baru',
+      lokasi: basicData?.alamat || '-',
+      klasifikasi: basicData?.jenisBangunan || 'Gedung Negara Tidak Sederhana',
+      satuan: 'm2',
+      nilaiBkf: 'Sedang', // Default to 'Sedang' for new submissions
+      sumberPembiayaan: 'APBD',
+      status: 'Proses', // Set status to Proses for new submissions
+      suratPermohonan: '/docs/permohonan-new.pdf',
+      createdAt: new Date().toISOString(),
+    };
+
+    // Get existing submissions from localStorage
+    const existingSubmissions = localStorage.getItem('submitted_usulan_list');
+    let submissions = [];
+    
+    if (existingSubmissions) {
+      try {
+        submissions = JSON.parse(existingSubmissions);
+      } catch (e) {
+        console.error('Failed to parse existing submissions', e);
+      }
+    }
+
+    // Add new submission to the list
+    submissions.push(newUsulan);
+    
+    // Save back to localStorage
+    localStorage.setItem('submitted_usulan_list', JSON.stringify(submissions));
+
+    // Navigate back to usulan list
     router.push('/usulan/bangunan-gedung');
   };
 

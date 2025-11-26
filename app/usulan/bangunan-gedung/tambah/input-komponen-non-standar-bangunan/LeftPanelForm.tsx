@@ -39,6 +39,33 @@ export default function LeftPanelForm() {
     updateRowState(rowId, { percentage: val });
   };
 
+  const handleCheckChange = (rowId: string, checked: boolean) => {
+    updateRowState(rowId, { 
+      checked: checked,
+      // Reset percentage to 0 when unchecking
+      percentage: checked ? (formState[rowId]?.percentage || 0) : 0
+    });
+  };
+
+  // Calculate totals for non-standard components
+  const calculateTotals = () => {
+    let checkedCount = 0;
+    let totalPercentage = 0;
+
+    Object.values(formState).forEach((state: any) => {
+      if (state?.checked) {
+        checkedCount++;
+        totalPercentage += state.percentage || 0;
+      }
+    });
+
+    const averagePercentage = checkedCount > 0 ? totalPercentage / checkedCount : 0;
+
+    return { checkedCount, totalPercentage, averagePercentage };
+  };
+
+  const totals = calculateTotals();
+
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
       {/* Header */}
@@ -59,14 +86,13 @@ export default function LeftPanelForm() {
               Check
             </th>
             <th scope="col" className="py-3.5 px-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-48">
-              Prosentase
+              Persentase
             </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
           {nonStandardComponents.map((component, index) => {
             const currentState = formState[component.id];
-
             return (
               <tr key={component.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 text-sm text-gray-700 text-center">
@@ -77,22 +103,30 @@ export default function LeftPanelForm() {
                 </td>
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center">
-                    <div className="w-7 h-7 rounded-full border-2 border-gray-800 flex items-center justify-center bg-white">
-                      <svg className="w-5 h-5 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
+                    <label className="cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="peer hidden"
+                        checked={currentState?.checked || false}
+                        onChange={(e) => handleCheckChange(component.id, e.target.checked)}
+                      />
+                      <div className="w-7 h-7 rounded-full border-2 peer-checked:border-lime-600 peer-checked:bg-lime-600 border-gray-300 flex items-center justify-center bg-white transition-all duration-200 hover:border-lime-400">
+                        <svg className="w-5 h-5 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </label>
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-sm text-gray-600">0% - </span>
-                    <div className="flex items-center">
+                    <div className="flex w-full items-center">
                       <input
                         type="number"
                         min="0"
                         max="100"
-                        className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-lime-500 text-right pr-7"
+                        disabled={!currentState?.checked}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-lime-500 text-right pr-7 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                         value={currentState?.percentage || 0}
                         onChange={(e) => handlePercentageChange(component.id, e)}
                       />
@@ -103,13 +137,33 @@ export default function LeftPanelForm() {
                   <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                     <div 
                       className="bg-lime-600 h-1.5 rounded-full transition-all duration-300" 
-                      style={{ width: `${currentState?.percentage || 0}%` }}
+                      style={{ width: `${currentState?.checked ? (currentState?.percentage || 0) : 0}%` }}
                     />
                   </div>
                 </td>
               </tr>
             );
           })}
+          
+          {/* Total Pengeluaran Row */}
+          <tr className="bg-lime-50 border-t-2 border-lime-300">
+            <td colSpan={2} className="py-4 px-4 text-sm font-bold text-lime-900 uppercase tracking-wider text-right">
+              Total Komponen Terpilih
+            </td>
+            <td className="py-4 px-4 text-center">
+              <div className="bg-lime-600 text-white px-3 py-2 rounded-lg font-bold">
+                {totals.checkedCount}
+              </div>
+            </td>
+            <td className="py-4 px-4 text-center">
+              <div className="space-y-1">
+                <div className="bg-lime-600 text-white px-3 py-2 rounded-lg font-bold">
+                  {totals.averagePercentage.toFixed(2)}%
+                </div>
+                <div className="text-xs text-lime-700">Rata-rata Persentase</div>
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
 

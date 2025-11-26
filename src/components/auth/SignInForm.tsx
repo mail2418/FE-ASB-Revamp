@@ -97,20 +97,20 @@ export default function SignInForm() {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // TODO: Replace with actual authentication API call
-      // const response = await fetch('/api/auth/signin', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     username: formData.username,
-      //     password: formData.password,
-      //   }),
-      // });
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
 
-      // if (!response.ok) {
-      //   throw new Error('Authentication failed');
-      // }
+      if (!response.ok) {
+        throw new Error('Authentication failed');
+      }
 
-      // const data = await response.json();
+      const data = await response.json();
 
       // Handle remember me
       if (typeof window !== 'undefined') {
