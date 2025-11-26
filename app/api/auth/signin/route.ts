@@ -45,17 +45,50 @@ function clearRateLimit(identifier: string): void {
   loginAttempts.delete(identifier);
 }
 
+// Dummy users for testing - in production, use a real database
+const DUMMY_USERS = [
+  {
+    username: 'admin',
+    password: 'Admin123!',
+    name: 'Admin User',
+    role: 'admin' as const,
+  },
+  {
+    username: 'verif1',
+    password: 'Verif123!',
+    name: 'Verifikator Satu',
+    role: 'verifikator' as const,
+  },
+  {
+    username: 'pd1',
+    password: 'PD12345!',
+    name: 'PD User',
+    role: 'perangkat_daerah' as const,
+  },
+];
+
 // Helper function to validate credentials (replace with actual database check)
-async function validateCredentials(username: string, password: string): Promise<boolean> {
+async function validateCredentials(
+  username: string, 
+  password: string
+): Promise<{ isValid: boolean; user?: typeof DUMMY_USERS[0] }> {
   // TODO: Replace with actual database query
   // Example using bcrypt for password comparison:
   // const user = await db.user.findUnique({ where: { username } });
-  // if (!user) return false;
-  // return await bcrypt.compare(password, user.passwordHash);
+  // if (!user) return { isValid: false };
+  // const isValid = await bcrypt.compare(password, user.passwordHash);
+  // return { isValid, user };
   
   // Mock validation for demonstration
   // In production, NEVER hardcode credentials
-  return username === 'admin' && password === 'Admin123!';
+  const user = DUMMY_USERS.find(
+    u => u.username === username && u.password === password
+  );
+  
+  return {
+    isValid: !!user,
+    user,
+  };
 }
 
 // Helper function to generate a secure token
@@ -124,9 +157,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate credentials
-    const isValid = await validateCredentials(username, password);
+    const { isValid, user } = await validateCredentials(username, password);
     
-    if (!isValid) {
+    if (!isValid || !user) {
       return NextResponse.json(
         { 
           success: false,
@@ -148,14 +181,15 @@ export async function POST(request: NextRequest) {
     // Generate authentication token
     const token = generateToken();
     
-    // Create response
+    // Create response with user data
     const response = NextResponse.json(
       { 
         success: true,
         message: 'Authentication successful',
         user: {
-          username,
-          // Add other non-sensitive user data
+          username: user.username,
+          name: user.name,
+          role: user.role,
         }
       },
       { status: 200 }
@@ -170,6 +204,22 @@ export async function POST(request: NextRequest) {
       maxAge: SESSION_DURATION / 1000, // Cookie expiration in seconds
       path: '/', // Available across the entire site
     });
+    
+    // Set user data cookie (accessible to client for role checks)
+    cookieStore.set('userData', 
+      JSON.stringify({
+        username: user.username,
+        name: user.name,
+        role: user.role,
+      }), 
+      {
+        httpOnly: false, // Accessible to JavaScript for UI logic
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: SESSION_DURATION / 1000,
+        path: '/',
+      }
+    );
     
     // Optional: Set CSRF token
     const csrfToken = generateToken();
@@ -206,6 +256,7 @@ export async function DELETE(request: NextRequest) {
     
     // Clear authentication cookies
     cookieStore.delete('authToken');
+    cookieStore.delete('userData');
     cookieStore.delete('csrfToken');
     
     return NextResponse.json(

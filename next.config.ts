@@ -59,6 +59,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: '1.0.0',
   },
   transpilePackages: ['three'],
+  turbopack: {
+    root: './',
+  }
 };
 
 export default nextConfig;

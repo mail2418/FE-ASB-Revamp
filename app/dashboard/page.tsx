@@ -3,7 +3,6 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { Info } from 'lucide-react';
 import type { UsulanData } from '@/types';
-import { ChartContainer, ChartGrid } from '@/components/Charts/ChartContainer';
 
 // Dynamic imports for charts to avoid SSR issues
 const BarChart = dynamic(() => import('@/components/Charts/BarChart'), {
@@ -23,31 +22,33 @@ const DashboardTable = dynamic(() => import('@/components/Dashboard/DashboardTab
 
 // Mock data - in production this would come from API
 const barChartData = [
-  { name: 'Item 1', value: 8 },
-  { name: 'Item 2', value: 12 },
-  { name: 'Item 3', value: 16 },
-  { name: 'Item 4', value: 20 },
+  { name: 'Bangunan Gedung', value: 8, color: '#ef4444' },
+  { name: 'Jalan', value: 12, color: '#f59e0b' },
+  { name: 'Saluran', value: 16, color: '#eab308' },
 ];
 
 const donutChartData1 = [
-  { name: 'Item 1', value: 25, color: '#ef4444' },
-  { name: 'Item 2', value: 20, color: '#f59e0b' },
-  { name: 'Item 3', value: 30, color: '#eab308' },
-  { name: 'Item 4', value: 25, color: '#22c55e' },
+  { name: 'Sukses', value: 40, color: '#ef4444' },
+  { name: 'Sedang diproses', value: 25, color: '#f59e0b' },
+  { name: 'Ditolak', value: 20, color: '#eab308' },
+  { name: 'Menunggu Verifikator', value: 15, color: '#22c55e' },
 ];
 
 const donutChartData2 = [
-  { name: 'Item 1', value: 40, color: '#3b82f6' },
-  { name: 'Item 2', value: 30, color: '#22c55e' },
-  { name: 'Item 3', value: 30, color: '#84cc16' },
+  { name: 'Sukses', value: 15, color: '#ef4444' },
+  { name: 'Sedang diproses', value: 25, color: '#f59e0b' },
+  { name: 'Ditolak', value: 10, color: '#eab308' },
+  { name: 'Menunggu Verifikator', value: 50, color: '#22c55e' },
 ];
 
 const donutChartData3 = [
-  { name: 'Item 1', value: 65.5, color: '#06b6d4' },
-  { name: 'Item 2', value: 22.7, color: '#8b5cf6' },
-  { name: 'Item 3', value: 11.8, color: '#a855f7' },
+  { name: 'Sukses', value: 55, color: '#ef4444' },
+  { name: 'Sedang diproses', value: 15, color: '#f59e0b' },
+  { name: 'Ditolak', value: 10, color: '#eab308' },
+  { name: 'Menunggu Verifikator', value: 20, color: '#22c55e' },
 ];
 
+// GET FROM API
 const tableData: UsulanData[] = [
   {
     id: '1',
@@ -55,7 +56,7 @@ const tableData: UsulanData[] = [
     uraian: '1 m1 Konstruksi XXX',
     spek: 'Upload teaser',
     satuan: 'Add here',
-    satuan2: 'Add here',
+    
     status: 'Sedang Diproses',
   },
   {
@@ -64,7 +65,7 @@ const tableData: UsulanData[] = [
     uraian: 'Bangunan Gedung X',
     spek: '-',
     satuan: 'Add here',
-    satuan2: 'Add here',
+    
     status: 'Sukses',
   },
   {
@@ -73,7 +74,7 @@ const tableData: UsulanData[] = [
     uraian: '1 m1 Konstruksi XXX',
     spek: 'Review messaging',
     satuan: 'Add here',
-    satuan2: 'Add here',
+    
     status: 'Sukses',
   },
   {
@@ -82,7 +83,7 @@ const tableData: UsulanData[] = [
     uraian: '1 m1 Konstruksi XXX',
     spek: 'Review messaging',
     satuan: 'Add here',
-    satuan2: 'Add here',
+    
     status: 'Sukses',
   },
   {
@@ -91,7 +92,7 @@ const tableData: UsulanData[] = [
     uraian: '1 m1 Konstruksi XXX',
     spek: 'Review messaging',
     satuan: 'Add here',
-    satuan2: 'Add here',
+    
     status: 'Sukses',
   },
   {
@@ -100,7 +101,7 @@ const tableData: UsulanData[] = [
     uraian: '1 m1 Konstruksi XXX',
     spek: 'Review messaging',
     satuan: 'Add here',
-    satuan2: 'Add here',
+    
     status: 'Sukses',
   },
 ];
@@ -128,21 +129,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Usulan</h1>
-        <div className="mt-4 sm:mt-0 flex items-center gap-2 text-sm text-gray-500">
-          <Info className="h-4 w-4" />
-          <span>Data terakhir diperbarui: {new Date().toLocaleDateString('id-ID')}</span>
-        </div>
-      </div>
-
       {/* Charts Grid - Responsive Layout */}
       <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
         {/* Bar Chart Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Dashboard Usulan</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Persebaran Usulan</h3>
             <button className="text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium">
               View Details →
             </button>
@@ -155,7 +147,7 @@ export default function DashboardPage() {
         {/* Status Charts Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">
-            Prosentase Status Usulan
+            Persentase Status Usulan
           </h3>
           
           {/* Responsive Grid: Stack on mobile, 3 columns on desktop */}
@@ -164,7 +156,7 @@ export default function DashboardPage() {
             <div className="bg-gray-50 rounded-lg p-3 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
-                  T
+                  Usulan Bangunan Gedung
                 </span>
               </div>
               <div className="h-[200px] sm:h-40">
@@ -181,7 +173,7 @@ export default function DashboardPage() {
             <div className="bg-gray-50 rounded-lg p-3 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
-                  T
+                   Usulan Jalan
                 </span>
               </div>
               <div className="h-[200px] sm:h-40">
@@ -198,7 +190,7 @@ export default function DashboardPage() {
             <div className="bg-gray-50 rounded-lg p-3 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
-                  T
+                   Usulan Saluran
                 </span>
               </div>
               <div className="h-[200px] sm:h-40">

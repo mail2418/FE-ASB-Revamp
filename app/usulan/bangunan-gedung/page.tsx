@@ -30,7 +30,7 @@ const mockData: UsulanBangunanGedung[] = [
     lokasi: 'Jl X, Kab/Kota',
     klasifikasi: 'Gedung Negara Tidak Sederhana',
     satuan: 'm2',
-    nilaiBkf: 1000000000,
+    nilaiBkf: 'Sudah',
     sumberPembiayaan: 'APBD',
     status: 'Sukses',
     suratPermohonan: '/docs/permohonan-1.pdf',
@@ -43,7 +43,7 @@ const mockData: UsulanBangunanGedung[] = [
     lokasi: 'Jl X, Kab/Kota',
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
-    nilaiBkf: 750000000,
+    nilaiBkf: 'Sudah',
     sumberPembiayaan: 'APBD',
     status: 'Sukses',
     suratPermohonan: '/docs/permohonan-2.pdf',
@@ -56,7 +56,7 @@ const mockData: UsulanBangunanGedung[] = [
     lokasi: 'Jl X, Kab/Kota',
     klasifikasi: 'Rumah Negara Tipe A',
     satuan: 'm2',
-    nilaiBkf: 500000000,
+    nilaiBkf: 'Belum',
     sumberPembiayaan: 'APBN',
     status: 'Tolak',
     suratPermohonan: '/docs/permohonan-3.pdf',
@@ -68,7 +68,7 @@ const mockData: UsulanBangunanGedung[] = [
     lokasi: 'Jl X, Kab/Kota',
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
-    nilaiBkf: 250000000,
+    nilaiBkf: 'Sedang',
     sumberPembiayaan: 'APBD',
     status: 'Proses',
     suratPermohonan: '/docs/permohonan-4.pdf',
@@ -77,23 +77,19 @@ const mockData: UsulanBangunanGedung[] = [
 
 // Chart data - from API in production
 const barChartData = [
-  { name: 'Item 1', value: 8 },
-  { name: 'Item 2', value: 12 },
-  { name: 'Item 3', value: 16 },
-  { name: 'Item 4', value: 20 },
+  { name: 'Pembangunan', value: 8, color: '#ef4444' },
+  { name: 'Pemeliharaan', value: 12, color: '#f59e0b' },
 ];
 
 const donutChartData1 = [
-  { name: 'Item 1', value: 25, color: '#ef4444' },
-  { name: 'Item 2', value: 20, color: '#f59e0b' },
-  { name: 'Item 3', value: 30, color: '#eab308' },
-  { name: 'Item 4', value: 25, color: '#22c55e' },
+  { name: 'Pembangunan', value: 25, color: '#ef4444' },
+  { name: 'Pemeliharaan', value: 20, color: '#f59e0b' },
 ];
 
 const donutChartData2 = [
-  { name: 'Item 1', value: 40, color: '#3b82f6' },
-  { name: 'Item 2', value: 30, color: '#22c55e' },
-  { name: 'Item 3', value: 30, color: '#84cc16' },
+  { name: 'Sukses', value: 40, color: '#3b82f6' },
+  { name: 'Proses', value: 30, color: '#22c55e' },
+  { name: 'Tolak', value: 30, color: '#84cc16' },
 ];
 
 const donutChartData3 = [
@@ -104,9 +100,29 @@ const donutChartData3 = [
 
 export default function UsulanBangunanGedungPage() {
   const router = useRouter();
-  const [data, setData] = useState(mockData);
-  const [filteredData, setFilteredData] = useState(mockData);
+  const [data, setData] = useState<UsulanBangunanGedung[]>(mockData);
+  const [filteredData, setFilteredData] = useState<UsulanBangunanGedung[]>(mockData);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load submitted usulan from localStorage on mount
+  useEffect(() => {
+    const loadSubmittedUsulan = () => {
+      const submittedData = localStorage.getItem('submitted_usulan_list');
+      if (submittedData) {
+        try {
+          const submissions = JSON.parse(submittedData);
+          // Merge submitted data with mock data
+          const combinedData = [...mockData, ...submissions];
+          setData(combinedData);
+          setFilteredData(combinedData);
+        } catch (e) {
+          console.error('Failed to load submitted usulan', e);
+        }
+      }
+    };
+
+    loadSubmittedUsulan();
+  }, []);
 
   // Handle filter changes
   const handleFilterChange = (filters: FilterUsulanBangunan) => {
@@ -149,16 +165,6 @@ export default function UsulanBangunanGedungPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Usulan</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Kelola usulan bangunan gedung dari berbagai instansi
-          </p>
-        </div>
-      </div>
-
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -214,7 +220,7 @@ export default function UsulanBangunanGedungPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Trend Usulan</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Persebaran Aktivitas</h3>
           <div className="h-[250px]">
             <BarChart data={barChartData} height={220} />
           </div>

@@ -13,7 +13,7 @@ export default function InputKomponenPage() {
         <div className="w-full lg:w-3/5 h-full overflow-y-auto border-r border-gray-200 bg-white p-6">
             <div className="mb-6">
              <h1 className="text-xl font-bold text-gray-800">Input Komponen Standar Bangunan</h1>
-             <p className="text-sm text-gray-500">Lengkapi data spesifikasi dan prosentase pembangunan.</p>
+             <p className="text-sm text-gray-500">Lengkapi data spesifikasi dan Presentase pembangunan.</p>
             </div>
            <LeftPanelForm />
         </div>

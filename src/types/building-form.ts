@@ -2,6 +2,7 @@
 export interface ComponentRowState {
   classificationKey: string; // e.g., 'pondasi_batu_kali', 'struktur_beton_k250'
   percentage: number; // 0 to 100
+  checked?: boolean; // Optional checkbox state for non-standard components
 }
 
 // The overall state object holding data for all rows, keyed by a unique row ID

@@ -6,7 +6,7 @@ export interface UsulanBangunanGedung {
   lokasi: string;
   klasifikasi: string;
   satuan: string;
-  nilaiBkf: number;
+  nilaiBkf: 'Sedang' | 'Sudah' | 'Belum' | 'Tolak';
   sumberPembiayaan: 'APBD' | 'APBN' | 'Lainnya';
   status: 'Sukses' | 'Tolak' | 'Proses' | 'Draft';
   suratPermohonan?: string;
