@@ -33,18 +33,18 @@ const navigation = [
     icon: Building2,
     current: false,
   },
-  // {
-  //   name: 'Usulan Jalan',
-  //   href: '/usulan/jalan',
-  //   icon: Route,
-  //   current: false,
-  // },
-  // {
-  //   name: 'Usulan Saluran',
-  //   href: '/usulan/saluran',
-  //   icon: Droplets,
-  //   current: false,
-  // },
+  {
+    name: 'Usulan Jalan',
+    href: '/404',
+    icon: Route,
+    current: false,
+  },
+  {
+    name: 'Usulan Saluran',
+    href: '/404',
+    icon: Droplets,
+    current: false,
+  },
 ];
 
 export default function DashboardLayout({ children }: LayoutProps) {
@@ -52,16 +52,18 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [isHovered, setIsHovered] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
-  const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [userData, setUserData] = React.useState<{name: string; username: string; role: string} | null>(null);
 
+  // Get user data from cookie
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const userDataCookie = document.cookie
         .split('; ')
         .find(row => row.startsWith('userData='));
+      
       if (userDataCookie) {
-        const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
-        setUserRole(userData.role);
+        const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
+        setUserData(parsed);
       }
     }
   }, []);
@@ -72,13 +74,6 @@ export default function DashboardLayout({ children }: LayoutProps) {
     month: '2-digit',
     year: 'numeric'
   });
-
-  // Mock user data - in production, this would come from authentication
-  const user = {
-    name: 'Nama Akun',
-    role: 'Nama PD',
-    avatar: '/api/placeholder/32/32',
-  };
 
   // Logout handler
   const handleLogout = async () => {
@@ -167,7 +162,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 </Link>
               );
             })}
-            {userRole === 'admin' && (
+            {userData?.role === 'admin' && (
               <Link href="/admin" className={cn('group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors', pathname.startsWith('/admin') ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white')}>
                 <Shield className={cn('h-5 w-5 shrink-0', pathname.startsWith('/admin') ? 'text-white' : 'text-white/80', isHovered ? 'mr-3' : 'lg:mr-0')} aria-hidden="true" />
                 <span className={cn("transition-all duration-300", isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden")}>Admin</span>
@@ -219,12 +214,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
                   >
                     <div className="text-right hidden sm:block">
                       <div className="text-sm font-medium text-gray-900">
-                        {user.name}
+                        {userData?.name || 'Loading...'}
                       </div>
-                      <div className="text-xs text-gray-500">{user.role}</div>
+                      <div className="text-xs text-gray-500">{userData?.role || ''}</div>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg font-bold shadow-sm">
-                      N
+                      {userData?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-500" />
                   </button>

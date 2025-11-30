@@ -1,11 +1,12 @@
 'use client';
 import React from 'react';
 import dynamic from 'next/dynamic';
-import { Info } from 'lucide-react';
+import { Info, ChevronDown } from 'lucide-react';
 import type { UsulanData } from '@/types';
+import { cn } from '@/lib/utils';
 
 // Dynamic imports for charts to avoid SSR issues
-const BarChart = dynamic(() => import('@/components/Charts/BarChart'), {
+const LineChart = dynamic(() => import('@/components/Charts/LineChart'), {
   ssr: false,
   loading: () => <div className="h-[300px] bg-gray-100 animate-pulse rounded-lg" />,
 });
@@ -20,11 +21,29 @@ const DashboardTable = dynamic(() => import('@/components/Dashboard/DashboardTab
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
 });
 
-// Mock data - in production this would come from API
-const barChartData = [
-  { name: 'Bangunan Gedung', value: 8, color: '#ef4444' },
-  { name: 'Jalan', value: 12, color: '#f59e0b' },
-  { name: 'Saluran', value: 16, color: '#eab308' },
+// Mock data - One month trend analysis (30 days)
+const lineChartData = [
+  { date: '1 Nov', bangunanGedung: 2, jalan: 1, saluran: 3 },
+  { date: '3 Nov', bangunanGedung: 3, jalan: 2, saluran: 4 },
+  { date: '5 Nov', bangunanGedung: 3, jalan: 3, saluran: 5 },
+  { date: '7 Nov', bangunanGedung: 4, jalan: 4, saluran: 6 },
+  { date: '9 Nov', bangunanGedung: 5, jalan: 6, saluran: 7 },
+  { date: '11 Nov', bangunanGedung: 5, jalan: 7, saluran: 8 },
+  { date: '13 Nov', bangunanGedung: 6, jalan: 8, saluran: 10 },
+  { date: '15 Nov', bangunanGedung: 6, jalan: 9, saluran: 11 },
+  { date: '17 Nov', bangunanGedung: 7, jalan: 10, saluran: 12 },
+  { date: '19 Nov', bangunanGedung: 7, jalan: 11, saluran: 13 },
+  { date: '21 Nov', bangunanGedung: 8, jalan: 11, saluran: 14 },
+  { date: '23 Nov', bangunanGedung: 8, jalan: 12, saluran: 15 },
+  { date: '25 Nov', bangunanGedung: 8, jalan: 12, saluran: 15 },
+  { date: '27 Nov', bangunanGedung: 8, jalan: 12, saluran: 16 },
+  { date: '29 Nov', bangunanGedung: 8, jalan: 12, saluran: 16 },
+];
+
+const lineChartLines = [
+  { dataKey: 'bangunanGedung', color: '#ef4444', name: 'Bangunan Gedung' },
+  { dataKey: 'jalan', color: '#f59e0b', name: 'Jalan' },
+  { dataKey: 'saluran', color: '#eab308', name: 'Saluran' },
 ];
 
 const donutChartData1 = [
@@ -53,75 +72,86 @@ const tableData: UsulanData[] = [
   {
     id: '1',
     jenis: 'Umum',
-    uraian: '1 m1 Konstruksi XXX',
-    spek: 'Upload teaser',
-    satuan: 'Add here',
-    
+    klasifikasi: 'Gedung Negara Sederhana',
     status: 'Sedang Diproses',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
   },
   {
     id: '2',
     jenis: 'Bangunan',
-    uraian: 'Bangunan Gedung X',
-    spek: '-',
-    satuan: 'Add here',
-    
+    klasifikasi: 'Gedung Negara Tidak Sederhana',
     status: 'Sukses',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
   },
   {
     id: '3',
     jenis: 'Jalan',
-    uraian: '1 m1 Konstruksi XXX',
-    spek: 'Review messaging',
-    satuan: 'Add here',
-    
+    klasifikasi: 'Rumah Negara Tipe A',
     status: 'Sukses',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
   },
   {
     id: '4',
     jenis: 'Jalan',
-    uraian: '1 m1 Konstruksi XXX',
-    spek: 'Review messaging',
-    satuan: 'Add here',
-    
+    klasifikasi: 'Gedung Negara Sederhana',
     status: 'Sukses',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
   },
   {
     id: '5',
     jenis: 'Jalan',
-    uraian: '1 m1 Konstruksi XXX',
-    spek: 'Review messaging',
-    satuan: 'Add here',
-    
+    klasifikasi: 'Rumah Negara Tipe B',
     status: 'Sukses',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
   },
   {
     id: '6',
     jenis: 'Jalan',
-    uraian: '1 m1 Konstruksi XXX',
-    spek: 'Review messaging',
-    satuan: 'Add here',
-    
+    klasifikasi: 'Gedung Negara Tidak Sederhana',
     status: 'Sukses',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
   },
 ];
 
 export default function DashboardPage() {
   const [filteredData, setFilteredData] = React.useState(tableData);
+  const [selectedMonth, setSelectedMonth] = React.useState('November');
+  const [selectedYear, setSelectedYear] = React.useState('2024');
+  const [monthDropdownOpen, setMonthDropdownOpen] = React.useState(false);
+  const [yearDropdownOpen, setYearDropdownOpen] = React.useState(false);
 
-  const handleFilterChange = (filters: { search?: string; status?: string }) => {
+  // Available months and years
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const years = ['2024', '2023', '2022', '2021'];
+
+  const handleFilterChange = (filters: { search?: string; status?: string; jenis?: string }) => {
     let filtered = [...tableData];
 
+    // Search across jenis, klasifikasi, and status
     if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(
         (item) =>
-          item.uraian.toLowerCase().includes(filters.search!.toLowerCase()) ||
-          item.spek.toLowerCase().includes(filters.search!.toLowerCase())
+          item.jenis.toLowerCase().includes(searchLower) ||
+          (item.klasifikasi && item.klasifikasi.toLowerCase().includes(searchLower)) ||
+          item.status.toLowerCase().includes(searchLower)
       );
     }
 
     if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter((item) => item.status === filters.status);
+    }
+    if (filters.jenis && filters.jenis !== 'all') {
+      filtered = filtered.filter((item) => item.jenis === filters.jenis);
     }
 
     setFilteredData(filtered);
@@ -131,38 +161,99 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Charts Grid - Responsive Layout */}
       <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
-        {/* Bar Chart Card */}
+        {/* Line Chart Card - Trend Analysis */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Persebaran Usulan</h3>
-            <button className="text-xs sm:text-sm text-teal-600 hover:text-teal-700 font-medium">
-              View Details →
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Trend Analisis Usulan</h3>
+              <p className="text-xs text-gray-500 mt-1">Data bulanan</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {/* Month Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setMonthDropdownOpen(!monthDropdownOpen)}
+                  className="bg-teal-50 text-teal-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors flex items-center gap-2"
+                >
+                  {selectedMonth}
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {monthDropdownOpen && (
+                  <div className="absolute top-full mt-2 right-0 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-60 overflow-y-auto">
+                    {months.map((month) => (
+                      <button
+                        key={month}
+                        onClick={() => {
+                          setSelectedMonth(month);
+                          setMonthDropdownOpen(false);
+                        }}
+                        className={cn(
+                          'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
+                          selectedMonth === month && 'bg-teal-50 text-teal-700 font-medium'
+                        )}
+                      >
+                        {month}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Year Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+                  className="bg-teal-50 text-teal-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors flex items-center gap-2"
+                >
+                  {selectedYear}
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {yearDropdownOpen && (
+                  <div className="absolute top-full mt-2 right-0 w-28 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    {years.map((year) => (
+                      <button
+                        key={year}
+                        onClick={() => {
+                          setSelectedYear(year);
+                          setYearDropdownOpen(false);
+                        }}
+                        className={cn(
+                          'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
+                          selectedYear === year && 'bg-teal-50 text-teal-700 font-medium'
+                        )}
+                      >
+                        {year}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <div className="h-[250px] sm:h-[300px]">
-            <BarChart data={barChartData} height={250} />
+            <LineChart data={lineChartData} lines={lineChartLines} height={250} />
           </div>
         </div>
 
         {/* Status Charts Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">
             Persentase Status Usulan
           </h3>
           
           {/* Responsive Grid: Stack on mobile, 3 columns on desktop */}
-          <div className="space-y-4 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-3 lg:gap-4">
+          <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-6 lg:gap-8">
             {/* Chart 1 */}
-            <div className="bg-gray-50 rounded-lg p-3 relative">
+            <div className="rounded-lg p-4 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
                   Usulan Bangunan Gedung
                 </span>
               </div>
-              <div className="h-[200px] sm:h-40">
+              <div className="h-[240px] sm:h-60">
                 <DonutChart
                   data={donutChartData1}
-                  height={140}
+                  height={240}
                   showLegend={true}
                   showLabels={false}
                 />
@@ -170,16 +261,16 @@ export default function DashboardPage() {
             </div>
 
             {/* Chart 2 */}
-            <div className="bg-gray-50 rounded-lg p-3 relative">
+            <div className="rounded-lg p-4 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
                    Usulan Jalan
                 </span>
               </div>
-              <div className="h-[200px] sm:h-40">
+              <div className="h-[240px] sm:h-60">
                 <DonutChart
                   data={donutChartData2}
-                  height={140}
+                  height={240}
                   showLegend={true}
                   showLabels={false}
                 />
@@ -187,16 +278,16 @@ export default function DashboardPage() {
             </div>
 
             {/* Chart 3 */}
-            <div className="bg-gray-50 rounded-lg p-3 relative">
+            <div className="rounded-lg p-4 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
                    Usulan Saluran
                 </span>
               </div>
-              <div className="h-[200px] sm:h-40">
+              <div className="h-[240px] sm:h-60">
                 <DonutChart
                   data={donutChartData3}
-                  height={140}
+                  height={240}
                   showLegend={true}
                   showLabels={false}
                 />

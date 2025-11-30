@@ -17,7 +17,7 @@ export default function AddUserForm({ onSuccess, onCancel }: AddUserFormProps) {
     username: '',
     password: '',
     name: '',
-    role: 'verifikator',
+    role: 'verifikator_opd',
   });
   const [errors, setErrors] = React.useState<CreateUserFormErrors>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -218,7 +218,9 @@ export default function AddUserForm({ onSuccess, onCancel }: AddUserFormProps) {
           }`}
           disabled={isSubmitting}
         >
-          <option value="verifikator">{ROLE_LABELS.verifikator}</option>
+          <option value="verifikator_opd">{ROLE_LABELS.verifikator_opd}</option>
+          <option value="verifikator_bappeda">{ROLE_LABELS.verifikator_bappeda}</option>
+          <option value="verifikator_bpkad">{ROLE_LABELS.verifikator_bpkad}</option>
           <option value="perangkat_daerah">{ROLE_LABELS.perangkat_daerah}</option>
         </select>
         {errors.role && (

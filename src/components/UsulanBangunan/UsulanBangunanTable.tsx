@@ -1,16 +1,17 @@
 'use client';
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Search, 
   ChevronDown, 
   Download,
-  Eye,
   MoreVertical,
   Check,
   X as CloseIcon
 } from 'lucide-react';
-import type { UsulanBangunanGedung, FilterUsulanBangunan } from '@/types/usulan-bangunan';
+import type { UsulanBangunanGedung, FilterUsulanBangunan, VerificationStatus } from '@/types/usulan-bangunan';
 import { cn } from '@/lib/utils';
+import VerificationSequence from './VerificationSequence';
 
 interface UsulanBangunanTableProps {
   data: UsulanBangunanGedung[];
@@ -83,7 +84,6 @@ const JenisBadge = ({ jenis }: { jenis: string }) => {
         )}
       />
       <span className={cn('text-sm', config.text)}>{jenis}</span>
-      <ChevronDown className="w-3 h-3 text-gray-400" />
     </div>
   );
 };
@@ -128,17 +128,20 @@ const NilaiBkfBadge = ({ status }: { status: string }) => {
   );
 };
 
-export default function UsulanBangunanTable({
-  data,
-  onFilterChange,
-  onAddNew,
-}: UsulanBangunanTableProps) {
+export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: UsulanBangunanTableProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedJenis, setSelectedJenis] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [isJenisDropdownOpen, setIsJenisDropdownOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [jenisFilter, setJenisFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [editingData, setEditingData] = useState<UsulanBangunanGedung[]>(data);
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState('Usulan Bangunan Gedung 2025');
+  const [selectedYear, setSelectedYear] = useState('2025');
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Available years
+  const years = ['2025', '2024', '2023', '2022', '2021'];
 
   // Get user role from cookie
   React.useEffect(() => {
@@ -165,20 +168,19 @@ export default function UsulanBangunanTable({
     if (onFilterChange) {
       onFilterChange({ 
         search: value,
-        jenis: selectedJenis as any,
-        status: selectedStatus as any,
+        jenis: jenisFilter as any,
+        status: statusFilter as any,
       });
     }
   };
 
   const handleJenisFilter = (jenis: string) => {
-    setSelectedJenis(jenis);
-    setIsJenisDropdownOpen(false);
+    setJenisFilter(jenis);
     if (onFilterChange) {
       onFilterChange({ 
         search: searchTerm,
         jenis: jenis as any,
-        status: selectedStatus as any,
+        status: statusFilter as any,
       });
     }
   };
@@ -190,31 +192,88 @@ export default function UsulanBangunanTable({
     }).format(value);
   };
 
-  // Handle nilaiBkf change (only for verifikator)
-  const handleNilaiBkfChange = (itemId: string, newValue: string) => {
+  // Handle verification status change
+  const handleVerificationChange = (itemId: string, stage: 'opd' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
     setEditingData(prev => 
       prev.map(item => 
         item.id === itemId 
-          ? { ...item, nilaiBkf: newValue as any }
+          ? { 
+              ...item, 
+              verificationStatus: {
+                ...item.verificationStatus,
+                [stage]: newStatus
+              }
+            }
           : item
       )
     );
     // In production, this would also call an API to update the backend
   };
 
+  // Handle verify button click
+  const handleVerifyClick = (itemId: string) => {
+    router.push(`/usulan/bangunan-gedung/verify/${itemId}`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Filter usulan by</h3>
-          <button
-            onClick={onAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors text-sm font-medium cursor-pointer"
-          >
-            <span className="text-lg">+</span>
-            Tambah Usulan
-          </button>
+      {/* Header with Project Info and Search - Similar to DashboardTable */}
+      <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+
+            {/* Year Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+                className="bg-white/90 text-teal-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white transition-colors flex items-center gap-2"
+              >
+                Tahun: {selectedYear}
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {yearDropdownOpen && (
+                <div className="absolute top-full mt-2 left-0 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  {years.map((year) => (
+                    <button
+                      key={year}
+                      onClick={() => {
+                        setSelectedYear(year);
+                        setYearDropdownOpen(false);
+                      }}
+                      className={cn(
+                        'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
+                        selectedYear === year && 'bg-teal-50 text-teal-700 font-medium'
+                      )}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Search Bar and Add Button */}
+          <div className="flex gap-2 flex-1 max-w-md">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={handleSearch}
+                placeholder="Cari usulan..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+              />
+            </div>
+            {onAddNew && (
+              <button
+                onClick={onAddNew}
+                className="bg-white text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors whitespace-nowrap"
+              >
+                + Tambah Usulan
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -233,13 +292,16 @@ export default function UsulanBangunanTable({
                 Lokasi
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Klasifikasi
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Satuan
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Nilai BKF
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Dibuat Oleh
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Tanggal Dibuat
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Tanggal Tenggat
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Surat Permohonan
@@ -268,26 +330,23 @@ export default function UsulanBangunanTable({
                   <div className="text-sm text-gray-900">{item.lokasi}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{item.klasifikasi}</div>
+                  <VerificationSequence
+                    verificationStatus={item.verificationStatus}
+                    userRole={userRole}
+                    usulanId={item.id}
+                    onStatusChange={(stage, newStatus) => handleVerificationChange(item.id, stage, newStatus)}
+                  />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{item.satuan}</div>
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  <div className="flex items-center">
+                    {item.createdBy || '-'}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {userRole === 'verifikator' ? (
-                    <select 
-                      value={editingData.find(d => d.id === item.id)?.nilaiBkf || item.nilaiBkf}
-                      onChange={(e) => handleNilaiBkfChange(item.id, e.target.value)}
-                      className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white cursor-pointer"
-                    >
-                      <option value="Sudah">Sudah</option>
-                      <option value="Belum">Belum</option>
-                      <option value="Tolak">Tolak</option>
-                      <option value="Sedang">Sedang</option>
-                    </select>
-                  ) : (
-                    <NilaiBkfBadge status={item.nilaiBkf} />
-                  )}
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {item.createdDate || '-'}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {item.tenggatDate || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {item.suratPermohonan ? (
@@ -327,7 +386,11 @@ export default function UsulanBangunanTable({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <button className="text-gray-400 hover:text-gray-600">
+                  <button 
+                    onClick={() => handleVerifyClick(item.id)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Verify usulan"
+                  >
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </td>

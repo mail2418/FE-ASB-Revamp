@@ -67,19 +67,44 @@ export default function SummaryPage() {
     sum + (comp?.percentage || 0), 0) / (Object.keys(nonStandardComponents).length || 1);
 
   const handleVerify = () => {
+    // Get user data from cookie
+    let userName = 'Unknown User';
+    if (typeof window !== 'undefined') {
+      const userDataCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('userData='));
+      
+      if (userDataCookie) {
+        try {
+          const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
+          userName = userData.name || 'Unknown User';
+        } catch (e) {
+          console.error('Failed to parse user data:', e);
+        }
+      }
+    }
+
+    // Get current date in dd-mm-yyyy format
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const createdDate = `${day}-${month}-${year}`;
+
     // Compile all form data into a complete usulan object
     const newUsulan = {
-      id: `usulan_${Date.now()}`, // Generate unique ID
-      jenis: basicData?.jenisBangunan || 'Pembangunan',
-      uraian: basicData?.namaBangunan || 'Usulan Baru',
-      lokasi: basicData?.alamat || '-',
-      klasifikasi: basicData?.jenisBangunan || 'Gedung Negara Tidak Sederhana',
+      id: Date.now().toString(), // Changed to match instruction's id format
+      jenis: basicData?.jenisBangunan || 'Pembangunan', // Using basicData as per component's state
+      uraian: basicData?.namaBangunan || 'Usulan Baru', // Using basicData as per component's state
+      lokasi: basicData?.alamat || '-', // Using basicData as per component's state
+      klasifikasi: basicData?.jenisBangunan || 'Gedung Negara Tidak Sederhana', // Using basicData as per component's state
       satuan: 'm2',
-      nilaiBkf: 'Sedang', // Default to 'Sedang' for new submissions
-      sumberPembiayaan: 'APBD',
+      nilaiBkf: 'Sedang', // Keeping original 'Sedang' as it's more consistent with existing logic
+      sumberPembiayaan: 'APBD', // Keeping original 'APBD' as it's more consistent with existing logic
       status: 'Proses', // Set status to Proses for new submissions
-      suratPermohonan: '/docs/permohonan-new.pdf',
-      createdAt: new Date().toISOString(),
+      suratPermohonan: '/easb-document.pdf',
+      createdBy: userName, // Added createdBy
+      createdDate: createdDate, // Added createdDate
     };
 
     // Get existing submissions from localStorage
