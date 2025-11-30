@@ -3,25 +3,39 @@ import { AdminUser, CreateUserFormData, UserRole } from '@/types/admin';
 // Mock user data - in production, this would come from a database
 let mockUsers: AdminUser[] = [
   {
-    id: '1',
-    name: 'Admin User',
+    id:"1",
     username: 'admin',
     password: 'Admin123!',
-    role: 'admin',
+    name: 'Samarta Admin',
+    role: 'admin' as const,
   },
   {
-    id: '2',
-    name: 'Verifikator Satu',
+    id:"2",
     username: 'verif1',
     password: 'Verif123!',
-    role: 'verifikator',
+    name: 'Muhammad Ismail 1',
+    role: 'verifikator_opd' as const,
   },
   {
-    id: '3',
-    name: 'PD User',
+    id:"3",
+    username: 'verif2',
+    password: 'Verif123!',
+    name: 'Muhammad Ismail 2',
+    role: 'verifikator_bappeda' as const,
+  },
+  {
+    id:"4",
+    username: 'verif2',
+    password: 'Verif123!',
+    name: 'Muhammad Ismail 3',
+    role: 'verifikator_bpkad' as const,
+  },
+  {
+    id:"5",
     username: 'pd1',
-    password: 'PD123!',
-    role: 'perangkat_daerah',
+    password: 'PD12345!',
+    name: 'Anggito Anju',
+    role: 'perangkat_daerah' as const,
   },
 ];
 

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Building2, TrendingUp, FileText, CheckCircle } from 'lucide-react';
 import type { UsulanBangunanGedung, FilterUsulanBangunan } from '@/types/usulan-bangunan';
 
@@ -20,96 +21,129 @@ const UsulanBangunanTable = dynamic(() => import('@/components/UsulanBangunan/Us
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
 });
 
-const AddUsulanModal = dynamic(() => import('@/components/UsulanBangunan/AddUsulanModal'), {
-  ssr: false,
-});
-
 // Mock data - in production this would come from API
 const mockData: UsulanBangunanGedung[] = [
   {
     id: '1',
     jenis: 'Pembangunan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Pembangunan Gedung Kantor Dinas Pendidikan 3 Lantai',
+    lokasi: 'Jl. Gatot Subroto No. 45, Kota Bandung',
     klasifikasi: 'Gedung Negara Tidak Sederhana',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Disetujui',
+      bappeda: 'Disetujui',
+      bpkad: 'Disetujui',
+    },
     nilaiBkf: 'Sudah',
     sumberPembiayaan: 'APBD',
     status: 'Sukses',
-    suratPermohonan: '/docs/permohonan-1.pdf',
-    suratRekomendasi: '/docs/rekomendasi-1.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
+    createdBy: 'Anggito Anju',
+    createdDate: '15-11-2024',
   },
   {
     id: '2',
     jenis: 'Pembangunan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Pembangunan Gedung Puskesmas Tipe B',
+    lokasi: 'Jl. Ahmad Yani Km 5, Kecamatan Cibiru',
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Disetujui',
+      bappeda: 'Disetujui',
+      bpkad: 'Menunggu',
+    },
     nilaiBkf: 'Sudah',
     sumberPembiayaan: 'APBD',
     status: 'Sukses',
-    suratPermohonan: '/docs/permohonan-2.pdf',
-    suratRekomendasi: '/docs/rekomendasi-2.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
+    createdBy: 'Muhammad Ismail',
+    createdDate: '20-11-2024',
   },
   {
     id: '3',
     jenis: 'Pembangunan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Renovasi dan Perluasan Balai Kota',
+    lokasi: 'Jl. Wastukencana No. 2, Bandung Wetan',
     klasifikasi: 'Rumah Negara Tipe A',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Disetujui',
+      bappeda: 'Ditolak',
+      bpkad: 'Belum',
+    },
     nilaiBkf: 'Belum',
     sumberPembiayaan: 'APBN',
     status: 'Tolak',
-    suratPermohonan: '/docs/permohonan-3.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    createdBy: 'Anggito Anju',
+    createdDate: '10-11-2024',
   },
   {
     id: '4',
     jenis: 'Pemeliharaan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Rehabilitasi Gedung DPRD 2 Lantai',
+    lokasi: 'Jl. Diponegoro No. 10, Bandung',
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Menunggu',
+      bappeda: 'Belum',
+      bpkad: 'Belum',
+    },
     nilaiBkf: 'Sedang',
     sumberPembiayaan: 'APBD',
     status: 'Proses',
-    suratPermohonan: '/docs/permohonan-4.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    createdBy: 'Samarta Admin',
+    createdDate: '25-11-2024',
   },
 ];
 
-// Chart data
+// Chart data - from API in production
 const barChartData = [
-  { name: 'Item 1', value: 8 },
-  { name: 'Item 2', value: 12 },
-  { name: 'Item 3', value: 16 },
-  { name: 'Item 4', value: 20 },
+  { name: 'Pembangunan', value: 8, color: '#ef4444' },
+  { name: 'Pemeliharaan', value: 12, color: '#f59e0b' },
 ];
 
 const donutChartData1 = [
-  { name: 'Item 1', value: 25, color: '#ef4444' },
-  { name: 'Item 2', value: 20, color: '#f59e0b' },
-  { name: 'Item 3', value: 30, color: '#eab308' },
-  { name: 'Item 4', value: 25, color: '#22c55e' },
+  { name: 'Pembangunan', value: 25, color: '#ef4444' },
+  { name: 'Pemeliharaan', value: 20, color: '#f59e0b' },
 ];
 
 const donutChartData2 = [
-  { name: 'Item 1', value: 40, color: '#3b82f6' },
-  { name: 'Item 2', value: 30, color: '#22c55e' },
-  { name: 'Item 3', value: 30, color: '#84cc16' },
-];
-
-const donutChartData3 = [
-  { name: 'Item 1', value: 62.5, color: '#06b6d4' },
-  { name: 'Item 3', value: 25, color: '#8b5cf6' },
-  { name: 'Item 5', value: 12.5, color: '#a855f7' },
+  { name: 'Sukses', value: 40, color: '#3b82f6' },
+  { name: 'Proses', value: 30, color: '#22c55e' },
+  { name: 'Tolak', value: 30, color: '#84cc16' },
 ];
 
 export default function UsulanBangunanGedungPage() {
-  const [data, setData] = useState(mockData);
-  const [filteredData, setFilteredData] = useState(mockData);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
+  const [data, setData] = useState<UsulanBangunanGedung[]>(mockData);
+  const [filteredData, setFilteredData] = useState<UsulanBangunanGedung[]>(mockData);
+
+  // Load submitted usulan from localStorage on mount
+  useEffect(() => {
+    const loadSubmittedUsulan = () => {
+      const submittedData = localStorage.getItem('submitted_usulan_list');
+      if (submittedData) {
+        try {
+          const submissions = JSON.parse(submittedData);
+          // Merge submitted data with mock data
+          const combinedData = [...mockData, ...submissions];
+          setData(combinedData);
+          setFilteredData(combinedData);
+        } catch (e) {
+          console.error('Failed to load submitted usulan', e);
+        }
+      }
+    };
+
+    loadSubmittedUsulan();
+  }, []);
 
   // Handle filter changes
   const handleFilterChange = (filters: FilterUsulanBangunan) => {
@@ -137,27 +171,7 @@ export default function UsulanBangunanGedungPage() {
 
   // Handle add new proposal
   const handleAddNew = () => {
-    setIsModalOpen(true);
-  };
-
-  // Handle form submit
-  const handleSubmit = (formData: Partial<UsulanBangunanGedung>) => {
-    const newUsulan: UsulanBangunanGedung = {
-      id: `${data.length + 1}`,
-      jenis: formData.jenis || 'Pembangunan',
-      uraian: formData.uraian || '',
-      lokasi: formData.lokasi || '',
-      klasifikasi: formData.klasifikasi || 'Gedung Negara Sederhana',
-      satuan: formData.satuan || 'm2',
-      nilaiBkf: formData.nilaiBkf || 'Belum',
-      sumberPembiayaan: formData.sumberPembiayaan || 'APBD',
-      status: 'Draft',
-      createdAt: new Date(),
-    };
-    
-    const updatedData = [newUsulan, ...data];
-    setData(updatedData);
-    setFilteredData(updatedData);
+    router.push('/usulan/bangunan-gedung/tambah');
   };
 
   // Calculate statistics
@@ -172,16 +186,6 @@ export default function UsulanBangunanGedungPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Usulan</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Kelola usulan jalan dari berbagai instansi
-          </p>
-        </div>
-      </div>
-
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -237,7 +241,7 @@ export default function UsulanBangunanGedungPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Trend Usulan</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Persebaran Aktivitas</h3>
           <div className="h-[250px]">
             <BarChart data={barChartData} height={220} />
           </div>
@@ -245,12 +249,12 @@ export default function UsulanBangunanGedungPage() {
 
         {/* Donut Charts Grid */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribusi Status</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Distribusi Status</h3>
+          <div className="grid grid-cols-2 gap-8">
             <div className="relative">
               <DonutChart
                 data={donutChartData1}
-                height={180}
+                height={260}
                 showLegend={true}
                 showLabels={false}
               />
@@ -258,15 +262,7 @@ export default function UsulanBangunanGedungPage() {
             <div className="relative">
               <DonutChart
                 data={donutChartData2}
-                height={180}
-                showLegend={true}
-                showLabels={false}
-              />
-            </div>
-            <div className="relative">
-              <DonutChart
-                data={donutChartData3}
-                height={180}
+                height={260}
                 showLegend={true}
                 showLabels={false}
               />
@@ -280,13 +276,6 @@ export default function UsulanBangunanGedungPage() {
         data={filteredData}
         onFilterChange={handleFilterChange}
         onAddNew={handleAddNew}
-      />
-
-      {/* Add Usulan Modal */}
-      <AddUsulanModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleSubmit}
       />
     </div>
   );
