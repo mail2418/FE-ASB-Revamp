@@ -17,11 +17,11 @@ export interface DashboardData {
 
 export interface UsulanData {
   id: string;
-  jenis: 'Umum' | 'Bangunan' | 'Jalan';
-  uraian: string;
-  spek: string;
-  satuan: string;
-  status: 'Sedang Diproses' | 'Sukses' | 'Ditolak' | 'Menunggu';
+  jenis: string;
+  klasifikasi?: string;
+  status: string;
+  suratPermohonan?: string;
+  suratRekomendasi?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

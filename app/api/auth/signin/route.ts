@@ -50,19 +50,31 @@ const DUMMY_USERS = [
   {
     username: 'admin',
     password: 'Admin123!',
-    name: 'Admin User',
+    name: 'Samarta Admin',
     role: 'admin' as const,
   },
   {
     username: 'verif1',
     password: 'Verif123!',
-    name: 'Verifikator Satu',
-    role: 'verifikator' as const,
+    name: 'Muhammad Ismail 1',
+    role: 'verifikator_opd' as const,
+  },
+  {
+    username: 'verif2',
+    password: 'Verif123!',
+    name: 'Muhammad Ismail 2',
+    role: 'verifikator_bappeda' as const,
+  },
+  {
+    username: 'verif2',
+    password: 'Verif123!',
+    name: 'Muhammad Ismail 3',
+    role: 'verifikator_bpkad' as const,
   },
   {
     username: 'pd1',
     password: 'PD12345!',
-    name: 'PD User',
+    name: 'Anggito Anju',
     role: 'perangkat_daerah' as const,
   },
 ];

@@ -26,52 +26,80 @@ const mockData: UsulanBangunanGedung[] = [
   {
     id: '1',
     jenis: 'Pembangunan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Pembangunan Gedung Kantor Dinas Pendidikan 3 Lantai',
+    lokasi: 'Jl. Gatot Subroto No. 45, Kota Bandung',
     klasifikasi: 'Gedung Negara Tidak Sederhana',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Disetujui',
+      bappeda: 'Disetujui',
+      bpkad: 'Disetujui',
+    },
     nilaiBkf: 'Sudah',
     sumberPembiayaan: 'APBD',
     status: 'Sukses',
-    suratPermohonan: '/docs/permohonan-1.pdf',
-    suratRekomendasi: '/docs/rekomendasi-1.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
+    createdBy: 'Anggito Anju',
+    createdDate: '15-11-2024',
   },
   {
     id: '2',
     jenis: 'Pembangunan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Pembangunan Gedung Puskesmas Tipe B',
+    lokasi: 'Jl. Ahmad Yani Km 5, Kecamatan Cibiru',
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Disetujui',
+      bappeda: 'Disetujui',
+      bpkad: 'Menunggu',
+    },
     nilaiBkf: 'Sudah',
     sumberPembiayaan: 'APBD',
     status: 'Sukses',
-    suratPermohonan: '/docs/permohonan-2.pdf',
-    suratRekomendasi: '/docs/rekomendasi-2.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    suratRekomendasi: '/easb-document.pdf',
+    createdBy: 'Muhammad Ismail',
+    createdDate: '20-11-2024',
   },
   {
     id: '3',
     jenis: 'Pembangunan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Renovasi dan Perluasan Balai Kota',
+    lokasi: 'Jl. Wastukencana No. 2, Bandung Wetan',
     klasifikasi: 'Rumah Negara Tipe A',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Disetujui',
+      bappeda: 'Ditolak',
+      bpkad: 'Belum',
+    },
     nilaiBkf: 'Belum',
     sumberPembiayaan: 'APBN',
     status: 'Tolak',
-    suratPermohonan: '/docs/permohonan-3.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    createdBy: 'Anggito Anju',
+    createdDate: '10-11-2024',
   },
   {
     id: '4',
     jenis: 'Pemeliharaan',
-    uraian: '1 m1 Konstruksi XXX',
-    lokasi: 'Jl X, Kab/Kota',
+    uraian: 'Rehabilitasi Gedung DPRD 2 Lantai',
+    lokasi: 'Jl. Diponegoro No. 10, Bandung',
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
+    verificationStatus: {
+      opd: 'Menunggu',
+      bappeda: 'Belum',
+      bpkad: 'Belum',
+    },
     nilaiBkf: 'Sedang',
     sumberPembiayaan: 'APBD',
     status: 'Proses',
-    suratPermohonan: '/docs/permohonan-4.pdf',
+    suratPermohonan: '/easb-document.pdf',
+    createdBy: 'Samarta Admin',
+    createdDate: '25-11-2024',
   },
 ];
 
@@ -92,17 +120,10 @@ const donutChartData2 = [
   { name: 'Tolak', value: 30, color: '#84cc16' },
 ];
 
-const donutChartData3 = [
-  { name: 'Item 1', value: 62.5, color: '#06b6d4' },
-  { name: 'Item 3', value: 25, color: '#8b5cf6' },
-  { name: 'Item 5', value: 12.5, color: '#a855f7' },
-];
-
 export default function UsulanBangunanGedungPage() {
   const router = useRouter();
   const [data, setData] = useState<UsulanBangunanGedung[]>(mockData);
   const [filteredData, setFilteredData] = useState<UsulanBangunanGedung[]>(mockData);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Load submitted usulan from localStorage on mount
   useEffect(() => {
@@ -228,12 +249,12 @@ export default function UsulanBangunanGedungPage() {
 
         {/* Donut Charts Grid */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribusi Status</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Distribusi Status</h3>
+          <div className="grid grid-cols-2 gap-8">
             <div className="relative">
               <DonutChart
                 data={donutChartData1}
-                height={180}
+                height={260}
                 showLegend={true}
                 showLabels={false}
               />
@@ -241,15 +262,7 @@ export default function UsulanBangunanGedungPage() {
             <div className="relative">
               <DonutChart
                 data={donutChartData2}
-                height={180}
-                showLegend={true}
-                showLabels={false}
-              />
-            </div>
-            <div className="relative">
-              <DonutChart
-                data={donutChartData3}
-                height={180}
+                height={260}
                 showLegend={true}
                 showLabels={false}
               />

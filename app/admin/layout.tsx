@@ -33,18 +33,18 @@ const navigation = [
     icon: Building2,
     current: false,
   },
-  // {
-  //   name: 'Usulan Jalan',
-  //   href: '/usulan/jalan',
-  //   icon: Route,
-  //   current: false,
-  // },
-  // {
-  //   name: 'Usulan Saluran',
-  //   href: '/usulan/saluran',
-  //   icon: Droplets,
-  //   current: false,
-  // },
+  {
+    name: 'Usulan Jalan',
+    href: '/404',
+    icon: Route,
+    current: false,
+  },
+  {
+    name: 'Usulan Saluran',
+    href: '/404',
+    icon: Droplets,
+    current: false,
+  },
 ];
 
 export default function DashboardLayout({ children }: LayoutProps) {
@@ -53,6 +53,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
   const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [userData, setUserData] = React.useState<{name: string; username: string; role: string} | null>(null);
 
   // Get user data from cookie
   React.useEffect(() => {
@@ -62,8 +63,9 @@ export default function DashboardLayout({ children }: LayoutProps) {
         .find(row => row.startsWith('userData='));
       
       if (userDataCookie) {
-        const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
-        setUserRole(userData.role);
+        const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
+        setUserRole(parsed.role);
+        setUserData(parsed);
       }
     }
   }, []);
@@ -75,22 +77,17 @@ export default function DashboardLayout({ children }: LayoutProps) {
     year: 'numeric'
   });
 
-  // Mock user data - in production, this would come from authentication
-  const user = {
-    name: 'Nama Akun',
-    role: 'Nama PD',
-    avatar: '/api/placeholder/32/32',
-  };
-
   // Logout handler
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/signin', {
         method: 'DELETE',
       });
+      // Redirect to login page
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      // Redirect to login page
       window.location.href = '/';
     }
   };
@@ -236,19 +233,19 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 <div className="relative">
                   <button
                     type="button"
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    className="cursor-pointer flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     aria-expanded={userMenuOpen}
                     aria-haspopup="true"
                   >
                     <div className="text-right hidden sm:block">
                       <div className="text-sm font-medium text-gray-900">
-                        {user.name}
+                        {userData?.name || 'Loading...'}
                       </div>
-                      <div className="text-xs text-gray-500">{user.role}</div>
+                      <div className="text-xs text-gray-500">{userData?.role || ''}</div>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg font-bold shadow-sm">
-                      N
+                      {userData?.name?.charAt(0).toUpperCase() ||  'U'}
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-500" />
                   </button>

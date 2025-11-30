@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, Search, Filter } from 'lucide-react';
+import { ChevronDown, Search, Filter, Download } from 'lucide-react';
 import type { UsulanData } from '@/types';
 
 interface DashboardTableProps {
@@ -29,7 +29,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border',
+        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border',
         statusStyles[status as keyof typeof statusStyles] || statusStyles['Menunggu']
       )}
     >
@@ -55,7 +55,7 @@ const JenisBadge = ({ jenis }: { jenis: string }) => {
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border',
+        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border',
         jenisStyles[jenis as keyof typeof jenisStyles] || jenisStyles['Umum']
       )}
     >
@@ -72,9 +72,24 @@ export default function DashboardTable({
 }: DashboardTableProps) {
   const [jenisFilterOpen, setJenisFilterOpen] = React.useState(false);
   const [statusFilterOpen, setStatusFilterOpen] = React.useState(false);
+  const [projectDropdownOpen, setProjectDropdownOpen] = React.useState(false);
+  const [yearDropdownOpen, setYearDropdownOpen] = React.useState(false);
   const [selectedJenisFilter, setSelectedJenisFilter] = React.useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = React.useState('all');
+  const [selectedProject, setSelectedProject] = React.useState('Pengadaan Bangunan Gedung ABCDE di Jl. ABCDE');
+  const [selectedYear, setSelectedYear] = React.useState('2025');
   const [searchTerm, setSearchTerm] = React.useState('');
+
+  // Mock project data
+  const projects = [
+    'Pengadaan Bangunan Gedung ABCDE di Jl. ABCDE',
+    'Pembangunan Gedung Kantor Dinas Pendidikan',
+    'Renovasi Gedung Puskesmas Kota',
+    'Pembangunan Jalan Raya Utara',
+  ];
+
+  // Available years
+  const years = ['2025', '2024', '2023', '2022', '2021'];
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -117,10 +132,36 @@ export default function DashboardTable({
       {/* Header with Project Info and Search */}
       <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex gap-2">
-            <button className="bg-white text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-              Proyek: Pengadaan Bangunan Gedung ABCDE di Jl. ABCDE
-            </button>
+          <div className="flex flex-wrap gap-2">
+            {/* Year Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+                className="bg-white/90 text-teal-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white transition-colors flex items-center gap-2"
+              >
+                Tahun: {selectedYear}
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {yearDropdownOpen && (
+                <div className="absolute top-full mt-2 left-0 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  {years.map((year) => (
+                    <button
+                      key={year}
+                      onClick={() => {
+                        setSelectedYear(year);
+                        setYearDropdownOpen(false);
+                      }}
+                      className={cn(
+                        'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
+                        selectedYear === year && 'bg-teal-50 text-teal-700 font-medium'
+                      )}
+                    >
+                      {year}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Search Bar */}
@@ -142,7 +183,7 @@ export default function DashboardTable({
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <span>Jenis</span>
                   <div className="relative">
@@ -174,16 +215,16 @@ export default function DashboardTable({
                   </div>
                 </div>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Uraian
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Spek
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Surat Permohonan
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Satuan
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Surat Rekomendasi
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <span>Status</span>
                   <div className="relative">
@@ -223,21 +264,43 @@ export default function DashboardTable({
                 key={item.id || index}
                 className="hover:bg-gray-50 transition-colors"
               >
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <JenisBadge jenis={item.jenis} />
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {item.uraian}
+                <td className="px-4 py-3 text-base text-gray-900">
+                  {item.klasifikasi || '-'}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {item.spek}
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {item.suratPermohonan ? (
+                    <a
+                      href={item.suratPermohonan}
+                      className="inline-flex items-center gap-1.5 text-red-600 hover:text-red-700 text-base font-medium"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="w-4 h-4" />
+                      PDF
+                    </a>
+                  ) : (
+                    <span className="text-base text-gray-400">-</span>
+                  )}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-gray-100 text-gray-800">
-                    {item.satuan}
-                  </span>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {item.suratRekomendasi ? (
+                    <a
+                      href={item.suratRekomendasi}
+                      className="inline-flex items-center gap-1.5 text-green-600 hover:text-green-700 text-base font-medium"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="w-4 h-4" />
+                      PDF
+                    </a>
+                  ) : (
+                    <span className="text-base text-gray-400">-</span>
+                  )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-3 whitespace-nowrap">
                   <StatusBadge status={item.status} />
                 </td>
               </tr>

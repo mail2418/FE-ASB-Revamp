@@ -1,4 +1,13 @@
 // Types for Usulan Bangunan Gedung
+
+export type VerificationStatus = 'Belum' | 'Disetujui' | 'Ditolak' | 'Menunggu';
+
+export interface VerificationStages {
+  opd: VerificationStatus;
+  bappeda: VerificationStatus;
+  bpkad: VerificationStatus;
+}
+
 export interface UsulanBangunanGedung {
   id: string;
   jenis: 'Pembangunan' | 'Pemeliharaan';
@@ -6,11 +15,15 @@ export interface UsulanBangunanGedung {
   lokasi: string;
   klasifikasi: string;
   satuan: string;
-  nilaiBkf: 'Sedang' | 'Sudah' | 'Belum' | 'Tolak';
-  sumberPembiayaan: 'APBD' | 'APBN' | 'Lainnya';
+  verificationStatus: VerificationStages;
+  nilaiBkf?: 'Sudah' | 'Belum' | 'Sedang'; // Deprecated, keeping for backward compatibility
+  sumberPembiayaan: 'APBN' | 'APBD';
   status: 'Sukses' | 'Tolak' | 'Proses' | 'Draft';
   suratPermohonan?: string;
   suratRekomendasi?: string;
+  createdBy?: string;
+  createdDate?: string;
+  tenggatDate?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
