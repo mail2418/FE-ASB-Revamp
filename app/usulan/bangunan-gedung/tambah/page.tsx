@@ -3,9 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Building2, 
-  Plus, 
-  Trash2, 
   Upload, 
   ChevronDown,
   Save,

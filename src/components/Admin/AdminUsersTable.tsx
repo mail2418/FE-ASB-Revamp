@@ -1,11 +1,10 @@
 'use client'
 
-import React from 'react';
 import { cn } from '@/lib/utils';
 import { AdminUser, ROLE_LABELS, ROLE_COLORS } from '@/types/admin';
 
 interface AdminUsersTableProps {
-  users: AdminUser[];
+  users?: AdminUser[];
   className?: string;
 }
 
@@ -52,7 +51,7 @@ export default function AdminUsersTable({ users, className }: AdminUsersTablePro
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user, index) => (
+            {users?.map((user, index) => (
               <tr
                 key={user.id}
                 className="hover:bg-gray-50 transition-colors"
@@ -78,7 +77,7 @@ export default function AdminUsersTable({ users, className }: AdminUsersTablePro
       {/* Table Footer */}
       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
         <p className="text-sm text-gray-700">
-          Total: <span className="font-medium">{users.length}</span> pengguna
+          Total: <span className="font-medium">{users?.length || 0}</span> pengguna
         </p>
       </div>
     </div>

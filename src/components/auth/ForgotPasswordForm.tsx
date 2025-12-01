@@ -28,18 +28,18 @@ export default function ForgotPasswordForm() {
   const contactPersons: ContactPerson[] = [
     {
       name: 'Admin IT Support',
-      role: 'System Administrator',
-      phone: '+62 812-3456-7890',
-      email: 'admin.it@asb-revamp.id',
-      availableHours: 'Monday - Friday, 08:00 - 17:00 WIB',
+      role: 'Application Developer',
+      phone: '+62 813-5894-5230',
+      email: 'muhammadismail2418@gmail.com',
+      availableHours: 'Monday - Friday, 08:00 - 18:00 WIB',
     },
-    {
-      name: 'Help Desk',
-      role: 'Technical Support',
-      phone: '+62 813-9876-5432',
-      email: 'helpdesk@asb-revamp.id',
-      availableHours: 'Monday - Friday, 08:00 - 20:00 WIB',
-    },
+    // {
+    //   name: 'Help Desk',
+    //   role: 'Technical Support',
+    //   phone: '+62 813-9876-5432',
+    //   email: 'helpdesk@asb-revamp.id',
+    //   availableHours: 'Monday - Friday, 08:00 - 20:00 WIB',
+    // },
   ];
 
   const handleContactClick = (phone: string) => {

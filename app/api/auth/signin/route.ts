@@ -45,33 +45,45 @@ function clearRateLimit(identifier: string): void {
   loginAttempts.delete(identifier);
 }
 
-// Dummy users for testing - in production, use a real database
-const DUMMY_USERS = [
+// Mock user data - in production this would come from database
+const mockUsers = [
   {
+    id: "0",
+    username: 'superadmin',
+    password: 'SuperAdminPass123!',
+    name: 'Super Admin',
+    role: 'superadmin' as const,
+  },
+  {
+    id: "1",
     username: 'admin',
     password: 'Admin123!',
     name: 'Samarta Admin',
     role: 'admin' as const,
   },
   {
+    id:"2",
     username: 'verif1',
     password: 'Verif123!',
     name: 'Muhammad Ismail 1',
     role: 'verifikator_opd' as const,
   },
   {
+    id:"3",
     username: 'verif2',
     password: 'Verif123!',
     name: 'Muhammad Ismail 2',
     role: 'verifikator_bappeda' as const,
   },
   {
+    id:"4",
     username: 'verif2',
     password: 'Verif123!',
     name: 'Muhammad Ismail 3',
     role: 'verifikator_bpkad' as const,
   },
   {
+    id:"5",
     username: 'pd1',
     password: 'PD12345!',
     name: 'Anggito Anju',
@@ -83,7 +95,7 @@ const DUMMY_USERS = [
 async function validateCredentials(
   username: string, 
   password: string
-): Promise<{ isValid: boolean; user?: typeof DUMMY_USERS[0] }> {
+): Promise<{ isValid: boolean; user?: typeof mockUsers[0] }> {
   // TODO: Replace with actual database query
   // Example using bcrypt for password comparison:
   // const user = await db.user.findUnique({ where: { username } });
@@ -93,7 +105,7 @@ async function validateCredentials(
   
   // Mock validation for demonstration
   // In production, NEVER hardcode credentials
-  const user = DUMMY_USERS.find(
+  const user = mockUsers.find(
     u => u.username === username && u.password === password
   );
   
@@ -112,6 +124,12 @@ function generateToken(): string {
     token += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return token;
+}
+
+// Helper function to get user by ID
+export function getUserById(userId: string): typeof mockUsers[0] | null {
+  const user = mockUsers.find(u => u.id === userId);
+  return user || null;
 }
 
 export async function POST(request: NextRequest) {
@@ -220,6 +238,7 @@ export async function POST(request: NextRequest) {
     // Set user data cookie (accessible to client for role checks)
     cookieStore.set('userData', 
       JSON.stringify({
+        id: user.id,
         username: user.username,
         name: user.name,
         role: user.role,
