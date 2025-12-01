@@ -2,14 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { userService } from '@/lib/user-service';
 import { ProfileUpdateData } from '@/lib/profile-service';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     console.log(params)
     const userId = await params.id;
-
     // Get user profile
     const user = await userService.getUserById(userId);
     console.log(user)
@@ -30,10 +27,8 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const userId = params.id;
     const updates: ProfileUpdateData = await request.json();
