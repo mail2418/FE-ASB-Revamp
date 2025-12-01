@@ -52,7 +52,6 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [isHovered, setIsHovered] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
-  const [userRole, setUserRole] = React.useState<string | null>(null);
   const [userData, setUserData] = React.useState<{id: string; name: string; username: string; role: string} | null>(null);
 
   // Get user data from cookie
@@ -64,9 +63,20 @@ export default function DashboardLayout({ children }: LayoutProps) {
       
       if (userDataCookie) {
         const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
-        setUserRole(parsed.role);
-        console.log(`${decodeURIComponent(userDataCookie.split('=')[1])}`);
         setUserData(parsed);
+      }
+    }
+  }, []);
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userDataCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('userData='));
+      if (userDataCookie) {
+        const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
+        setUserRole(userData.role);
       }
     }
   }, []);
@@ -168,60 +178,10 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 </Link>
               );
             })}
-            
-            {/* Admin Menu - Only visible for admin role */}
             {userRole === 'admin' && (
-              <Link
-                href="/admin"
-                className={cn(
-                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
-                  pathname.startsWith('/admin')
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                )}
-              >
-                <Shield
-                  className={cn(
-                    'h-5 w-5 shrink-0',
-                    pathname.startsWith('/admin') ? 'text-white' : 'text-white/80',
-                    isHovered ? 'mr-3' : 'lg:mr-0'
-                  )}
-                  aria-hidden="true"
-                />
-                <span className={cn(
-                  "transition-all duration-300",
-                  isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden"
-                )}>
-                  Admin
-                </span>
-              </Link>
-            )}
-
-            {/* Super Admin Menu - Only visible for superadmin role */}
-            {userRole === 'superadmin' && (
-              <Link
-                href="/superadmin"
-                className={cn(
-                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
-                  pathname.startsWith('/superadmin')
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                )}
-              >
-                <Shield
-                  className={cn(
-                    'h-5 w-5 shrink-0',
-                    pathname.startsWith('/superadmin') ? 'text-white' : 'text-white/80',
-                    isHovered ? 'mr-3' : 'lg:mr-0'
-                  )}
-                  aria-hidden="true"
-                />
-                <span className={cn(
-                  "transition-all duration-300",
-                  isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden"
-                )}>
-                  Super Admin
-                </span>
+              <Link href="/admin" className={cn('group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors', pathname.startsWith('/admin') ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white')}>
+                <Shield className={cn('h-5 w-5 shrink-0', pathname.startsWith('/admin') ? 'text-white' : 'text-white/80', isHovered ? 'mr-3' : 'lg:mr-0')} aria-hidden="true" />
+                <span className={cn("transition-all duration-300", isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden")}>Admin</span>
               </Link>
             )}
           </nav>
@@ -247,7 +207,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
               {/* Page title */}
               <div className="flex-1 px-4 lg:px-0">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Dashboard Utama
+                  Usulan Bagunan Gedung
                 </h2>
               </div>
 

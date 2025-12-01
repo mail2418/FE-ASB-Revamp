@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
   const [userRole, setUserRole] = React.useState<string | null>(null);
-  const [userData, setUserData] = React.useState<{id: string; name: string; username: string; role: string} | null>(null);
+  const [userData, setUserData] = React.useState<{name: string; username: string; role: string} | null>(null);
 
   // Get user data from cookie
   React.useEffect(() => {
@@ -65,7 +65,6 @@ export default function DashboardLayout({ children }: LayoutProps) {
       if (userDataCookie) {
         const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
         setUserRole(parsed.role);
-        console.log(`${decodeURIComponent(userDataCookie.split('=')[1])}`);
         setUserData(parsed);
       }
     }
@@ -283,12 +282,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
                   {/* Dropdown menu */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                      <Link
-                        href={userData?.id ? `/profile/${userData.id}` : '#'}
+                      <a
+                        href="#"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Profile
-                      </Link>
+                      </a>
                       <a
                         href="#"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

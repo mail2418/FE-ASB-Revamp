@@ -3,7 +3,14 @@ import { AdminUser, CreateUserFormData, UserRole } from '@/types/admin';
 // Mock user data - in production, this would come from a database
 let mockUsers: AdminUser[] = [
   {
-    id:"1",
+    id: "0",
+    username: 'superadmin',
+    password: 'SuperAdminPass123!',
+    name: 'Super Admin',
+    role: 'superadmin' as const,
+  },
+  {
+    id: "1",
     username: 'admin',
     password: 'Admin123!',
     name: 'Samarta Admin',
@@ -99,6 +106,60 @@ class UserService {
       ...userWithoutPassword,
       password: '********',
     };
+  }
+
+  /**
+   * Get user by ID
+   */
+  async getUserById(userId: string): Promise<AdminUser | null> {
+    const user = mockUsers.find(u => u.id === userId);
+    if (!user) return null;
+
+    // Return without password
+    const { password, ...userWithoutPassword } = user;
+    return {
+      ...userWithoutPassword,
+      password: '********',
+    };
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateUser(
+    userId: string,
+    updates: Partial<Omit<AdminUser, 'id' | 'password'>>
+  ): Promise<{ success: boolean; error?: string; user?: AdminUser }> {
+    try {
+      const userIndex = mockUsers.findIndex(u => u.id === userId);
+      if (userIndex === -1) {
+        return {
+          success: false,
+          error: 'User not found',
+        };
+      }
+
+      // Update user data (preserve password and id)
+      mockUsers[userIndex] = {
+        ...mockUsers[userIndex],
+        ...updates,
+      };
+
+      // Return updated user without password
+      const { password, ...userWithoutPassword } = mockUsers[userIndex];
+      return {
+        success: true,
+        user: {
+          ...userWithoutPassword,
+          password: '********',
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Failed to update user',
+      };
+    }
   }
 }
 
