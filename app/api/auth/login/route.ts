@@ -45,76 +45,6 @@ function clearRateLimit(identifier: string): void {
   loginAttempts.delete(identifier);
 }
 
-// Mock user data - in production this would come from database
-const mockUsers = [
-  {
-    id: "0",
-    username: 'superadmin',
-    password: 'SuperAdminPass123!',
-    name: 'Super Admin',
-    role: 'superadmin' as const,
-  },
-  {
-    id: "1",
-    username: 'admin',
-    password: 'Admin123!',
-    name: 'Samarta Admin',
-    role: 'admin' as const,
-  },
-  {
-    id:"2",
-    username: 'verif1',
-    password: 'Verif123!',
-    name: 'Muhammad Ismail 1',
-    role: 'verifikator_opd' as const,
-  },
-  {
-    id:"3",
-    username: 'verif2',
-    password: 'Verif123!',
-    name: 'Muhammad Ismail 2',
-    role: 'verifikator_bappeda' as const,
-  },
-  {
-    id:"4",
-    username: 'verif2',
-    password: 'Verif123!',
-    name: 'Muhammad Ismail 3',
-    role: 'verifikator_bpkad' as const,
-  },
-  {
-    id:"5",
-    username: 'pd1',
-    password: 'PD12345!',
-    name: 'Anggito Anju',
-    role: 'perangkat_daerah' as const,
-  },
-];
-
-// Helper function to validate credentials (replace with actual database check)
-async function validateCredentials(
-  username: string, 
-  password: string
-): Promise<{ isValid: boolean; user?: typeof mockUsers[0] }> {
-  // TODO: Replace with actual database query
-  // Example using bcrypt for password comparison:
-  // const user = await db.user.findUnique({ where: { username } });
-  // if (!user) return { isValid: false };
-  // const isValid = await bcrypt.compare(password, user.passwordHash);
-  // return { isValid, user };
-  
-  // Mock validation for demonstration
-  // In production, NEVER hardcode credentials
-  const user = mockUsers.find(
-    u => u.username === username && u.password === password
-  );
-  
-  return {
-    isValid: !!user,
-    user,
-  };
-}
-
 // Helper function to generate a secure token
 function generateToken(): string {
   // In production, use a proper JWT library like jose or jsonwebtoken
@@ -124,12 +54,6 @@ function generateToken(): string {
     token += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return token;
-}
-
-// Helper function to get user by ID
-export function getUserById(userId: string): typeof mockUsers[0] | null {
-  const user = mockUsers.find(u => u.id === userId);
-  return user || null;
 }
 
 export async function POST(request: NextRequest) {
@@ -142,8 +66,7 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body: SignInRequest = await request.json();
     const { username, password } = body;
-    
-    // Input validation
+    // Input validation 
     if (!username || !password) {
       return NextResponse.json(
         { 
@@ -186,22 +109,80 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate credentials
-    const { isValid, user } = await validateCredentials(username, password);
+    // Forward to external API if configured, otherwise use mock
+    const externalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+    let user;
+    let accessToken: string | undefined;
     
-    if (!isValid || !user) {
+    // Call external API
+    try {
+      const externalResponse = await fetch(`${externalApiUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!externalResponse.ok) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Invalid username or password',
+            attemptsRemaining: rateLimit.remaining - 1
+          },
+          { 
+            status: 401,
+            headers: {
+              'X-RateLimit-Remaining': (rateLimit.remaining - 1).toString(),
+            }
+          }
+        );
+      }
+      
+      const externalData = await externalResponse.json();
+      console.log('External API Response:', JSON.stringify(externalData, null, 2));
+      
+      // Decode JWT to get user info
+      if (!externalData.data?.accessToken) {
+        throw new Error('No access token in response');
+      }
+
+      // Store accessToken to return in response
+      accessToken = externalData.data.accessToken;
+
+      // Decode JWT payload (base64 decode the middle section)
+      const token = externalData.data.accessToken;
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        Buffer.from(base64, 'base64')
+          .toString('utf-8')
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+      
+      console.log('Decoded JWT Payload:', JSON.stringify(payload, null, 2));
+      
+      // Map JWT payload to our user format
+      user = {
+        id: payload.sub || payload.userId || payload.id,
+        username: payload.username || username,
+        name: payload.name || payload.fullName || username,
+        role: payload.roles?.[0] || payload.role || 'guest', // Take first role from roles array
+      };
+      
+      console.log('Mapped User:', JSON.stringify(user, null, 2));
+    } catch (error) {
+      console.error('External API error:', error);
       return NextResponse.json(
         { 
           success: false,
-          error: 'Invalid username or password',
-          attemptsRemaining: rateLimit.remaining - 1
+          error: 'Authentication service unavailable' 
         },
-        { 
-          status: 401,
-          headers: {
-            'X-RateLimit-Remaining': (rateLimit.remaining - 1).toString(),
-          }
-        }
+        { status: 503 }
       );
     }
     
@@ -211,18 +192,20 @@ export async function POST(request: NextRequest) {
     // Generate authentication token
     const token = generateToken();
     
-    // Create response with user data
+    // Create response with user data and accessToken
     const response = NextResponse.json(
       { 
+        status: 200,
         success: true,
         message: 'Authentication successful',
+        accessToken: accessToken, // Include accessToken from external API
         user: {
+          id: user.id,
           username: user.username,
           name: user.name,
           role: user.role,
         }
       },
-      { status: 200 }
     );
     
     // Set secure cookie with authentication token

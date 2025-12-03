@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
   const [userRole, setUserRole] = React.useState<string | null>(null);
-  const [userData, setUserData] = React.useState<{name: string; username: string; role: string} | null>(null);
+  const [userData, setUserData] = React.useState<{id: string; name: string; username: string; role: string} | null>(null);
 
   // Get user data from cookie
   React.useEffect(() => {
@@ -65,6 +65,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
       if (userDataCookie) {
         const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
         setUserRole(parsed.role);
+        console.log(`${decodeURIComponent(userDataCookie.split('=')[1])}`);
         setUserData(parsed);
       }
     }
@@ -80,14 +81,28 @@ export default function DashboardLayout({ children }: LayoutProps) {
   // Logout handler
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/signin', {
+      await fetch('/api/auth/login', {
         method: 'DELETE',
       });
+      
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       // Redirect to login page
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
-      // Redirect to login page
+      
+      // Clear localStorage even on error
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
+      // Still redirect on error
       window.location.href = '/';
     }
   };
@@ -121,7 +136,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
               "text-xl font-bold text-white transition-opacity duration-300",
               isHovered ? "opacity-100" : "lg:opacity-0"
             )}>
-              SISBE 
+              SISBE
             </h1>
             <button
               type="button"
@@ -194,6 +209,34 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 </span>
               </Link>
             )}
+
+            {/* Super Admin Menu - Only visible for superadmin role */}
+            {userRole === 'superadmin' && (
+              <Link
+                href="/superadmin"
+                className={cn(
+                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
+                  pathname.startsWith('/superadmin')
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                )}
+              >
+                <Shield
+                  className={cn(
+                    'h-5 w-5 shrink-0',
+                    pathname.startsWith('/superadmin') ? 'text-white' : 'text-white/80',
+                    isHovered ? 'mr-3' : 'lg:mr-0'
+                  )}
+                  aria-hidden="true"
+                />
+                <span className={cn(
+                  "transition-all duration-300",
+                  isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden"
+                )}>
+                  Super Admin
+                </span>
+              </Link>
+            )}
           </nav>
         </div>
       </div>
@@ -217,7 +260,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
               {/* Page title */}
               <div className="flex-1 px-4 lg:px-0">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Dashboard Admin
+                  Dashboard Utama
                 </h2>
               </div>
 
@@ -233,7 +276,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 <div className="relative">
                   <button
                     type="button"
-                    className="cursor-pointer flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     aria-expanded={userMenuOpen}
                     aria-haspopup="true"
@@ -245,7 +288,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                       <div className="text-xs text-gray-500">{userData?.role || ''}</div>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center text-white text-lg font-bold shadow-sm">
-                      {userData?.name?.charAt(0).toUpperCase() ||  'U'}
+                      {userData?.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-500" />
                   </button>
@@ -253,12 +296,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
                   {/* Dropdown menu */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                      <a
-                        href="#"
+                      <Link
+                        href={userData?.id ? `/profile/${userData.id}` : '#'}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Profile
-                      </a>
+                      </Link>
                       <a
                         href="#"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

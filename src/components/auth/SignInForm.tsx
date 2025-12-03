@@ -94,24 +94,42 @@ export default function SignInForm() {
     setErrors({});
 
     try {
-      // Simulate API call - Replace with actual authentication
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // TODO: Replace with actual authentication API call
-      const response = await fetch('/api/auth/signin', {
+      // Call local Next.js API route
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Authentication failed');
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Handle specific error cases
+        if (data.retryAfter) {
+          setErrors({
+            general: `Too many login attempts. Please try again in ${Math.ceil(data.retryAfter)} seconds.`,
+          });
+        } else if (data.attemptsRemaining !== undefined) {
+          setErrors({
+            general: `Invalid username or password. ${data.attemptsRemaining} attempts remaining.`,
+          });
+        } else {
+          setErrors({
+            general: data.error || 'Invalid username or password. Please try again.',
+          });
+        }
+        return;
       }
 
-      const data = await response.json();
+      // Store accessToken in localStorage
+      if (typeof window !== 'undefined' && data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+      }
 
       // Handle remember me
       if (typeof window !== 'undefined') {
@@ -127,7 +145,7 @@ export default function SignInForm() {
       
     } catch (error) {
       setErrors({
-        general: 'Invalid username or password. Please try again.',
+        general: 'An unexpected error occurred. Please try again.',
       });
     } finally {
       setIsLoading(false);

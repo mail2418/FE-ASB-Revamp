@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { AdminUser, ROLE_LABELS, ROLE_COLORS } from '@/types/admin';
-import { profileService } from '@/lib/profile-service';
 import AvatarUpload from './AvatarUpload';
 import { Edit2, Save, X, User, Briefcase, Mail, Shield, CheckCircle } from 'lucide-react';
 
@@ -38,18 +37,39 @@ export default function ProfilePage({ userId, currentUserId, isAdmin = false }: 
   const loadUserProfile = async () => {
     setLoading(true);
     setError(null);
-    const profile = await profileService.getUserProfile(userId);
-    if (profile) {
-      setUser(profile);
-      setFormData({
-        name: profile.name || '',
-        displayName: profile.displayName || '',
-        jobPosition: profile.jobPosition || '',
-        avatar: profile.avatar || '',
+    try {
+      const response = await fetch(`/api/profile/${userId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        method: 'GET',
       });
-    } else {
+      
+      if (!response.ok) {
+        setError('Failed to load profile');
+        setLoading(false);
+        return;
+      }
+      
+      const profile = await response.json();
+      
+      if (profile) {
+        setUser(profile);
+        setFormData({
+          name: profile.name || '',
+          displayName: profile.displayName || '',
+          jobPosition: profile.jobPosition || '',
+          avatar: profile.avatar || '',
+        });
+      } else {
+        setError('Failed to load profile');
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
       setError('Failed to load profile');
     }
+    
     setLoading(false);
   };
 
@@ -85,31 +105,45 @@ export default function ProfilePage({ userId, currentUserId, isAdmin = false }: 
     setError(null);
     setSuccessMessage(null);
 
-    const result = await profileService.updateUserProfile(userId, {
-      name: formData.name,
-      displayName: formData.displayName,
-      jobPosition: formData.jobPosition,
-      avatar: formData.avatar,
-    });
+    try {
+      const response = await fetch(`/api/profile/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          displayName: formData.displayName,
+          jobPosition: formData.jobPosition,
+          avatar: formData.avatar,
+        }),
+      });
 
-    setSaving(false);
+      const result = await response.json();
 
-    if (result.success && result.user) {
-      setUser(result.user);
-      setIsEditing(false);
-      setSuccessMessage('Profile updated successfully!');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
+      setSaving(false);
 
-      // Reload page to update header if current user updated their own profile
-      if (userId === currentUserId) {
-        window.location.reload();
+      if (response.ok && result.success && result.user) {
+        setUser(result.user);
+        setIsEditing(false);
+        setSuccessMessage('Profile updated successfully!');
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000);
+
+        // Reload page to update header if current user updated their own profile
+        if (userId === currentUserId) {
+          window.location.reload();
+        }
+      } else {
+        setError(result.error || 'Failed to update profile');
       }
-    } else {
-      setError(result.error || 'Failed to update profile');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError('Failed to update profile');
+      setSaving(false);
     }
   };
 

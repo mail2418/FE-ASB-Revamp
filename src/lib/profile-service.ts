@@ -1,4 +1,5 @@
 import { AdminUser } from '@/types/admin';
+import { apiClient } from './api-client';
 
 // Profile update data type
 export interface ProfileUpdateData {
@@ -14,12 +15,14 @@ class ProfileService {
    */
   async getUserProfile(userId: string): Promise<AdminUser | null> {
     try {
-      const response = await fetch(`/api/profile/${userId}`);
-      // console.log(response)
-      if (!response.ok) {
-        return null;
+      const response = await apiClient.get<AdminUser>(`/api/profile/${userId}`);
+      
+      if (response.success && response.data) {
+        return response.data;
       }
-      return await response.json();
+      
+      console.error('Failed to fetch user profile:', response.error);
+      return null;
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
       return null;
@@ -34,26 +37,21 @@ class ProfileService {
     updates: ProfileUpdateData
   ): Promise<{ success: boolean; error?: string; user?: AdminUser }> {
     try {
-      const response = await fetch(`/api/profile/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
+      const response = await apiClient.put<{ user: AdminUser }>(
+        `/api/profile/${userId}`,
+        updates
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (response.success && response.data) {
         return {
-          success: false,
-          error: data.error || 'Failed to update profile',
+          success: true,
+          user: response.data.user,
         };
       }
 
       return {
-        success: true,
-        user: data.user,
+        success: false,
+        error: response.error || 'Failed to update profile',
       };
     } catch (error) {
       console.error('Failed to update user profile:', error);
