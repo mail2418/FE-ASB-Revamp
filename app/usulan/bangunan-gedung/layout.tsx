@@ -52,7 +52,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [isHovered, setIsHovered] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
-  const [userData, setUserData] = React.useState<{name: string; username: string; role: string} | null>(null);
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [userData, setUserData] = React.useState<{id: string; name: string; username: string; role: string} | null>(null);
 
   // Get user data from cookie
   React.useEffect(() => {
@@ -63,24 +64,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
       
       if (userDataCookie) {
         const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
+        setUserRole(parsed.role);
+        console.log(`${decodeURIComponent(userDataCookie.split('=')[1])}`);
         setUserData(parsed);
       }
     }
   }, []);
-  const [userRole, setUserRole] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const userDataCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('userData='));
-      if (userDataCookie) {
-        const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
-        setUserRole(userData.role);
-      }
-    }
-  }, []);
-
 
   // Get current date
   const currentDate = new Date().toLocaleDateString('id-ID', {
@@ -92,13 +81,27 @@ export default function DashboardLayout({ children }: LayoutProps) {
   // Logout handler
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/signin', {
+      await fetch('/api/auth/login', {
         method: 'DELETE',
       });
+      
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       // Redirect to login page
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      
+      // Clear localStorage even on error
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       // Still redirect on error
       window.location.href = '/';
     }
@@ -178,10 +181,60 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 </Link>
               );
             })}
+            
+            {/* Admin Menu - Only visible for admin role */}
             {userRole === 'admin' && (
-              <Link href="/admin" className={cn('group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors', pathname.startsWith('/admin') ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white')}>
-                <Shield className={cn('h-5 w-5 shrink-0', pathname.startsWith('/admin') ? 'text-white' : 'text-white/80', isHovered ? 'mr-3' : 'lg:mr-0')} aria-hidden="true" />
-                <span className={cn("transition-all duration-300", isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden")}>Admin</span>
+              <Link
+                href="/admin"
+                className={cn(
+                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
+                  pathname.startsWith('/admin')
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                )}
+              >
+                <Shield
+                  className={cn(
+                    'h-5 w-5 shrink-0',
+                    pathname.startsWith('/admin') ? 'text-white' : 'text-white/80',
+                    isHovered ? 'mr-3' : 'lg:mr-0'
+                  )}
+                  aria-hidden="true"
+                />
+                <span className={cn(
+                  "transition-all duration-300",
+                  isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden"
+                )}>
+                  Admin
+                </span>
+              </Link>
+            )}
+
+            {/* Super Admin Menu - Only visible for superadmin role */}
+            {userRole === 'superadmin' && (
+              <Link
+                href="/superadmin"
+                className={cn(
+                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
+                  pathname.startsWith('/superadmin')
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                )}
+              >
+                <Shield
+                  className={cn(
+                    'h-5 w-5 shrink-0',
+                    pathname.startsWith('/superadmin') ? 'text-white' : 'text-white/80',
+                    isHovered ? 'mr-3' : 'lg:mr-0'
+                  )}
+                  aria-hidden="true"
+                />
+                <span className={cn(
+                  "transition-all duration-300",
+                  isHovered ? "opacity-100 w-auto" : "lg:opacity-0 lg:w-0 lg:overflow-hidden"
+                )}>
+                  Super Admin
+                </span>
               </Link>
             )}
           </nav>
@@ -207,7 +260,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
               {/* Page title */}
               <div className="flex-1 px-4 lg:px-0">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Usulan Bagunan Gedung
+                  Dashboard Utama
                 </h2>
               </div>
 
@@ -243,12 +296,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
                   {/* Dropdown menu */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                      <a
-                        href="#"
+                      <Link
+                        href={userData?.id ? `/profile/${userData.id}` : '#'}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Profile
-                      </a>
+                      </Link>
                       <a
                         href="#"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

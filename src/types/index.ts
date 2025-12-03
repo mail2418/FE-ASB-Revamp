@@ -18,7 +18,7 @@ export interface DashboardData {
 export interface UsulanData {
   id: string;
   jenis: string;
-  klasifikasi?: string;
+  uraian?: string;
   status: string;
   suratPermohonan?: string;
   suratRekomendasi?: string;

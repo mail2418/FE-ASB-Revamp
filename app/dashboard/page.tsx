@@ -46,21 +46,21 @@ const lineChartLines = [
   { dataKey: 'saluran', color: '#eab308', name: 'Saluran' },
 ];
 
-const donutChartData1 = [
+const donutChartDataBangunanGedung = [
   { name: 'Sukses', value: 40, color: '#ef4444' },
   { name: 'Sedang diproses', value: 25, color: '#f59e0b' },
   { name: 'Ditolak', value: 20, color: '#eab308' },
   { name: 'Menunggu Verifikator', value: 15, color: '#22c55e' },
 ];
 
-const donutChartData2 = [
+const donutChartDataJalan = [
   { name: 'Sukses', value: 15, color: '#ef4444' },
   { name: 'Sedang diproses', value: 25, color: '#f59e0b' },
   { name: 'Ditolak', value: 10, color: '#eab308' },
   { name: 'Menunggu Verifikator', value: 50, color: '#22c55e' },
 ];
 
-const donutChartData3 = [
+const donutChartDataSaluran = [
   { name: 'Sukses', value: 55, color: '#ef4444' },
   { name: 'Sedang diproses', value: 15, color: '#f59e0b' },
   { name: 'Ditolak', value: 10, color: '#eab308' },
@@ -71,8 +71,8 @@ const donutChartData3 = [
 const tableData: UsulanData[] = [
   {
     id: '1',
-    jenis: 'Umum',
-    klasifikasi: 'Gedung Negara Sederhana',
+    jenis: 'Bangunan',
+    uraian: 'Gedung Negara Sederhana',
     status: 'Sedang Diproses',
     suratPermohonan: '/easb-document.pdf',
     suratRekomendasi: '/easb-document.pdf',
@@ -80,7 +80,7 @@ const tableData: UsulanData[] = [
   {
     id: '2',
     jenis: 'Bangunan',
-    klasifikasi: 'Gedung Negara Tidak Sederhana',
+    uraian: 'Gedung Negara Tidak Sederhana',
     status: 'Sukses',
     suratPermohonan: '/easb-document.pdf',
     suratRekomendasi: '/easb-document.pdf',
@@ -88,7 +88,7 @@ const tableData: UsulanData[] = [
   {
     id: '3',
     jenis: 'Jalan',
-    klasifikasi: 'Rumah Negara Tipe A',
+    uraian: 'Rumah Negara Tipe A',
     status: 'Sukses',
     suratPermohonan: '/easb-document.pdf',
     suratRekomendasi: '/easb-document.pdf',
@@ -96,7 +96,7 @@ const tableData: UsulanData[] = [
   {
     id: '4',
     jenis: 'Jalan',
-    klasifikasi: 'Gedung Negara Sederhana',
+    uraian: 'Gedung Negara Sederhana',
     status: 'Sukses',
     suratPermohonan: '/easb-document.pdf',
     suratRekomendasi: '/easb-document.pdf',
@@ -104,7 +104,7 @@ const tableData: UsulanData[] = [
   {
     id: '5',
     jenis: 'Jalan',
-    klasifikasi: 'Rumah Negara Tipe B',
+    uraian: 'Rumah Negara Tipe B',
     status: 'Sukses',
     suratPermohonan: '/easb-document.pdf',
     suratRekomendasi: '/easb-document.pdf',
@@ -112,7 +112,7 @@ const tableData: UsulanData[] = [
   {
     id: '6',
     jenis: 'Jalan',
-    klasifikasi: 'Gedung Negara Tidak Sederhana',
+    uraian: 'Gedung Negara Tidak Sederhana',
     status: 'Sukses',
     suratPermohonan: '/easb-document.pdf',
     suratRekomendasi: '/easb-document.pdf',
@@ -136,13 +136,13 @@ export default function DashboardPage() {
   const handleFilterChange = (filters: { search?: string; status?: string; jenis?: string }) => {
     let filtered = [...tableData];
 
-    // Search across jenis, klasifikasi, and status
+    // Search across jenis, uraian, and status
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(
         (item) =>
           item.jenis.toLowerCase().includes(searchLower) ||
-          (item.klasifikasi && item.klasifikasi.toLowerCase().includes(searchLower)) ||
+          (item.uraian && item.uraian.toLowerCase().includes(searchLower)) ||
           item.status.toLowerCase().includes(searchLower)
       );
     }
@@ -252,7 +252,7 @@ export default function DashboardPage() {
               </div>
               <div className="h-[240px] sm:h-60">
                 <DonutChart
-                  data={donutChartData1}
+                  data={donutChartDataBangunanGedung}
                   height={240}
                   showLegend={true}
                   showLabels={false}
@@ -269,7 +269,7 @@ export default function DashboardPage() {
               </div>
               <div className="h-[240px] sm:h-60">
                 <DonutChart
-                  data={donutChartData2}
+                  data={donutChartDataJalan}
                   height={240}
                   showLegend={true}
                   showLabels={false}
@@ -286,7 +286,7 @@ export default function DashboardPage() {
               </div>
               <div className="h-[240px] sm:h-60">
                 <DonutChart
-                  data={donutChartData3}
+                  data={donutChartDataSaluran}
                   height={240}
                   showLegend={true}
                   showLabels={false}
@@ -299,7 +299,7 @@ export default function DashboardPage() {
           <div className="mt-4 sm:hidden border-t pt-4">
             <p className="text-xs text-gray-500 mb-2">Keterangan:</p>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              {[...donutChartData1, ...donutChartData2, ...donutChartData3]
+              {[...donutChartDataBangunanGedung, ...donutChartDataJalan, ...donutChartDataSaluran]
                 .filter((item, index, self) => 
                   index === self.findIndex(t => t.name === item.name)
                 )

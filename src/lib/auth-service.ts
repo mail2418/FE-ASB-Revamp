@@ -6,152 +6,121 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface LoginResponse {
-  accessToken: string;
+export interface SignInResponse {
+  success: boolean;
+  message?: string;
+  user?: {
+    id: string;
+    username: string;
+    name: string;
+    role: string;
+  };
+  error?: string;
+  attemptsRemaining?: number;
+  retryAfter?: number;
 }
 
 export interface User {
-  userId: string;
+  id: string;
   username: string;
-  roles: string[];
+  name: string;
+  role: string;
 }
 
 class AuthService {
-  private accessToken: string | null = null;
-
   /**
-   * Login user
+   * Sign in user with external API
    */
-  async login(credentials: LoginCredentials): Promise<ApiResponse<LoginResponse>> {
+  async signin(credentials: LoginCredentials): Promise<SignInResponse> {
     try {
-      const response = await apiClient.post<LoginResponse>(
+      // Call external auth API
+      const response = await apiClient.post<SignInResponse>(
         '/auth/login',
         credentials
       );
 
       if (response.success && response.data) {
-        // Store access token in memory
-        this.accessToken = response.data.accessToken;
-        
-        // Store in sessionStorage as backup (will be cleared on browser close)
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('accessToken', response.data.accessToken);
-        }
+        return response.data;
       }
 
-      return response;
-    } catch (error: any) {
       return {
         success: false,
-        error: error.message || 'Login failed',
+        error: response.error || 'Authentication failed',
+      };
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      return {
+        success: false,
+        error: error.message || 'Authentication failed',
       };
     }
   }
 
   /**
-   * Logout user
+   * Sign out user
    */
-  async logout(): Promise<void> {
+  async signout(): Promise<ApiResponse<any>> {
     try {
-      // Call logout endpoint to clear httpOnly cookie
-      await apiClient.post('/auth/logout');
+      // Call external logout API
+      const response = await apiClient.delete('/api/auth/signin');
       
-      // Clear access token from memory and storage
-      this.accessToken = null;
-      
+      // Clear any client-side storage
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('accessToken');
         localStorage.removeItem('rememberedUsername');
       }
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Still clear local tokens even if API call fails
-      this.accessToken = null;
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('accessToken');
-      }
+
+      return response;
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      return {
+        success: false,
+        error: error.message || 'Sign out failed',
+      };
     }
   }
 
   /**
-   * Refresh access token using refresh token (httpOnly cookie)
+   * Get current user from cookie
    */
-  async refreshToken(): Promise<boolean> {
+  getCurrentUser(): User | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
     try {
-      const response = await apiClient.post<LoginResponse>('/auth/refresh');
-
-      if (response.success && response.data) {
-        this.accessToken = response.data.accessToken;
-        
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('accessToken', response.data.accessToken);
-        }
-        
-        return true;
+      const userDataCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('userData='));
+      
+      if (!userDataCookie) {
+        return null;
       }
 
-      return false;
+      const userData = JSON.parse(
+        decodeURIComponent(userDataCookie.split('=')[1])
+      );
+
+      return userData;
     } catch (error) {
-      console.error('Token refresh error:', error);
-      return false;
+      console.error('Error reading user data:', error);
+      return null;
     }
-  }
-
-  /**
-   * Get current access token
-   */
-  getAccessToken(): string | null {
-    if (this.accessToken) {
-      return this.accessToken;
-    }
-
-    // Try to get from sessionStorage
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('accessToken');
-    }
-
-    return null;
   }
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    return !!this.getAccessToken();
-  }
-
-  /**
-   * Decode JWT token to get user info
-   */
-  getCurrentUser(): User | null {
-    const token = this.getAccessToken();
-    
-    if (!token) {
-      return null;
+    if (typeof window === 'undefined') {
+      return false;
     }
 
-    try {
-      // Decode JWT payload (without verification - server handles that)
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
+    // Check for authToken cookie
+    const hasAuthToken = document.cookie
+      .split('; ')
+      .some(row => row.startsWith('authToken='));
 
-      const payload = JSON.parse(jsonPayload);
-      
-      return {
-        userId: payload.sub,
-        username: payload.username,
-        roles: payload.roles || [],
-      };
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    }
+    return hasAuthToken;
   }
 
   /**
@@ -159,7 +128,7 @@ class AuthService {
    */
   hasRole(role: string): boolean {
     const user = this.getCurrentUser();
-    return user?.roles.includes(role) || false;
+    return user?.role === role;
   }
 
   /**
@@ -169,7 +138,38 @@ class AuthService {
     const user = this.getCurrentUser();
     if (!user) return false;
     
-    return roles.some(role => user.roles.includes(role));
+    return roles.includes(user.role);
+  }
+
+  /**
+   * Validate credentials format (client-side validation)
+   */
+  validateCredentials(credentials: LoginCredentials): { 
+    valid: boolean; 
+    errors: { username?: string; password?: string } 
+  } {
+    const errors: { username?: string; password?: string } = {};
+
+    // Username validation
+    if (!credentials.username) {
+      errors.username = 'Username is required';
+    } else if (credentials.username.length < 3) {
+      errors.username = 'Username must be at least 3 characters';
+    } else if (!/^[a-zA-Z0-9._-]+$/.test(credentials.username)) {
+      errors.username = 'Username can only contain letters, numbers, dots, underscores, and hyphens';
+    }
+
+    // Password validation
+    if (!credentials.password) {
+      errors.password = 'Password is required';
+    } else if (credentials.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors,
+    };
   }
 }
 

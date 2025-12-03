@@ -76,22 +76,12 @@ export default function DashboardTable({
   const [yearDropdownOpen, setYearDropdownOpen] = React.useState(false);
   const [selectedJenisFilter, setSelectedJenisFilter] = React.useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = React.useState('all');
-  const [selectedProject, setSelectedProject] = React.useState('Pengadaan Bangunan Gedung ABCDE di Jl. ABCDE');
   const [selectedYear, setSelectedYear] = React.useState('2025');
   const [searchTerm, setSearchTerm] = React.useState('');
 
-  // Mock project data
-  const projects = [
-    'Pengadaan Bangunan Gedung ABCDE di Jl. ABCDE',
-    'Pembangunan Gedung Kantor Dinas Pendidikan',
-    'Renovasi Gedung Puskesmas Kota',
-    'Pembangunan Jalan Raya Utara',
-  ];
-
-  // Available years
   const years = ['2025', '2024', '2023', '2022', '2021'];
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const value = e.target.value;
     setSearchTerm(value);
     if (onFilterChange) {
@@ -197,7 +187,7 @@ export default function DashboardTable({
                     </button>
                     
                     {jenisFilterOpen && (
-                      <div className="absolute top-full mt-1 left-0 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                      <div className="absolute top-full mt-1 left-0 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                         {['all', 'Umum', 'Bangunan', 'Jalan'].map((filter) => (
                           <button
                             key={filter}
@@ -268,7 +258,7 @@ export default function DashboardTable({
                   <JenisBadge jenis={item.jenis} />
                 </td>
                 <td className="px-4 py-3 text-base text-gray-900">
-                  {item.klasifikasi || '-'}
+                  {item.uraian || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {item.suratPermohonan ? (
@@ -311,7 +301,7 @@ export default function DashboardTable({
 
       {/* Table Footer */}
       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between z-49">
           <p className="text-sm text-gray-700">
             Menampilkan <span className="font-medium">{data.length}</span> dari{' '}
             <span className="font-medium">{data.length}</span> hasil

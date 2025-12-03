@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
   const [userRole, setUserRole] = React.useState<string | null>(null);
-  const [userData, setUserData] = React.useState<{name: string; username: string; role: string} | null>(null);
+  const [userData, setUserData] = React.useState<{id: string; name: string; username: string; role: string} | null>(null);
 
   // Get user data from cookie
   React.useEffect(() => {
@@ -65,11 +65,11 @@ export default function DashboardLayout({ children }: LayoutProps) {
       if (userDataCookie) {
         const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
         setUserRole(parsed.role);
+        console.log(`${decodeURIComponent(userDataCookie.split('=')[1])}`);
         setUserData(parsed);
       }
     }
   }, []);
-
 
   // Get current date
   const currentDate = new Date().toLocaleDateString('id-ID', {
@@ -81,13 +81,27 @@ export default function DashboardLayout({ children }: LayoutProps) {
   // Logout handler
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/signin', {
+      await fetch('/api/auth/login', {
         method: 'DELETE',
       });
+      
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       // Redirect to login page
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      
+      // Clear localStorage even on error
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       // Still redirect on error
       window.location.href = '/';
     }
@@ -282,12 +296,12 @@ export default function DashboardLayout({ children }: LayoutProps) {
                   {/* Dropdown menu */}
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-                      <a
-                        href="#"
+                      <Link
+                        href={userData?.id ? `/profile/${userData.id}` : '#'}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Profile
-                      </a>
+                      </Link>
                       <a
                         href="#"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

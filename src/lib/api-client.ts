@@ -9,7 +9,9 @@ class ApiClient {
   private timeout: number;
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/dev/v1';
+    // For internal Next.js API routes, use empty string
+    // For external APIs, set NEXT_PUBLIC_API_URL environment variable
+    this.baseURL = process.env.NEXT_PUBLIC_API_URL || '';
     this.timeout = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000', 10);
   }
 
@@ -24,7 +26,12 @@ class ApiClient {
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
-
+    console.log(`url ${url}`)
+    console.log({
+        ...fetchConfig,
+        signal: controller.signal,
+        credentials: 'include', // Important for cookies
+      })
     try {
       const response = await fetch(url, {
         ...fetchConfig,
@@ -73,7 +80,6 @@ class ApiClient {
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
-    
     try {
       const response = await this.fetchWithTimeout(url, {
         method: 'POST',

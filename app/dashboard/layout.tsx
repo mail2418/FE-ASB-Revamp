@@ -71,7 +71,6 @@ export default function DashboardLayout({ children }: LayoutProps) {
     }
   }, []);
 
-
   // Get current date
   const currentDate = new Date().toLocaleDateString('id-ID', {
     day: '2-digit',
@@ -82,13 +81,27 @@ export default function DashboardLayout({ children }: LayoutProps) {
   // Logout handler
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/signin', {
+      await fetch('/api/auth/login', {
         method: 'DELETE',
       });
+      
+      // Clear localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       // Redirect to login page
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      
+      // Clear localStorage even on error
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('rememberedUsername');
+      }
+      
       // Still redirect on error
       window.location.href = '/';
     }
