@@ -1,8 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { saveSuratPermohonanPDF, SuratPermohonanData } from '@/lib/pdf-generator';
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Helper to get token from request headers
@@ -18,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const token = getAuthToken(request);
     const idAsb = request.nextUrl.searchParams.get('idAsb');
-    
+
     if (!token) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - No token found' },
