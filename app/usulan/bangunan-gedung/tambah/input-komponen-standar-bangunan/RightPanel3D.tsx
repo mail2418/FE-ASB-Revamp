@@ -25,7 +25,6 @@ export default function RightPanel3D() {
             <orthographicCamera attach="shadow-camera" args={[-10, 10, 10, -10]} />
           </directionalLight>
           <Sky sunPosition={[7, 5, 1]} />
-          {/* <Environment preset="city" /> */}
 
           {/* The main container for our dynamic building parts */}
           <BuildingContainer formState={formState} />

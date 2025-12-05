@@ -1,91 +1,84 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Edit3, Save, X } from 'lucide-react';
 import type { UsulanBangunanGedung, VerificationStatus } from '@/types/usulan-bangunan';
 import VerificationSequence from '@/components/UsulanBangunan/VerificationSequence';
 
-// Mock data - in production this would come from API
-const mockData: UsulanBangunanGedung[] = [
-  {
-    id: '1',
-    jenis: 'Pembangunan',
-    uraian: 'Pembangunan Gedung Kantor Dinas Pendidikan 3 Lantai',
-    lokasi: 'Jl. Gatot Subroto No. 45, Kota Bandung',
-    klasifikasi: 'Gedung Negara Tidak Sederhana',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Disetujui',
-      bpkad: 'Disetujui',
-    },
-    nilaiBkf: 'Sudah',
-    sumberPembiayaan: 'APBD',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-    createdBy: 'Anggito Anju',
-    createdDate: '15-11-2024',
-  },
-  {
-    id: '2',
-    jenis: 'Pembangunan',
-    uraian: 'Pembangunan Gedung Puskesmas Tipe B',
-    lokasi: 'Jl. Ahmad Yani Km 5, Kecamatan Cibiru',
-    klasifikasi: 'Gedung Negara Sederhana',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Disetujui',
-      bpkad: 'Menunggu',
-    },
-    nilaiBkf: 'Sudah',
-    sumberPembiayaan: 'APBD',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-    createdBy: 'Muhammad Ismail',
-    createdDate: '20-11-2024',
-  },
-  {
-    id: '3',
-    jenis: 'Pembangunan',
-    uraian: 'Renovasi dan Perluasan Balai Kota',
-    lokasi: 'Jl. Wastukencana No. 2, Bandung Wetan',
-    klasifikasi: 'Rumah Negara Tipe A',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Ditolak',
-      bpkad: 'Belum',
-    },
-    nilaiBkf: 'Belum',
-    sumberPembiayaan: 'APBN',
-    status: 'Tolak',
-    suratPermohonan: '/easb-document.pdf',
-    createdBy: 'Anggito Anju',
-    createdDate: '10-11-2024',
-  },
-  {
-    id: '4',
-    jenis: 'Pemeliharaan',
-    uraian: 'Rehabilitasi Gedung DPRD 2 Lantai',
-    lokasi: 'Jl. Diponegoro No. 10, Bandung',
-    klasifikasi: 'Gedung Negara Sederhana',
+// Interface for API response
+interface APIUsulanBangunan {
+  id: number;
+  idAsbJenis: number;
+  idAsbStatus: number;
+  idOpd: number;
+  idAsbTipeBangunan: number;
+  idKabkota: number;
+  idAsbKlasifikasi: number | null;
+  tahunAnggaran: number;
+  namaAsb: string;
+  alamat: string;
+  jumlahKontraktor: number;
+  totalLantai: number;
+  rejectReason: string | null;
+  shst: number | null;
+  luasTotalBangunan: number | null;
+  totalBiayaPembangunan: number | null;
+  kabkota: {
+    id: number;
+    kode: string;
+    nama: string;
+  };
+  asbStatus: {
+    id: number;
+    status: string;
+  };
+  asbJenis: {
+    id: number;
+    jenis: string;
+    asb: string;
+  };
+  opd: {
+    id: number;
+    opd: string;
+    alias: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Map API status to display status
+const mapStatus = (asbStatus: { id: number; status: string }): string => {
+  const statusMap: { [key: string]: string } = {
+    'General Documents': 'Proses',
+    'Approved': 'Sukses',
+    'Rejected': 'Tolak',
+    'Pending': 'Proses',
+    'Review': 'Proses',
+  };
+  return statusMap[asbStatus?.status] || 'Proses';
+};
+
+// Transform API data to display format
+const transformAPIData = (item: APIUsulanBangunan): UsulanBangunanGedung => {
+  return {
+    id: item.id.toString(),
+    jenis: item.asbJenis?.jenis || 'Pembangunan',
+    uraian: item.namaAsb,
+    lokasi: item.alamat,
+    klasifikasi: item.idAsbKlasifikasi ? `Klasifikasi ${item.idAsbKlasifikasi}` : 'Belum Ditentukan',
     satuan: 'm2',
     verificationStatus: {
       opd: 'Menunggu',
       bappeda: 'Belum',
       bpkad: 'Belum',
     },
-    nilaiBkf: 'Sedang',
-    sumberPembiayaan: 'APBD',
-    status: 'Proses',
+    nilaiBkf: item.shst ? 'Sudah' : 'Belum',
+    status: mapStatus(item.asbStatus),
     suratPermohonan: '/easb-document.pdf',
-    createdBy: 'Samarta Admin',
-    createdDate: '25-11-2024',
-  },
-];
+    createdBy: item.opd?.opd || 'Unknown',
+    createdDate: new Date(item.createdAt).toLocaleDateString('id-ID'),
+  };
+};
 
 export default function VerifyUsulanPage() {
   const router = useRouter();
@@ -93,6 +86,13 @@ export default function VerifyUsulanPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [usulanData, setUsulanData] = useState<UsulanBangunanGedung | null>(null);
+  const [apiData, setApiData] = useState<APIUsulanBangunan | null>(null);
+  
+  // Editing states
+  const [isEditingSummary, setIsEditingSummary] = useState(false);
+  const [editedUraian, setEditedUraian] = useState('');
+  const [editedLokasi, setEditedLokasi] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // Check if user is verificator/verifikator
@@ -107,7 +107,7 @@ export default function VerifyUsulanPage() {
           setUserRole(userData.role);
           
           // Redirect if not one of the verificator roles
-          const allowedRoles = ['verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad'];
+          const allowedRoles = ['verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad', 'verifikator'];
           if (!allowedRoles.includes(userData.role)) {
             router.push('/usulan/bangunan-gedung');
             return;
@@ -123,34 +123,98 @@ export default function VerifyUsulanPage() {
     checkAuth();
   }, [router]);
 
+  // Fetch data from API
   useEffect(() => {
-    // Load usulan data based on ID
-    if (params.id) {
-      const id = Array.isArray(params.id) ? params.id[0] : params.id;
+    const fetchUsulanData = async () => {
+      if (!params.id) return;
       
-      // Try to get from mock data first
-      let data = mockData.find(item => item.id === id);
-      
-      // If not found in mock data, try to get from localStorage (submitted data)
-      if (!data) {
-        const submittedData = localStorage.getItem('submitted_usulan_list');
-        if (submittedData) {
-          try {
-            const submissions = JSON.parse(submittedData);
-            data = submissions.find((item: UsulanBangunanGedung) => item.id === id);
-          } catch (e) {
-            console.error('Failed to load submitted usulan', e);
-          }
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.error('No access token found');
+          setIsLoading(false);
+          return;
         }
+        const response = await fetch('/api/usulan/bangunan-gedung/asb', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          const allData: APIUsulanBangunan[] = result.data?.data || result.data || [];
+          
+          const id = Array.isArray(params.id) ? params.id[0] : params.id;
+          const foundItem = allData.find(item => item.id.toString() === id);
+          
+          if (foundItem) {
+            setApiData(foundItem);
+            const transformed = transformAPIData(foundItem);
+            setUsulanData(transformed);
+            setEditedUraian(transformed.uraian);
+            setEditedLokasi(transformed.lokasi);
+          }
+        } else {
+          console.error('Failed to fetch data:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching usulan data:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setUsulanData(data || null);
-      setIsLoading(false);
-    }
+    };
+
+    fetchUsulanData();
   }, [params.id]);
 
+  // Handle save summary
+  const handleSaveSummary = async () => {
+    if (!apiData || !usulanData) return;
+    
+    setIsSaving(true);
+    try {
+      // In production, this would call a PUT/PATCH API to update the data
+      // For now, we update the local state
+      setUsulanData(prev => prev ? {
+        ...prev,
+        uraian: editedUraian,
+        lokasi: editedLokasi,
+      } : null);
+      
+      setIsEditingSummary(false);
+      
+      // TODO: Call API to save changes
+      // const response = await fetch(`/api/usulan/bangunan-gedung/asb/${apiData.id}`, {
+      //   method: 'PATCH',
+      //   headers: {
+      //     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     namaAsb: editedUraian,
+      //     alamat: editedLokasi,
+      //   }),
+      // });
+      
+      console.log('Summary updated:', { uraian: editedUraian, lokasi: editedLokasi });
+    } catch (error) {
+      console.error('Error saving summary:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Check if user can edit (verifikator role)
+  const canEdit = userRole === 'verifikator' || 
+                  userRole === 'verifikator_opd' || 
+                  userRole === 'verifikator_bappeda' || 
+                  userRole === 'verifikator_bpkad';
+
   // Don't show anything until auth check is complete
-  const allowedRoles = ['verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad'];
+  const allowedRoles = ['verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad', 'verifikator'];
   if (!userRole || !allowedRoles.includes(userRole)) {
     return null;
   }
@@ -160,7 +224,7 @@ export default function VerifyUsulanPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Memuat data...</p>
         </div>
       </div>
     );
@@ -204,10 +268,20 @@ export default function VerifyUsulanPage() {
         </div>
       </div>
 
-      {/* Summary Card */}
-      <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg shadow-lg p-6 text-white">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
+      {/* Summary Card - Editable for verifikator */}
+      <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg shadow-lg p-6 text-white relative">
+        {canEdit && !isEditingSummary && (
+          <button
+            onClick={() => setIsEditingSummary(true)}
+            className="absolute top-4 right-4 p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+            title="Edit Summary"
+          >
+            <Edit3 className="w-5 h-5" />
+          </button>
+        )}
+        
+        {isEditingSummary ? (
+          <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                 usulanData.jenis === 'Pembangunan' 
@@ -225,15 +299,129 @@ export default function VerifyUsulanPage() {
                 {usulanData.status}
               </span>
             </div>
-            <h2 className="text-2xl font-bold mb-2">{usulanData.uraian}</h2>
-            <div className="flex items-center gap-2 text-white/90">
-              <MapPin className="w-4 h-4" />
-              <span className="text-sm">{usulanData.lokasi}</span>
+            
+            <div>
+              <label className="text-sm text-white/80 mb-1 block">Nama/Uraian Bangunan</label>
+              <input
+                type="text"
+                value={editedUraian}
+                onChange={(e) => setEditedUraian(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm text-white/80 mb-1 block">Lokasi/Alamat</label>
+              <input
+                type="text"
+                value={editedLokasi}
+                onChange={(e) => setEditedLokasi(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveSummary}
+                disabled={isSaving}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-medium disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? 'Menyimpan...' : 'Simpan'}
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditingSummary(false);
+                  setEditedUraian(usulanData.uraian);
+                  setEditedLokasi(usulanData.lokasi);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium"
+              >
+                <X className="w-4 h-4" />
+                Batal
+              </button>
             </div>
           </div>
-          <Building2 className="w-16 h-16 text-white/20" />
-        </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  usulanData.jenis === 'Pembangunan' 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-orange-500 text-white'
+                }`}>
+                  {usulanData.jenis}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  usulanData.status === 'Sukses' ? 'bg-green-100 text-green-800' :
+                  usulanData.status === 'Proses' ? 'bg-yellow-100 text-yellow-800' :
+                  usulanData.status === 'Tolak' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {usulanData.status}
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold mb-2">{usulanData.uraian}</h2>
+              <div className="flex items-center gap-2 text-white/90">
+                <MapPin className="w-4 h-4" />
+                <span className="text-sm">{usulanData.lokasi}</span>
+              </div>
+            </div>
+            <Building2 className="w-16 h-16 text-white/20" />
+          </div>
+        )}
       </div>
+
+      {/* Extended Information from API */}
+      {apiData && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-teal-600" />
+            Detail Bangunan
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm text-gray-500">Tahun Anggaran</p>
+              <p className="text-lg font-semibold text-gray-900">{apiData.tahunAnggaran}</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm text-gray-500">Total Lantai</p>
+              <p className="text-lg font-semibold text-gray-900">{apiData.totalLantai} Lantai</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm text-gray-500">Jumlah Kontraktor</p>
+              <p className="text-lg font-semibold text-gray-900">{apiData.jumlahKontraktor}</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm text-gray-500">Kab/Kota</p>
+              <p className="text-lg font-semibold text-gray-900">{apiData.kabkota?.nama || '-'}</p>
+            </div>
+            {apiData.luasTotalBangunan && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500">Luas Total</p>
+                <p className="text-lg font-semibold text-gray-900">{apiData.luasTotalBangunan} m²</p>
+              </div>
+            )}
+            {apiData.totalBiayaPembangunan && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500">Total Biaya</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  Rp {apiData.totalBiayaPembangunan.toLocaleString('id-ID')}
+                </p>
+              </div>
+            )}
+            {apiData.shst && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500">SHST</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  Rp {apiData.shst.toLocaleString('id-ID')}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Details Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -253,12 +441,8 @@ export default function VerifyUsulanPage() {
               <p className="text-gray-900 mt-1">{usulanData.satuan}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Sumber Pembiayaan</label>
-              <p className="text-gray-900 mt-1">
-                <span className="inline-flex items-center px-3 py-1 rounded-md bg-purple-50 text-purple-700 text-sm font-medium">
-                  {usulanData.sumberPembiayaan}
-                </span>
-              </p>
+              <label className="text-sm font-medium text-gray-500">OPD</label>
+              <p className="text-gray-900 mt-1">{apiData?.opd?.opd || '-'}</p>
             </div>
           </div>
         </div>
@@ -292,6 +476,7 @@ export default function VerifyUsulanPage() {
             <strong>Info:</strong> {userRole === 'verifikator_opd' ? 'Anda dapat mengubah status verifikasi OPD.' :
               userRole === 'verifikator_bappeda' ? 'Anda dapat mengubah status verifikasi BAPPEDA.' :
               userRole === 'verifikator_bpkad' ? 'Anda dapat mengubah status verifikasi BPKAD.' :
+              userRole === 'verifikator' ? 'Anda dapat mengedit summary dan melihat status verifikasi.' :
               'Anda dapat melihat status verifikasi dari semua tahapan.'}
           </p>
         </div>
@@ -362,7 +547,7 @@ export default function VerifyUsulanPage() {
       </div>
 
       {/* Action Buttons - Only for verificators */}
-      {(userRole === 'verifikator_opd' || userRole === 'verifikator_bappeda' || userRole === 'verifikator_bpkad') && (
+      {(userRole === 'verifikator_opd' || userRole === 'verifikator_bappeda' || userRole === 'verifikator_bpkad' || userRole === 'verifikator') && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
           <div className="flex flex-wrap gap-3">

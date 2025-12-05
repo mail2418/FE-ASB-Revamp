@@ -21,9 +21,9 @@ export type ModuleType =
 
 export interface FungsiRuangData {
   id: number;
-  namaFungsiRuang: string;
-  koefisien: number;
-  active: boolean;
+  nama_fungsi_ruang: string;
+  koef: number;
+  isActive: boolean;
 }
 
 export interface JenisData {

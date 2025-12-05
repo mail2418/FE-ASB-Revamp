@@ -162,10 +162,10 @@ export default function SignInForm() {
           </div>
         </div>
         <h1 className="text-2xl font-bold text-center mb-2">
-          ASB Revamp Dashboard
+          Sistem Informasi Standar Belanja Elektronik
         </h1>
         <p className="text-orange-100 text-center text-sm">
-          Building Proposal Management System
+          Membantu Pemerintah Daerah dalam pengelolaan belanja elektronik
         </p>
       </div>
 

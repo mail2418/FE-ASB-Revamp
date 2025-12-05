@@ -1,223 +1,309 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useBuildingContext } from './BuildingContext';
-import { MOCK_CLASSIFICATIONS, ClassificationOption } from '@/types/building-form';
+import { useBuildingContext, get3DTypeFromKomponen } from './BuildingContext';
 
-// Helper component for table header rows (e.g., A. SUB STRUKTUR)
-const SectionHeaderRow = ({ title }: { title: string }) => (
-  <tr className="bg-blue-50">
-    <td colSpan={5} className="py-3 px-4 text-sm font-bold text-blue-800 uppercase tracking-wider">
-      {title}
-    </td>
-  </tr>
-);
-
-// Helper component for group sub-header rows (e.g., 1. Pekerjaan Tanah)
-const GroupHeaderRow = ({ title }: { title: string }) => (
-  <tr className="bg-gray-50">
-    <td colSpan={5} className="py-2 px-4 text-sm font-semibold text-gray-700 pl-8">
-      {title}
-    </td>
-  </tr>
-);
+// Interface for API component data
+interface StandardComponentAPI {
+  id: number;
+  komponen: string;
+  idAsbJenis: number;
+  idAsbTipeBangunan: number;
+}
 
 export default function LeftPanelForm() {
   const router = useRouter();
   const { formState, updateRowState } = useBuildingContext();
+  
+  // Load building data from localStorage
+  const [buildingData, setBuildingData] = React.useState<any>(null);
+  
+  // API data states
+  const [allComponents, setAllComponents] = useState<StandardComponentAPI[]>([]);
+  const [selectedComponents, setSelectedComponents] = useState<StandardComponentAPI[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Helper to render a data input row
-  const renderInputRow = (rowId: string, label: string, classificationType: string) => {
-    const currentState = formState[rowId];
-    const options = MOCK_CLASSIFICATIONS[classificationType] || [];
-    const selectedOption = options.find(opt => opt.id === currentState?.classificationKey) || options[0];
-
-    const handleClassificationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        updateRowState(rowId, { classificationKey: e.target.value });
-    };
-
-    const handlePercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Ensure value is between 0 and 100
-        let val = parseInt(e.target.value) || 0;
-        val = Math.max(0, Math.min(100, val));
-        updateRowState(rowId, { percentage: val });
-    };
-
-    // Calculate Harga Persentase = Harga Satuan * Percentage / 100
-    const hargaPersentase = ((selectedOption?.harga || 0) * (currentState?.percentage || 0)) / 100;
-
-    return (
-      <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-        <td className="py-3 px-4 text-sm text-gray-600 pl-12">{label}</td>
-        <td className="py-2 px-2">
-          <select
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border"
-            value={currentState?.classificationKey}
-            onChange={handleClassificationChange}
-          >
-            {options.map((opt) => (
-              <option key={opt.id} value={opt.id}>{opt.name}</option>
-            ))}
-          </select>
-        </td>
-        <td className="py-3 px-4 text-sm text-right text-gray-600">
-            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(selectedOption?.harga || 0)}
-        </td>
-        <td className="py-2 px-2">
-          <div className="flex items-center">
-            <input
-              type="number"
-              min="0"
-              max="100"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border text-right pr-8 relative z-10"
-              value={currentState?.percentage || 0}
-              onChange={handlePercentageChange}
-            />
-            <span className="text-gray-500 -ml-6 z-20">%</span>
-          </div>
-           {/* Visual percentage bar below input */}
-           <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-              <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-500" style={{ width: `${currentState?.percentage || 0}%` }}></div>
-            </div>
-        </td>
-        <td className="py-3 px-4 text-sm text-right text-gray-900 font-semibold">
-          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(hargaPersentase)}
-        </td>
-      </tr>
-    );
-  };
-
-  // Calculate totals for all components
-  const calculateTotals = () => {
-    let totalHargaSatuan = 0;
-    let totalHargaPersentase = 0;
-
-    // Iterate through all form states to calculate totals
-    Object.keys(formState).forEach(rowId => {
-      const state = formState[rowId];
-      if (state) {
-        // Get classification type from rowId to find the correct options
-        let classificationType = '';
-        if (rowId.includes('pondasi')) classificationType = 'pondasi';
-        else if (rowId.includes('struktur')) classificationType = 'struktur';
-        else if (rowId.includes('lantai')) classificationType = 'lantai';
-        else if (rowId.includes('dinding_luar')) classificationType = 'dinding_luar';
-        else if (rowId.includes('dinding_dalam')) classificationType = 'dinding_dalam';
-        else if (rowId.includes('plafond')) classificationType = 'plafond';
-        else if (rowId.includes('atap')) classificationType = 'atap';
-
-        const options = MOCK_CLASSIFICATIONS[classificationType] || [];
-        const selectedOption = options.find(opt => opt.id === state.classificationKey) || options[0];
-        
-        if (selectedOption) {
-          totalHargaSatuan += selectedOption.harga || 0;
-          totalHargaPersentase += ((selectedOption.harga || 0) * (state.percentage || 0)) / 100;
-        }
+  // Load building data from localStorage first
+  useEffect(() => {
+    const savedData = localStorage.getItem('usulan_bangunan_new_entry');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setBuildingData(parsed);
+      } catch (e) {
+        console.error('Failed to load building data:', e);
       }
-    });
+    }
+  }, []);
 
-    const percentageComparison = totalHargaSatuan > 0 
-      ? (totalHargaPersentase / totalHargaSatuan) * 100 
-      : 0;
+  // Fetch standard components from API - runs AFTER buildingData is loaded
+  useEffect(() => {
+    // Only fetch when buildingData is available
+    if (!buildingData) return;
+    
+    const fetchStandardComponents = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        const response = await fetch('/api/usulan/bangunan-gedung/kb-s', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-    return { totalHargaSatuan, totalHargaPersentase, percentageComparison };
+        if (response.ok) {
+          const data = await response.json();
+          const components = data.data?.komponenBangunans || data.data || [];
+          
+          // Filter components by jenis AND tipeBangunan from saved form data
+          const filteredComponents = components.filter((c: any) =>
+            c.idAsbJenis.toString() === buildingData.formData?.jenis &&
+            c.idAsbTipeBangunan.toString() === buildingData.formData?.tipeBangunan
+          );
+          
+          console.log('Filtered Components:', filteredComponents);
+          console.log('Filter criteria - jenis:', buildingData.formData?.jenis, 'tipeBangunan:', buildingData.formData?.tipeBangunan);
+          
+          setAllComponents(filteredComponents);
+          
+          // Initialize component states for 3D visualization
+          if (filteredComponents.length <= 10) {
+            setSelectedComponents(filteredComponents);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching Standard Components:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStandardComponents();
+  }, [buildingData]); // Re-run when buildingData changes
+
+  const handlePercentageChange = (componentId: number, componentKomponen: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = parseInt(e.target.value) || 0;
+    val = Math.max(0, Math.min(100, val));
+    
+    // Update by component ID (for saving)
+    updateRowState(`row_${componentId}`, { percentage: val });
+    
+    // Also update by 3D type for visualization
+    const type3D = get3DTypeFromKomponen(componentKomponen);
+    if (type3D && type3D !== 'default') {
+      updateRowState(`row_${type3D}`, { percentage: val });
+    }
   };
 
-  const totals = calculateTotals();
+  const toggleComponent = (component: StandardComponentAPI) => {
+    if (selectedComponents.find(c => c.id === component.id)) {
+      setSelectedComponents(selectedComponents.filter(c => c.id !== component.id));
+    } else {
+      setSelectedComponents([...selectedComponents, component]);
+    }
+  };
+
+  const filteredComponents = allComponents.filter(c => 
+    c.komponen.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const needsDropdown = allComponents.length > 10;
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200 bg-white">
-        <thead className="bg-gray-50">
-          <tr>
-            <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-900">Uraian Pekerjaan</th>
-            <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-900 w-64">Klasifikasi Standar</th>
-            <th scope="col" className="py-3.5 px-4 text-right text-sm font-semibold text-gray-900 w-32">Harga Satuan</th>
-            <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-900 w-40">Persentase Pembangunan</th>
-            <th scope="col" className="py-3.5 px-4 text-right text-sm font-semibold text-gray-900 w-40">Harga Persentase</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          <SectionHeaderRow title="A. SUB STRUKTUR" />
-          <GroupHeaderRow title="1. Pekerjaan Tanah" />
-          {/* Add tanah inputs here if needed */}
-          <GroupHeaderRow title="2. Pekerjaan Pondasi" />
-          {renderInputRow('row_pondasi', 'a. Pondasi', 'pondasi')}
+    <div className="space-y-4">
+      {/* Building Information Section */}
+      {buildingData && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Bangunan</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
+              <p className="text-base font-semibold text-gray-900">
+                {buildingData.formData?.deskripsiBangunan || '-'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
+              <p className="text-base font-semibold text-gray-900">
+                {buildingData.formData?.klasifikasi || '-'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
+              <p className="text-base font-semibold text-blue-600">
+                {buildingData.formData?.nilaiSHST || '-'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
-          <SectionHeaderRow title="B. STRUKTUR ATAS" />
-          <GroupHeaderRow title="1. Struktur Beton" />
-          {renderInputRow('row_struktur_lt1', 'a. Struktur Lantai 1 (Kolom, Balok, Plat)', 'struktur')}
-          {renderInputRow('row_struktur_lt2', 'b. Struktur Lantai 2 (Kolom, Balok, Plat)', 'struktur')}
-          <GroupHeaderRow title="2. Struktur Atap" />
-          {/* Add struktur atap inputs here */}
-
-
-          <SectionHeaderRow title="C. ARSITEKTUR" />
-
-          <GroupHeaderRow title="1. Pekerjaan Lantai" />
-          {renderInputRow('row_lantai_lt1', 'a. Lantai 1', 'lantai')}
-          {renderInputRow('row_lantai_lt2', 'b. Lantai 2', 'lantai')}
-
-          <GroupHeaderRow title="2. Pekerjaan Dinding" />
-          {renderInputRow('row_dinding_luar', 'a. Dinding Luar', 'dinding_luar')}
-          {renderInputRow('row_dinding_dalam', 'b. Dinding Dalam (Partisi)', 'dinding_dalam')}
-
-          <GroupHeaderRow title="3. Pekerjaan Plafond" />
-          {renderInputRow('row_plafond', 'a. Plafond Dalam', 'plafond')}
-
-          <GroupHeaderRow title="4. Pekerjaan Penutup Atap" />
-          {renderInputRow('row_atap', 'a. Penutup Atap', 'atap')}
-
-          {/* Total Pengeluaran Row */}
-          <tr className="bg-blue-50 border-t-2 border-blue-200">
-            <td colSpan={2} className="py-4 px-4 text-sm font-bold text-blue-900 uppercase tracking-wider text-right">
-              Total Pengeluaran
-            </td>
-            <td className="py-4 px-4 text-sm text-right font-bold text-blue-900">
-              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totals.totalHargaSatuan)}
-            </td>
-            <td className="py-4 px-4 text-center">
-              <div className="bg-blue-600 text-white px-3 py-2 rounded-lg font-bold text-sm">
-                {totals.percentageComparison.toFixed(2)}%
+      {/* Component Selection Dropdown (if more than 10 components) */}
+      {needsDropdown && (
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Pilih Komponen Standar ({selectedComponents.length} dipilih)
+            </h3>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+            >
+              {showDropdown ? 'Tutup' : 'Pilih Komponen'}
+            </button>
+          </div>
+          
+          {showDropdown && (
+            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+              {/* Search input */}
+              <input
+                type="text"
+                placeholder="Cari komponen..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              
+              {/* Component list with checkboxes */}
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {filteredComponents.map((component) => (
+                  <label
+                    key={component.id}
+                    className="flex items-center gap-3 p-2 hover:bg-white rounded cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedComponents.some(c => c.id === component.id)}
+                      onChange={() => toggleComponent(component)}
+                      className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-800">{component.komponen}</span>
+                  </label>
+                ))}
               </div>
-              <div className="text-xs text-blue-700 mt-1">Efisiensi Anggaran</div>
-            </td>
-            <td className="py-4 px-4 text-sm text-right font-bold text-blue-900">
-              {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totals.totalHargaPersentase)}
-            </td>
-          </tr>
+              
+              {/* Quick actions */}
+              <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                <button
+                  onClick={() => setSelectedComponents([...allComponents])}
+                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                >
+                  Pilih Semua
+                </button>
+                <button
+                  onClick={() => setSelectedComponents([])}
+                  className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                >
+                  Hapus Semua
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-        </tbody>
-      </table>
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Memuat komponen...</span>
+        </div>
+      )}
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-between p-6 bg-gray-50 border-t border-gray-200">
-        <button
-          onClick={() => router.push('/usulan/bangunan-gedung/tambah')}
-          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium flex items-center gap-2 cursor-pointer"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-          Previous
-        </button>
-        <button
-          onClick={(e) => {
-            e.preventDefault()
-            // Save state
-            localStorage.setItem('usulan_bangunan_standar_components', JSON.stringify(formState));
-            // Navigate to next page
-            router.push('/usulan/bangunan-gedung/tambah/input-komponen-non-standar-bangunan');
-          }}
-          className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-medium flex items-center gap-2 cursor-pointer"
-        >
-          Next
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          </svg>
-        </button>
-      </div>
+      {/* Table Section */}
+      {!loading && (
+        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+          <table className="min-w-full divide-y divide-gray-200 bg-white">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="py-5 px-8 text-left text-lg font-semibold text-gray-900">Uraian Pekerjaan</th>
+                <th scope="col" className="py-5 px-8 text-left text-lg font-semibold text-gray-900">Persentase Pembangunan (Bobot)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {(needsDropdown ? selectedComponents : allComponents).length === 0 ? (
+                <tr>
+                  <td colSpan={2} className="py-8 text-center text-gray-500">
+                    {needsDropdown ? 'Pilih komponen untuk ditampilkan' : 'Tidak ada komponen tersedia'}
+                  </td>
+                </tr>
+              ) : (
+                (needsDropdown ? selectedComponents : allComponents).map((component) => {
+                  const currentState = formState[`row_${component.id}`];
+                  console.log(currentState);
+                  
+                  return (
+                    <tr key={component.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-5 px-8 text-lg font-medium text-gray-900">
+                        {component.komponen}
+                      </td>
+                      <td className="py-4 px-8">
+                        <div className="flex items-center gap-8">
+                          <div className="flex items-center w-40">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg p-3 border text-right pr-10"
+                              value={currentState?.percentage || 0}
+                              onChange={(e) => handlePercentageChange(component.id, component.komponen, e)}
+                            />
+                            <span className="text-gray-500 text-lg -ml-9 pointer-events-none">%</span>
+                          </div>
+                          {/* Visual percentage bar */}
+                          <div className="flex-1 bg-gray-200 rounded-full h-4">
+                            <div 
+                              className="bg-blue-600 h-4 rounded-full transition-all duration-500" 
+                              style={{ width: `${currentState?.percentage || 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between p-6 bg-gray-50 border-t border-gray-200">
+            <button
+              onClick={() => router.push('/usulan/bangunan-gedung/tambah')}
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              Previous
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                // Save state with selected components
+                const saveData = {
+                  formState,
+                  selectedComponents: needsDropdown ? selectedComponents : allComponents
+                };
+                localStorage.setItem('usulan_bangunan_standar_components', JSON.stringify(saveData));
+                // Navigate to next page
+                router.push('/usulan/bangunan-gedung/tambah/input-komponen-non-standar-bangunan');
+              }}
+              className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-medium flex items-center gap-2 cursor-pointer"
+            >
+              Next
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

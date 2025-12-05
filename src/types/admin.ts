@@ -17,7 +17,7 @@ export interface CreateUserFormData {
   username: string;
   password: string;
   name: string;
-  role: UserRole;
+  role: UserRole[];
 }
 
 export interface CreateUserFormErrors {

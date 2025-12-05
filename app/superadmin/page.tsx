@@ -10,10 +10,6 @@ import type { ModuleType, FungsiRuangData, JenisData, KlasifikasiData, KomponenB
 import ModuleSelector from '@/components/SuperAdmin/ModuleSelector';
 import FungsiRuangTable from '@/components/SuperAdmin/tables/FungsiRuangTable';
 import GenericModuleTable from '@/components/SuperAdmin/tables/GenericModuleTable';
-import TableInput from '@/components/SuperAdmin/TableInput';
-import TableCheckbox from '@/components/SuperAdmin/TableCheckbox';
-import ActionButtons from '@/components/SuperAdmin/ActionButtons';
-import AddRowButtons from '@/components/SuperAdmin/AddRowButtons';
 
 const AdminUsersTable = dynamic(() => import('@/components/Admin/AdminUsersTable'), {
   ssr: false,
@@ -30,7 +26,7 @@ export default function SuperAdminPage() {
 
   // Mock data states
   const [fungsiRuangData, setFungsiRuangData] = useState<FungsiRuangData[]>([
-    { id: 1, namaFungsiRuang: 'Ruang Kelas', koefisien: 1.2, active: true },
+    { id: 1, nama_fungsi_ruang: 'Ruang Kelas', koef: 1.2, isActive: true },
   ]);
 
   const [jenisData, setJenisData] = useState<JenisData[]>([
@@ -111,10 +107,12 @@ export default function SuperAdminPage() {
         },
         method: 'GET',
       });
+  
       if (response.ok) {
         const data = await response.json();
+        console.log(data)
         // Assuming API returns data in format { data: [...] } or similar
-        setFungsiRuangData(data.data || data);
+        setFungsiRuangData(data.data.data || data);
       } else {
         console.error('Failed to fetch fungsi ruang data');
       }
@@ -140,7 +138,7 @@ export default function SuperAdminPage() {
   }, []);
 
   // New row templates
-  const [newFungsiRuang, setNewFungsiRuang] = useState<FungsiRuangData>({ id: 0, namaFungsiRuang: '', koefisien: 0, active: true });
+  const [newFungsiRuang, setNewFungsiRuang] = useState<FungsiRuangData>({ id: 0, nama_fungsi_ruang: '', koef: 0, isActive: true });
   const [newJenis, setNewJenis] = useState<JenisData>({ id: 0, jenis: '', asb: '' });
   const [newKlasifikasi, setNewKlasifikasi] = useState<KlasifikasiData>({ id: 0, idTipeBangunan: 0, klasifikasi: '' });
   const [newKomponenBangunanNonStandard, setNewKomponenBangunanNonStandard] = useState<KomponenBangunanNonStandardData>({ id: 0, komponen: '', files: '', idJenis: 0, idTipeBangunan: 0 });
@@ -209,9 +207,9 @@ export default function SuperAdminPage() {
           },
           body: JSON.stringify({
             id: itemToUpdate.id,
-            nama_fungsi_ruang: itemToUpdate.namaFungsiRuang,
-            koef: itemToUpdate.koefisien,
-            isActive: itemToUpdate.active,
+            nama_fungsi_ruang: itemToUpdate.nama_fungsi_ruang,
+            koef: itemToUpdate.koef,
+            isActive: itemToUpdate.isActive,
           }),
         });
         
@@ -245,15 +243,15 @@ export default function SuperAdminPage() {
             'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
-            nama_fungsi_ruang: newFungsiRuang.namaFungsiRuang,
-            koef: newFungsiRuang.koefisien,
-            isActive: newFungsiRuang.active,
+            nama_fungsi_ruang: newFungsiRuang.nama_fungsi_ruang,
+            koef: newFungsiRuang.koef,
+            isActive: newFungsiRuang.isActive,
           }),
         });
         
         if (response.ok) {
           await fetchFungsiRuangData(); // Refresh data
-          setNewFungsiRuang({ id: 0, namaFungsiRuang: '', koefisien: 0, active: true });
+          setNewFungsiRuang({ id: 0, nama_fungsi_ruang: '', koef: 0, isActive: true });
           setIsAdding(false);
         } else {
           console.error('Failed to create fungsi ruang');
@@ -759,43 +757,6 @@ export default function SuperAdminPage() {
           <div>
             <h3 className="text-sm font-semibold text-red-900">Super Admin Access</h3>
             <p className="text-sm text-red-700 mt-1">Anda memiliki akses penuh untuk mengelola akun administrator. Gunakan dengan bijak.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Admin</p>
-              <p className="text-2xl font-bold text-gray-900">1</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Users className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Admin Aktif</p>
-              <p className="text-2xl font-bold text-green-600">1</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <Users className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Pengguna</p>
-              <p className="text-2xl font-bold text-blue-600">6</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
           </div>
         </div>
       </div>

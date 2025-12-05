@@ -291,9 +291,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Lokasi
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Nilai BKF
-              </th>
+
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Dibuat Oleh
               </th>
@@ -307,7 +305,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                 Surat Permohonan
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Status
+                Status Verifikasi
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Surat Rekomendasi
@@ -329,14 +327,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">{item.lokasi}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <VerificationSequence
-                    verificationStatus={item.verificationStatus}
-                    userRole={userRole}
-                    usulanId={item.id}
-                    onStatusChange={(stage, newStatus) => handleVerificationChange(item.id, stage, newStatus)}
-                  />
-                </td>
+
                 <td className="px-6 py-4 text-sm text-gray-900">
                   <div className="flex items-center">
                     {item.createdBy || '-'}
@@ -364,7 +355,12 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <StatusBadge status={item.status} />
+                  <VerificationSequence
+                    verificationStatus={item.verificationStatus}
+                    userRole={userRole}
+                    usulanId={item.id}
+                    onStatusChange={(stage, newStatus) => handleVerificationChange(item.id, stage, newStatus)}
+                  />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {item.suratRekomendasi ? (

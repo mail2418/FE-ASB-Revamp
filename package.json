@@ -21,6 +21,7 @@
     "@types/three": "^0.181.0",
     "axios": "^1.13.2",
     "dompurify": "^3.3.0",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.553.0",
     "next": "16.0.1",
     "react": "19.2.0",

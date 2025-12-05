@@ -34,6 +34,15 @@ export default function FungsiRuangTable({
   onSaveNew,
   onCancelAdd,
 }: FungsiRuangTableProps) {
+  // Ensure data is an array
+  const safeData = Array.isArray(data) ? data : [];
+  
+  // Debug logging
+  React.useEffect(() => {
+    console.log('FungsiRuangTable received data:', data);
+    console.log('Is array?', Array.isArray(data));
+  }, [data]);
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -46,18 +55,18 @@ export default function FungsiRuangTable({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {data.map((item) => (
+          {safeData.map((item) => (
             <tr key={item.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
                 {editingId === item.id ? (
                   <TableInput 
                     type="text" 
-                    value={item.namaFungsiRuang} 
-                    onChange={(e) => onUpdate(item.id, 'namaFungsiRuang', e.target.value)} 
+                    value={item.nama_fungsi_ruang} 
+                    onChange={(e) => onUpdate(item.id, 'nama_fungsi_ruang', e.target.value)} 
                     className="w-full" 
                   />
                 ) : (
-                  <span className="text-sm text-gray-900">{item.namaFungsiRuang}</span>
+                  <span className="text-sm text-gray-900">{item.nama_fungsi_ruang}</span>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -65,23 +74,23 @@ export default function FungsiRuangTable({
                   <TableInput 
                     type="number" 
                     step="0.1" 
-                    value={item.koefisien} 
-                    onChange={(e) => onUpdate(item.id, 'koefisien', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} 
+                    value={item.koef} 
+                    onChange={(e) => onUpdate(item.id, 'koef', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} 
                     className="w-24" 
                   />
                 ) : (
-                  <span className="text-sm text-gray-900">{item.koefisien}</span>
+                  <span className="text-sm text-gray-900">{item.koef}</span>
                 )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {editingId === item.id ? (
                   <TableCheckbox 
-                    checked={item.active} 
-                    onChange={(e) => onUpdate(item.id, 'active', e.target.checked)} 
+                    checked={item.isActive} 
+                    onChange={(e) => onUpdate(item.id, 'isActive', e.target.checked)} 
                   />
                 ) : (
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${item.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {item.active ? 'Active' : 'Inactive'}
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${item.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {item.isActive ? 'Active' : 'Inactive'}
                   </span>
                 )}
               </td>
@@ -102,8 +111,8 @@ export default function FungsiRuangTable({
               <td className="px-6 py-4">
                 <TableInput 
                   type="text" 
-                  value={newRow.namaFungsiRuang} 
-                  onChange={(e) => onNewRowChange('namaFungsiRuang', e.target.value)} 
+                  value={newRow.nama_fungsi_ruang} 
+                  onChange={(e) => onNewRowChange('nama_fungsi_ruang', e.target.value)} 
                   placeholder="Nama" 
                   className="w-full" 
                 />
@@ -112,15 +121,15 @@ export default function FungsiRuangTable({
                 <TableInput 
                   type="number" 
                   step="0.1" 
-                  value={newRow.koefisien} 
-                  onChange={(e) => onNewRowChange('koefisien', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} 
+                  value={newRow.koef} 
+                  onChange={(e) => onNewRowChange('koef', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)} 
                   className="w-24" 
                 />
               </td>
               <td className="px-6 py-4">
                 <TableCheckbox 
-                  checked={newRow.active} 
-                  onChange={(e) => onNewRowChange('active', e.target.checked)} 
+                  checked={newRow.isActive} 
+                  onChange={(e) => onNewRowChange('isActive', e.target.checked)} 
                 />
               </td>
               <td className="px-6 py-4 text-right">

@@ -75,7 +75,6 @@ export default function VerificationSequence({
 
   return (
     <div className="flex items-center gap-2">{stages.map((stage, index) => {
-        console.log(stage);
         const status = verificationStatus[stage.key];
         
         // Safety check: if this stage's status is undefined, use 'Belum' as default
