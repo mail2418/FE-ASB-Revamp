@@ -57,7 +57,6 @@ export function proxy(request: NextRequest) {
       "frame-ancestors 'none'",
     ].join('; ')
   );
-  
   return response;
 }
 

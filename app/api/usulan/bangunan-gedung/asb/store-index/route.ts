@@ -22,12 +22,43 @@ export async function POST(request: NextRequest){
       );
     }
 
+    const requestData = await request.json();
+    const {
+        tahunAnggaran,
+        namaAsb,
+        alamat,
+        totalLantai,
+        idAsbTipeBangunan,
+        idKabkota,
+        jumlahKontraktor,
+        idAsbJenis
+    } = requestData;
+
+    console.log(tahunAnggaran)
+    console.log(namaAsb)
+    console.log(alamat)
+    console.log(totalLantai)
+    console.log(idAsbTipeBangunan)
+    console.log(idKabkota)
+    console.log(jumlahKontraktor)
+    console.log(idAsbJenis)
+
     const response = await fetch(`${API_BASE_URL}/asb/store-index`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-      body: request.body,
+      body: JSON.stringify({
+        tahunAnggaran,
+        namaAsb,
+        alamat,
+        totalLantai,
+        idAsbTipeBangunan,
+        idKabkota,
+        jumlahKontraktor,
+        idAsbJenis
+      }),
     });
 
     if (!response.ok) {
@@ -39,7 +70,6 @@ export async function POST(request: NextRequest){
     }
 
     const data = await response.json();
-
     console.log("fetching fungsi ruang success")
     return NextResponse.json(data, { status: 200 });
 

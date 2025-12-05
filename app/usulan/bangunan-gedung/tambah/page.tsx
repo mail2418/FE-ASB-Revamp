@@ -444,6 +444,7 @@ export default function TambahUsulanBangunanGedung() {
       }
 
       const resultASB = await responseASB.json();
+      console.log('Backend responseASB:', resultASB);
       const resultASBfiltered = resultASB.data?.data || resultASB.data || []
       console.log('Backend responseASB:', resultASBfiltered);
       
@@ -864,7 +865,7 @@ export default function TambahUsulanBangunanGedung() {
                                   >
                                     <option value="">{loadingLantai ? 'Memuat...' : 'Pilih'}</option>
                                     {jenisLantaiOptions.map(opt => (
-                                      <option key={opt.id} value={opt.lantai}>
+                                      <option key={opt.id} value={opt.id}>
                                         {opt.lantai}
                                       </option>
                                     ))}
@@ -883,7 +884,7 @@ export default function TambahUsulanBangunanGedung() {
                                   >
                                     <option value="">{loadingFungsi ? 'Memuat...' : 'Pilih'}</option>
                                     {fungsiLantaiOptions.map(opt => (
-                                      <option key={opt.id} value={opt.nama_fungsi_ruang}>
+                                      <option key={opt.id} value={opt.id}>
                                         {opt.nama_fungsi_ruang}
                                       </option>
                                     ))}

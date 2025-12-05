@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useNonStandardBuildingContext } from './BuildingContext';
+import { useRouter, useParams } from 'next/navigation';
+import { useEditNonStandardBuildingContext } from './BuildingContext';
 
 // Interface for API component data
 interface NonStandardComponentAPI {
@@ -14,10 +14,10 @@ interface NonStandardComponentAPI {
 
 export default function LeftPanelForm() {
   const router = useRouter();
-  const { formState, updateRowState } = useNonStandardBuildingContext();
+  const params = useParams();
+  const asbId = params.id as string;
   
-  // Load building data from localStorage
-  const [buildingData, setBuildingData] = useState<any>(null);
+  const { formState, updateRowState } = useEditNonStandardBuildingContext();
   
   // API data states
   const [allComponents, setAllComponents] = useState<NonStandardComponentAPI[]>([]);
@@ -27,24 +27,8 @@ export default function LeftPanelForm() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load building data from localStorage first
+  // Fetch non-standard components from API
   useEffect(() => {
-    const savedData = localStorage.getItem('usulan_bangunan_new_entry');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setBuildingData(parsed);
-      } catch (e) {
-        console.error('Failed to load building data:', e);
-      }
-    }
-  }, []);
-
-  // Fetch non-standard components from API - runs AFTER buildingData is loaded
-  useEffect(() => {
-    // Only fetch when buildingData is available
-    if (!buildingData) return;
-    
     const fetchNonStandardComponents = async () => {
       setLoading(true);
       try {
@@ -62,14 +46,7 @@ export default function LeftPanelForm() {
           const data = await response.json();
           const components = data.data?.komponenBangunanNonstds || data.data || [];
           
-          // Filter components by jenis AND tipeBangunan from saved form data
-          // const filteredComponents = components.filter((c: any) =>
-          //   c.idAsbJenis.toString() === buildingData.formData?.jenis &&
-          //   c.idAsbTipeBangunan.toString() === buildingData.formData?.tipeBangunan
-          // );
-          
           console.log('Non-Standard Components:', components);
-          console.log('Filter criteria - jenis:', buildingData.formData?.jenis, 'tipeBangunan:', buildingData.formData?.tipeBangunan);
           
           setAllComponents(components);
           
@@ -86,7 +63,7 @@ export default function LeftPanelForm() {
     };
     
     fetchNonStandardComponents();
-  }, [buildingData]); // Re-run when buildingData changes
+  }, [asbId]);
 
   const handlePercentageChange = (componentId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
@@ -97,7 +74,6 @@ export default function LeftPanelForm() {
   const handleCheckChange = (componentId: number, checked: boolean) => {
     updateRowState(`row_${componentId}`, { 
       checked: checked,
-      // Reset percentage to 0 when unchecking
       percentage: checked ? (formState[`row_${componentId}`]?.percentage || 0) : 0
     });
   };
@@ -116,23 +92,6 @@ export default function LeftPanelForm() {
 
   const needsDropdown = allComponents.length > 10;
 
-  // Calculate totals for non-standard components
-  const calculateTotals = () => {
-    let checkedCount = 0;
-    let totalPercentage = 0;
-
-    Object.values(formState).forEach((state: any) => {
-      if (state?.checked) {
-        checkedCount++;
-        totalPercentage += state.percentage || 0;
-      }
-    });
-
-    const averagePercentage = checkedCount > 0 ? totalPercentage / checkedCount : 0;
-
-    return { checkedCount, totalPercentage, averagePercentage };
-  };
-
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -141,12 +100,6 @@ export default function LeftPanelForm() {
       if (!token) {
         alert('Sesi Anda telah berakhir. Silakan login kembali.');
         return;
-      }
-
-      // Get id_asb from localStorage
-      const idAsb = buildingData?.resultASBfiltered?.id;
-      if (!idAsb) {
-        console.error('No id_asb found in localStorage');
       }
 
       // Build arrays for komponen_nonstd and bobot_nonstd (only checked items)
@@ -164,13 +117,13 @@ export default function LeftPanelForm() {
 
       // Prepare request body
       const requestBody = {
-        id_asb: idAsb,
+        id_asb: parseInt(asbId),
         id_asb_bipek_nonstd: null,
         komponen_nonstd: komponen_nonstd,
         bobot_nonstd: bobot_nonstd
       };
 
-      console.log('Sending non-standard components:', requestBody);
+      console.log('Updating non-standard components:', requestBody);
 
       // Send PUT request to API
       const response = await fetch('/api/superadmin/kb-ns', {
@@ -188,52 +141,27 @@ export default function LeftPanelForm() {
       }
 
       const result = await response.json();
-      console.log('Non-standard components saved:', result);
+      console.log('Non-standard components updated:', result);
 
-      // Save state with selected components to localStorage
-      const saveData = {
-        formState,
-        selectedComponents: componentsToSave
-      };
-      localStorage.setItem('usulan_bangunan_nonstandar_components', JSON.stringify(saveData));
-
-      // Navigate to summary page
-      router.push('/usulan/bangunan-gedung/tambah/summary');
+      // Navigate back to usulan list
+      alert('Data berhasil disimpan!');
+      router.push('/usulan/bangunan-gedung');
     } catch (error) {
-      console.error('Error saving non-standard components:', error);
+      console.error('Error updating non-standard components:', error);
       alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Building Information Section */}
-      {buildingData && (
-        <div className="bg-gradient-to-r from-lime-50 to-green-50 rounded-lg border border-lime-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Bangunan</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
-              <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.deskripsiBangunan || '-'}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
-              <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.klasifikasi || '-'}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
-              <p className="text-base font-semibold text-lime-600">
-                {buildingData.formData?.nilaiASB || '-'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ASB ID Info */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200 p-4">
+        <p className="text-sm text-orange-700">
+          <strong>Mode Edit:</strong> ASB ID #{asbId}
+        </p>
+      </div>
 
       {/* Component Selection Dropdown (if more than 10 components) */}
       {needsDropdown && (
@@ -252,7 +180,6 @@ export default function LeftPanelForm() {
           
           {showDropdown && (
             <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-              {/* Search input */}
               <input
                 type="text"
                 placeholder="Cari komponen..."
@@ -261,7 +188,6 @@ export default function LeftPanelForm() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-lime-500"
               />
               
-              {/* Component list with checkboxes */}
               <div className="max-h-60 overflow-y-auto space-y-2">
                 {filteredComponents.map((component) => (
                   <label
@@ -279,7 +205,6 @@ export default function LeftPanelForm() {
                 ))}
               </div>
               
-              {/* Quick actions */}
               <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                 <button
                   onClick={() => setSelectedComponents([...allComponents])}
@@ -400,7 +325,7 @@ export default function LeftPanelForm() {
           {/* Navigation Buttons */}
           <div className="flex justify-between p-6 bg-gray-50 border-t border-gray-200">
             <button
-              onClick={() => router.push('/usulan/bangunan-gedung/tambah/input-komponen-standar-bangunan')}
+              onClick={() => router.push(`/usulan/bangunan-gedung/edit/${asbId}/input-komponen-standar-bangunan`)}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium flex items-center gap-2 cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -420,9 +345,9 @@ export default function LeftPanelForm() {
                 </>
               ) : (
                 <>
-                  Next
+                  Simpan
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                   </svg>
                 </>
               )}

@@ -6,13 +6,13 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 function getAuthToken(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7);
+    return authHeader.substring(7); // Remove 'Bearer ' prefix
   }
   return null;
 }
 
-// PUT - Update store-lantai
-export async function PUT(request: NextRequest) {
+// GET - Fetch ASB by ID
+export async function GET(request: NextRequest) {
   try {
     const token = getAuthToken(request);
 
@@ -23,50 +23,39 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const {
-        id_asb,
-        id_asb_detail,
-        luas_lantai,
-        id_asb_lantai,
-        id_asb_fungsi_ruang
-    } = body;
+    // Get id from query parameters
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
 
-    console.log(id_asb)
-    console.log(id_asb_detail)
-    console.log(luas_lantai)
-    console.log(id_asb_lantai)
-    console.log(id_asb_fungsi_ruang)
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID parameter is required' },
+        { status: 400 }
+      );
+    }
 
-    const response = await fetch(`${API_BASE_URL}/asb/store-lantai`, {
-      method: 'PUT',
+    const response = await fetch(`${API_BASE_URL}/asb/${id}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        id_asb:1,
-        id_asb_detail,
-        luas_lantai,
-        id_asb_lantai,
-        id_asb_fungsi_ruang
-      }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { success: false, error: errorData.message || 'Failed to update store-lantai' },
+        { success: false, error: errorData.message || 'Failed to fetch ASB data' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    console.log("PUT store-lantai success");
+
+    console.log("fetching asb by id success")
     return NextResponse.json(data, { status: 200 });
 
   } catch (error) {
-    console.error('Error updating store-lantai:', error);
+    console.error('Error fetching ASB by ID:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

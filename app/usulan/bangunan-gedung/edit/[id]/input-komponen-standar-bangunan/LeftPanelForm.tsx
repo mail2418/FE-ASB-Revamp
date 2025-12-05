@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useBuildingContext, get3DTypeFromKomponen } from './BuildingContext';
+import { useRouter, useParams } from 'next/navigation';
+import { useEditBuildingContext, get3DTypeFromKomponen } from './BuildingContext';
 
 // Interface for API component data
 interface StandardComponentAPI {
@@ -14,10 +14,10 @@ interface StandardComponentAPI {
 
 export default function LeftPanelForm() {
   const router = useRouter();
-  const { formState, updateRowState } = useBuildingContext();
+  const params = useParams();
+  const asbId = params.id as string;
   
-  // Load building data from localStorage
-  const [buildingData, setBuildingData] = useState<any>(null);
+  const { formState, updateRowState, setFormState } = useEditBuildingContext();
   
   // API data states
   const [allComponents, setAllComponents] = useState<StandardComponentAPI[]>([]);
@@ -26,112 +26,55 @@ export default function LeftPanelForm() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [buildingInfo, setBuildingInfo] = useState<any>(null);
 
-  // Load building data from localStorage first
+  // Fetch existing data and components from API
   useEffect(() => {
-    const savedData = localStorage.getItem('usulan_bangunan_new_entry');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setBuildingData(parsed);
-      } catch (e) {
-        console.error('Failed to load building data:', e);
-      }
-    }
-  }, []);
-
-  // Fetch standard components from API - runs AFTER buildingData is loaded
-  useEffect(() => {
-    // Only fetch when buildingData is available
-    if (!buildingData) return;
-    
-    const fetchStandardComponents = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
-        const response = await fetch('/api/usulan/bangunan-gedung/kb-s', {
+
+        // Fetch all standard components
+        const componentsResponse = await fetch('/api/usulan/bangunan-gedung/kb-s', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
+        if (componentsResponse.ok) {
+          const data = await componentsResponse.json();
           const components = data.data?.komponenBangunans || data.data || [];
+          setAllComponents(components);
           
-          // Filter components by jenis AND tipeBangunan from saved form data
-          const filteredComponents = components.filter((c: any) =>
-            c.idAsbJenis.toString() === buildingData.formData?.jenis &&
-            c.idAsbTipeBangunan.toString() === buildingData.formData?.tipeBangunan
-          );
-          
-          console.log('Filtered Components:', filteredComponents);
-          console.log('Filter criteria - jenis:', buildingData.formData?.jenis, 'tipeBangunan:', buildingData.formData?.tipeBangunan);
-          
-          setAllComponents(filteredComponents);
-          
-          // Initialize component states for 3D visualization
-          if (filteredComponents.length <= 10) {
-            setSelectedComponents(filteredComponents);
+          // If 10 or less, auto-select all
+          if (components.length <= 10) {
+            setSelectedComponents(components);
           }
         }
+
+        // TODO: Fetch existing ASB data by ID to pre-populate percentages
+        // For now, we'll just load the components
+        // You may need to create an API endpoint like /api/usulan/bangunan-gedung/asb/[id]
+        
       } catch (error) {
-        console.error('Error fetching Standard Components:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchStandardComponents();
-  }, [buildingData]); // Re-run when buildingData changes
-
-  // Fetch ASB By ID in order to gain Klasifikasi and SHST Value
-  useEffect(()=>{
-    const fetchASBById = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) return;
-
-        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${buildingData?.resultASBfiltered?.id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('ASB By ID:', data);
-          setBuildingData((prev: any) => ({
-            ...prev,
-            resultASBfiltered: {
-              ...prev.resultASBfiltered,
-              klasifikasi: data.data.klasifikasi,
-              shst: data.data.shst,
-            },
-          }));
-        }
-      } catch (error) {
-        console.error('Error fetching ASB By ID:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchASBById();
-  }, [buildingData]);
+    fetchData();
+  }, [asbId]);
 
   const handlePercentageChange = (componentId: number, componentKomponen: string, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
     val = Math.max(0, Math.min(100, val));
     
-    // Update by component ID (for saving)
     updateRowState(`row_${componentId}`, { percentage: val });
     
-    // Also update by 3D type for visualization
     const type3D = get3DTypeFromKomponen(componentKomponen);
     if (type3D && type3D !== 'default') {
       updateRowState(`row_${type3D}`, { percentage: val });
@@ -153,109 +96,75 @@ export default function LeftPanelForm() {
   const needsDropdown = allComponents.length > 10;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      setIsSubmitting(true);
-      
-      try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-          alert('Sesi Anda telah berakhir. Silakan login kembali.');
-          return;
-        }
-
-        // Get id_asb from localStorage
-        const idAsb = buildingData?.resultASBfiltered?.id;
-        if (!idAsb) {
-          console.error('No id_asb found in localStorage');
-        }
-
-        console.log('id_asb', idAsb);
-
-        // Build arrays for komponen_std and bobot_std
-        const componentsToSave = needsDropdown ? selectedComponents : allComponents;
-        const komponen_std: number[] = [];
-        const bobot_std: number[] = [];
-
-        componentsToSave.forEach((component) => {
-          const state = formState[`row_${component.id}`];
-          if (state?.percentage > 0) {
-            komponen_std.push(component.id);
-            bobot_std.push(state.percentage);
-          }
-        });
-
-        // Prepare request body
-        const requestBody = {
-          id_asb: idAsb,
-          id_asb_bipek_standard: null,
-          komponen_std: komponen_std,
-          bobot_std: bobot_std
-        };
-
-        console.log('Sending standard components:', requestBody);
-
-        // Send PUT request to API
-        const response = await fetch('/api/usulan/bangunan-gedung/kb-s', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Gagal menyimpan data komponen standar');
-        }
-
-        const result = await response.json();
-        console.log('Standard components saved:', result);
-
-        // Save state with selected components to localStorage
-        const saveData = {
-          formState,
-          selectedComponents: componentsToSave
-        };
-        localStorage.setItem('usulan_bangunan_standar_components', JSON.stringify(saveData));
-        // Navigate to next page
-        router.push('/usulan/bangunan-gedung/tambah/input-komponen-non-standar-bangunan');
-      } catch (error) {
-        console.error('Error saving standard components:', error);
-        alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
-      } finally {
-        setIsSubmitting(false);
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
       }
+
+      // Build arrays for komponen_std and bobot_std
+      const componentsToSave = needsDropdown ? selectedComponents : allComponents;
+      const komponen_std: number[] = [];
+      const bobot_std: number[] = [];
+
+      componentsToSave.forEach((component) => {
+        const state = formState[`row_${component.id}`];
+        if (state?.percentage > 0) {
+          komponen_std.push(component.id);
+          bobot_std.push(state.percentage);
+        }
+      });
+
+      // Prepare request body
+      const requestBody = {
+        id_asb: parseInt(asbId),
+        id_asb_bipek_standard: null,
+        komponen_std: komponen_std,
+        bobot_std: bobot_std
+      };
+
+      console.log('Updating standard components:', requestBody);
+
+      // Send PUT request to API
+      const response = await fetch('/api/usulan/bangunan-gedung/kb-s', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal menyimpan data komponen standar');
+      }
+
+      const result = await response.json();
+      console.log('Standard components updated:', result);
+
+      // Navigate to non-standard edit page
+      router.push(`/usulan/bangunan-gedung/edit/${asbId}/input-komponen-non-standar-bangunan`);
+    } catch (error) {
+      console.error('Error updating standard components:', error);
+      alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
   return (
     <div className="space-y-4">
-      {/* Building Information Section */}
-      {buildingData && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Bangunan</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
-              <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.deskripsiBangunan || '-'}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
-              <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.klasifikasi || '-'}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
-              <p className="text-base font-semibold text-blue-600">
-                {buildingData.formData?.nilaiSHST || '-'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ASB ID Info */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200 p-4">
+        <p className="text-sm text-orange-700">
+          <strong>Mode Edit:</strong> ASB ID #{asbId}
+        </p>
+      </div>
 
       {/* Component Selection Dropdown (if more than 10 components) */}
       {needsDropdown && (
@@ -274,7 +183,6 @@ export default function LeftPanelForm() {
           
           {showDropdown && (
             <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-              {/* Search input */}
               <input
                 type="text"
                 placeholder="Cari komponen..."
@@ -283,7 +191,6 @@ export default function LeftPanelForm() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               
-              {/* Component list with checkboxes */}
               <div className="max-h-60 overflow-y-auto space-y-2">
                 {filteredComponents.map((component) => (
                   <label
@@ -301,7 +208,6 @@ export default function LeftPanelForm() {
                 ))}
               </div>
               
-              {/* Quick actions */}
               <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                 <button
                   onClick={() => setSelectedComponents([...allComponents])}
@@ -349,7 +255,6 @@ export default function LeftPanelForm() {
               ) : (
                 (needsDropdown ? selectedComponents : allComponents).map((component) => {
                   const currentState = formState[`row_${component.id}`];
-                  console.log(currentState);
                   
                   return (
                     <tr key={component.id} className="hover:bg-gray-50 transition-colors">
@@ -388,16 +293,16 @@ export default function LeftPanelForm() {
           {/* Navigation Buttons */}
           <div className="flex justify-between p-6 bg-gray-50 border-t border-gray-200">
             <button
-              onClick={() => router.push('/usulan/bangunan-gedung/tambah')}
+              onClick={() => router.push('/usulan/bangunan-gedung')}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium flex items-center gap-2 cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
               </svg>
-              Previous
+              Kembali
             </button>
             <button
-              onClick={(e:any)=>handleSubmit(e)}
+              onClick={(e: any) => handleSubmit(e)}
               disabled={isSubmitting}
               className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
