@@ -5,7 +5,7 @@ import {
   Search, 
   ChevronDown, 
   Download,
-  MoreVertical,
+  Pencil,
   Check,
   X as CloseIcon
 } from 'lucide-react';
@@ -382,13 +382,15 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <button 
-                    onClick={() => handleVerifyClick(item.id)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Verify usulan"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+                  {userRole && ['verifikator', 'verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && (
+                    <button 
+                      onClick={() => handleVerifyClick(item.id)}
+                      className="text-teal-500 hover:text-teal-700 transition-colors p-1 rounded hover:bg-teal-50"
+                      title="Edit / Verify usulan"
+                    >
+                      <Pencil className="w-5 h-5" />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

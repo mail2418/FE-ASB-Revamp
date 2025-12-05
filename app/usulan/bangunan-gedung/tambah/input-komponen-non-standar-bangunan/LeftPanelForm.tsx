@@ -25,6 +25,7 @@ export default function LeftPanelForm() {
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load building data from localStorage first
   useEffect(() => {
@@ -337,22 +338,95 @@ export default function LeftPanelForm() {
               Previous
             </button>
             <button
-              onClick={() => {
-                // Save state with selected components
-                const saveData = {
-                  formState,
-                  selectedComponents: needsDropdown ? selectedComponents : allComponents
-                };
-                localStorage.setItem('usulan_bangunan_nonstandar_components', JSON.stringify(saveData));
-                // Navigate to summary page
-                router.push('/usulan/bangunan-gedung/tambah/summary');
+              onClick={async () => {
+                setIsSubmitting(true);
+                
+                try {
+                  const token = localStorage.getItem('accessToken');
+                  if (!token) {
+                    alert('Sesi Anda telah berakhir. Silakan login kembali.');
+                    return;
+                  }
+
+                  // Get id_asb from localStorage
+                  const idAsb = buildingData?.resultASBfiltered?.id;
+                  if (!idAsb) {
+                    console.error('No id_asb found in localStorage');
+                  }
+
+                  // Build arrays for komponen_nonstd and bobot_nonstd (only checked items)
+                  const componentsToSave = needsDropdown ? selectedComponents : allComponents;
+                  const komponen_nonstd: number[] = [];
+                  const bobot_nonstd: number[] = [];
+
+                  componentsToSave.forEach((component) => {
+                    const state = formState[`row_${component.id}`];
+                    if (state?.checked && state?.percentage > 0) {
+                      komponen_nonstd.push(component.id);
+                      bobot_nonstd.push(state.percentage);
+                    }
+                  });
+
+                  // Prepare request body
+                  const requestBody = {
+                    id_asb: idAsb,
+                    id_asb_bipek_nonstd: null,
+                    komponen_nonstd: komponen_nonstd,
+                    bobot_nonstd: bobot_nonstd
+                  };
+
+                  console.log('Sending non-standard components:', requestBody);
+
+                  // Send PUT request to API
+                  const response = await fetch('/api/superadmin/kb-ns', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(requestBody),
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Gagal menyimpan data komponen non-standar');
+                  }
+
+                  const result = await response.json();
+                  console.log('Non-standard components saved:', result);
+
+                  // Save state with selected components to localStorage
+                  const saveData = {
+                    formState,
+                    selectedComponents: componentsToSave
+                  };
+                  localStorage.setItem('usulan_bangunan_nonstandar_components', JSON.stringify(saveData));
+
+                  // Navigate to summary page
+                  router.push('/usulan/bangunan-gedung/tambah/summary');
+                } catch (error) {
+                  console.error('Error saving non-standard components:', error);
+                  alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+                } finally {
+                  setIsSubmitting(false);
+                }
               }}
-              className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-medium flex items-center gap-2 cursor-pointer"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-medium flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Next
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  Next
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </>
+              )}
             </button>
           </div>
         </div>

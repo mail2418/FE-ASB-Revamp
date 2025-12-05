@@ -50,3 +50,41 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest){
+  try {
+    const token = getAuthToken(request);
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized - No token found' },
+        { status: 401 }
+      );
+    }
+
+    const response = await fetch(`${API_BASE_URL}/asb/store-bpns`, {
+      method: 'PUT',
+      headers: request.headers,
+      body: request.body,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { success: false, error: errorData.message || 'Failed to fetch fungsi ruang data' },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+
+    console.log("fetching success")
+    return NextResponse.json(data, { status: 200 });
+
+  } catch (error) {
+    console.error('Error fetching fungsi ruang:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
