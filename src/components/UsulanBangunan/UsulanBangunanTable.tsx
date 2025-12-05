@@ -139,6 +139,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
   const [selectedProject, setSelectedProject] = useState('Usulan Bangunan Gedung 2025');
   const [selectedYear, setSelectedYear] = useState('2025');
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Available years
   const years = ['2025', '2024', '2023', '2022', '2021'];
@@ -218,6 +219,64 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
   // Handle edit button click (for OPD role)
   const handleEditClick = (itemId: string) => {
     router.push(`/usulan/bangunan-gedung/edit/${itemId}/input-komponen-standar-bangunan`);
+  };
+
+  // Handle download Surat Permohonan
+  const handleDownloadSuratPermohonan = async (itemId: string) => {
+    setDownloadingId(itemId);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch(`/api/generate-surat-permohonan?idAsb=${itemId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal mengunduh dokumen');
+      }
+
+      const result = await response.json();
+      
+      // Check if response contains a download URL or file data
+      if (result.data?.url || result.url) {
+        // If backend returns a URL, open it in new tab
+        window.open(result.data?.url || result.url, '_blank');
+      } else if (result.data?.base64 || result.base64) {
+        // If backend returns base64, create a blob and download
+        const base64Data = result.data?.base64 || result.base64;
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `surat-permohonan-${itemId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        console.log('API Response:', result);
+        alert('Format respons tidak dikenali. Silakan cek console untuk detail.');
+      }
+    } catch (error) {
+      console.error('Error downloading surat permohonan:', error);
+      alert(`Gagal mengunduh: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return (
@@ -345,19 +404,23 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                   {item.tenggatDate || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {item.suratPermohonan ? (
-                    <a
-                      href={item.suratPermohonan}
-                      className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-sm"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span className="text-xs bg-red-100 text-red-600 px-1 rounded">PDF</span>
-                    </a>
-                  ) : (
-                    <span className="text-sm text-gray-400">-</span>
-                  )}
+                  <button
+                    onClick={() => handleDownloadSuratPermohonan(item.id)}
+                    disabled={downloadingId === item.id}
+                    className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {downloadingId === item.id ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
+                        <span className="text-xs">Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span className="text-xs bg-red-100 text-red-600 px-1 rounded">PDF</span>
+                      </>
+                    )}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <VerificationSequence
