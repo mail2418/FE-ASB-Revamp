@@ -120,46 +120,21 @@ export default function SummaryPage() {
     return rowKey.replace('row_', '').replace(/_/g, ' ');
   };
 
-  // Get OPD from cookie
-  const getOPDFromCookie = () => {
-    if (typeof window === 'undefined') return 'OPD Tidak Diketahui';
-    
-    const userDataCookie = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('userData='));
-    
-    if (userDataCookie) {
-      try {
-        const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
-        return userData.opd || userData.name || 'OPD Tidak Diketahui';
-      } catch (e) {
-        return 'OPD Tidak Diketahui';
-      }
-    }
-    return 'OPD Tidak Diketahui';
-  };
-
   const handleGeneratePDF = async () => {
-    if (!basicData) {
-      setPdfError('Data belum lengkap');
-      return;
-    }
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
 
     setIsGeneratingPdf(true);
     setPdfError('');
 
     try {
       const response = await fetch('/api/generate-surat-permohonan', {
-        method: 'POST',
+        method: 'GET',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          opd: getOPDFromCookie(),
-          namaKegiatan: basicData.deskripsiBangunan || basicData.namaBangunan,
-          jenisKegiatan: basicData.jenis || 'Pembangunan',
-          lokasi: basicData.lokasi || '-',
-        }),
+        }
       });
 
       if (!response.ok) {

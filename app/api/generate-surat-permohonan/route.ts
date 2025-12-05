@@ -3,58 +3,51 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { saveSuratPermohonanPDF, SuratPermohonanData } from '@/lib/pdf-generator';
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { opd, namaKegiatan, jenisKegiatan, lokasi }: SuratPermohonanData = body;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-    // Validate required fields
-    if (!opd || !namaKegiatan || !jenisKegiatan || !lokasi) {
+// Helper to get token from request headers
+function getAuthToken(request: NextRequest): string | null {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7); // Remove 'Bearer ' prefix
+  }
+  return null;
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const token = getAuthToken(request);
+    const idAsb = request.nextUrl.searchParams.get('idAsb');
+    
+    if (!token) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+        { success: false, error: 'Unauthorized - No token found' },
+        { status: 401 }
       );
     }
 
-    // Generate PDF
-    const pdfBlob = saveSuratPermohonanPDF({
-      opd,
-      namaKegiatan,
-      jenisKegiatan,
-      lokasi,
-    }, "suratPermohonan");
+    const response = await fetch(`${API_BASE_URL}/asb-document/download-surat-permohonan?idAsb=${idAsb}`, {
+      method: 'GET',
+      headers: request.headers,
+    });
 
-    // Convert blob to buffer
-    const arrayBuffer = await pdfBlob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Generate unique filename with timestamp
-    const timestamp = Date.now();
-    const filename = `surat-permohonan-${timestamp}.pdf`;
-    const publicPath = join(process.cwd(), 'public', filename);
-
-    // Ensure public directory exists
-    try {
-      await mkdir(join(process.cwd(), 'public'), { recursive: true });
-    } catch (error) {
-      // Directory might already exist, that's fine
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { success: false, error: errorData.message || 'Failed to fetch fungsi ruang data' },
+        { status: response.status }
+      );
     }
 
-    // Save PDF to public folder
-    await writeFile(publicPath, buffer);
+    const data = await response.json();
 
-    // Return the public URL path
-    const publicUrl = `/${filename}`;
+    console.log("fetching success")
+    return NextResponse.json(data, { status: 200 });
 
-    return NextResponse.json({
-      success: true,
-      filePath: publicUrl,
-      filename,
-    });
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('Error fetching komponen bangunan standar:', error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
