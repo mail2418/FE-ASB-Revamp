@@ -428,7 +428,7 @@ export default function TambahUsulanBangunanGedung() {
         idAsbJenis: parseInt(formData.jenis || '1'),
       };
 
-      // Send POST request to backend 
+      // CREATE STORE INDEX
       const responseASB = await fetch('/api/usulan/bangunan-gedung/asb/store-index', {
         method: 'POST',
         headers: {
@@ -457,6 +457,31 @@ export default function TambahUsulanBangunanGedung() {
           id_asb_fungsi_ruang: floors.map(floor => parseInt(floor.fungsiLantai))
       };
 
+      // Send UPDATE Store Rekening
+
+      // Prepare request body for backend API
+      const requestBodyRekening = {
+          id_asb: resultASBfiltered.id,
+          id_rekening: formData.kodeRekeningBelanja1
+      };
+      const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBodyRekening),
+      });
+
+      if (!responseRekening.ok) {
+        const errorData = await responseRekening.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal mengubah data ke server');
+      }
+      
+      const resultRekening = await responseRekening.json();
+      const resultRekeningfiltered = resultRekening.data?.data || resultRekening.data || []
+      console.log('Backend responseRekening:', resultRekeningfiltered);
+
       // Send UPDATE Store Lantai
       const responseLantai = await fetch('/api/usulan/bangunan-gedung/asb/store-lantai', {
         method: 'PUT',
@@ -475,31 +500,6 @@ export default function TambahUsulanBangunanGedung() {
       const resultLt = await responseLantai.json();
       const resultLantaifiltered = resultLt.data?.data || resultLt.data || []
       console.log('Backend responseLantai:', resultLantaifiltered);
-
-      // Prepare request body for backend API
-      const requestBodyRekening = {
-          id_asb: resultASBfiltered.id,
-          id_rekening: formData.kodeRekeningBelanja1
-      };
-
-      // Send UPDATE Store Rekening
-      const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBodyRekening),
-      });
-
-      if (!responseRekening.ok) {
-        const errorData = await responseRekening.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Gagal mengubah data ke server');
-      }
-      
-      const resultRekening = await responseRekening.json();
-      const resultRekeningfiltered = resultRekening.data?.data || resultRekening.data || []
-      console.log('Backend responseRekening:', resultRekeningfiltered);
 
       // Save to localStorage
       const dataToSave = {
@@ -693,7 +693,7 @@ export default function TambahUsulanBangunanGedung() {
                           <div
                             key={rekening.id}
                             onClick={() => {
-                              setFormData(prev => ({ ...prev, kodeRekeningBelanja1: rekening.rekening_kode }));
+                              setFormData(prev => ({ ...prev, kodeRekeningBelanja1: rekening.id.toString() }));
                               setSearchRekening('');
                             }}
                             className="px-4 py-2 hover:bg-orange-50 cursor-pointer text-sm"
