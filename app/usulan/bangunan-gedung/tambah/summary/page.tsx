@@ -108,18 +108,6 @@ export default function SummaryPage() {
 
   // Calculate totals
   const totalArea = floors.reduce((sum, floor) => sum + (parseFloat(floor.luas) || 0), 0);
-  
-  // Calculate standard component average
-  const standardValues = Object.values(standardComponents).filter(comp => comp?.percentage > 0);
-  const standardPercentageAvg = standardValues.length > 0 
-    ? standardValues.reduce((sum, comp) => sum + (comp?.percentage || 0), 0) / standardValues.length 
-    : 0;
-  
-  // Calculate non-standard component average (only checked items)
-  const nonStandardValues = Object.values(nonStandardComponents).filter(comp => comp?.checked && comp?.percentage > 0);
-  const nonStandardPercentageAvg = nonStandardValues.length > 0 
-    ? nonStandardValues.reduce((sum, comp) => sum + (comp?.percentage || 0), 0) / nonStandardValues.length 
-    : 0;
 
   // Get component name by ID
   const getComponentName = (rowKey: string, components: ComponentAPI[]) => {
@@ -189,123 +177,15 @@ export default function SummaryPage() {
   };
 
   const handleVerify = async () => {
-    // Get user data from cookie
-    let userName = 'Unknown User';
-    if (typeof window !== 'undefined') {
-      const userDataCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('userData='));
-      
-      if (userDataCookie) {
-        try {
-          const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
-          userName = userData.name || 'Unknown User';
-        } catch (e) {
-          console.error('Failed to parse user data:', e);
-        }
-      }
-    }
-
-    // Get current date in dd-mm-yyyy format
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    const createdDate = `${day}-${month}-${year}`;
-
-    try {
-      // Prepare request body for backend API
-      const requestBody = {
-        tahunAnggaran: year,
-        namaAsb: basicData?.deskripsiBangunan || basicData?.namaBangunan || 'Usulan Baru',
-        alamat: basicData?.lokasi || '-',
-        totalLantai: floors.length || parseInt(basicData?.jumlahLantai || '1'),
-        idAsbTipeBangunan: parseInt(basicData?.tipeBangunan || '1'),
-        idKabkota: parseInt(basicData?.kabKota || '1'),
-        jumlahKontraktor: 2,
-        idAsbJenis: parseInt(basicData?.jenis || '1'),
-      };
-
-      // Get auth token from localStorage
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        alert('Sesi Anda telah berakhir. Silakan login kembali.');
-        router.push('/login');
-        return;
-      }
-
-      // Send POST request to backend
-      const response = await fetch('/api/usulan/bangunan-gedung/summary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Gagal menyimpan data ke server');
-      }
-
-      const result = await response.json();
-      console.log('Backend response:', result);
-
-      // Compile all form data into a complete usulan object for localStorage
-      const newUsulan = {
-        id: result.id || Date.now().toString(),
-        jenis: basicData?.jenis || 'Pembangunan',
-        uraian: basicData?.deskripsiBangunan || basicData?.namaBangunan || 'Usulan Baru',
-        lokasi: basicData?.lokasi || '-',
-        klasifikasi: basicData?.tipeBangunan || 'Gedung Negara Tidak Sederhana',
-        satuan: 'm2',
-        nilaiBkf: 'Sedang',
-        status: 'Proses',
-        suratPermohonan: generatedPdfPath || '/easb-document.pdf',
-        createdBy: userName,
-        createdDate: createdDate,
-        verificationStatus: {
-          opd: 'Menunggu',
-          bappeda: 'Belum',
-          bpkad: 'Belum',
-        },
-      };
-
-      // Get existing submissions from localStorage
-      const existingSubmissions = localStorage.getItem('submitted_usulan_list');
-      let submissions = [];
-      
-      if (existingSubmissions) {
-        try {
-          submissions = JSON.parse(existingSubmissions);
-        } catch (e) {
-          console.error('Failed to parse existing submissions', e);
-        }
-      }
-
-      // Add new submission to the list
-      submissions.push(newUsulan);
-      
-      // Save back to localStorage
-      localStorage.setItem('submitted_usulan_list', JSON.stringify(submissions));
-
       // Clear form data after successful submission
       localStorage.removeItem('usulan_bangunan_new_entry');
       localStorage.removeItem('usulan_bangunan_standar_components');
       localStorage.removeItem('usulan_bangunan_nonstandar_components');
-
       // Show success message
       alert('Data berhasil diverifikasi dan disimpan!');
-
       // Navigate back to usulan list
       router.push('/usulan/bangunan-gedung');
-    } catch (error) {
-      console.error('Error submitting data:', error);
-      alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
     }
-  };
-
   // Get filtered standard components with percentages
   const getStandardComponentsDisplay = () => {
     if (selectedStandardComponents.length > 0) {

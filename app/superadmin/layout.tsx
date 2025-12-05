@@ -260,7 +260,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
               {/* Page title */}
               <div className="flex-1 px-4 lg:px-0">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Dashboard Utama
+                  Dashboard Super Admin
                 </h2>
               </div>
 

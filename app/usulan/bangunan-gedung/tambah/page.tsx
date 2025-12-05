@@ -34,7 +34,6 @@ export default function TambahUsulanBangunanGedung() {
   const [filteredKelurahanOptions, setFilteredKelurahanOptions] = useState<Array<{ id: number; namaKelurahan: string; kecamatanId?: number }>>([]);
   const [loadingLantai, setLoadingLantai] = useState(false);
   const [loadingFungsi, setLoadingFungsi] = useState(false);
-  const [loadingRekening, setLoadingRekening] = useState(false);
   const [loadingJenis, setLoadingJenis] = useState(false);
   const [loadingTipeBangunan, setLoadingTipeBangunan] = useState(false);
   const [loadingKabKota, setLoadingKabKota] = useState(false);
@@ -133,7 +132,6 @@ export default function TambahUsulanBangunanGedung() {
   // Fetch Rekening data
   React.useEffect(() => {
     const fetchRekening = async () => {
-      setLoadingRekening(true);
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
@@ -152,8 +150,6 @@ export default function TambahUsulanBangunanGedung() {
         }
       } catch (error) {
         console.error('Error fetching Rekening:', error);
-      } finally {
-        setLoadingRekening(false);
       }
     };
 
@@ -258,7 +254,6 @@ export default function TambahUsulanBangunanGedung() {
 
     fetchKabKota();
   }, []);
-
   // Fetch Kecamatan data
   React.useEffect(() => {
     const fetchKecamatan = async () => {
@@ -289,7 +284,6 @@ export default function TambahUsulanBangunanGedung() {
 
     fetchKecamatan();
   }, []);
-
   // Fetch Kelurahan data
   React.useEffect(() => {
     const fetchKelurahan = async () => {
@@ -320,7 +314,6 @@ export default function TambahUsulanBangunanGedung() {
 
     fetchKelurahan();
   }, []);
-
   // Filter kelurahan based on selected kecamatan
   React.useEffect(() => {
     if (formData.kecamatan) {
@@ -410,21 +403,121 @@ export default function TambahUsulanBangunanGedung() {
     setIsSubmitting(true);
 
     try {
+      // Get auth token from localStorage
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        router.push('/login');
+        return;
+      }
+
+      // Get current date in dd-mm-yyyy format
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+
+      // Prepare request body for backend API
+      const requestBodyASB = {
+        tahunAnggaran: year,
+        namaAsb: formData.deskripsiBangunan,
+        alamat: formData.lokasi,
+        totalLantai: floors.length || parseInt(formData.jumlahLantai || '1'),
+        idAsbTipeBangunan: parseInt(formData.tipeBangunan || '1'),
+        idKabkota: parseInt(formData.kabKota || '1'),
+        jumlahKontraktor: formData.jumlahKontraktor,
+        idAsbJenis: parseInt(formData.jenis || '1'),
+      };
+
+      // Send POST request to backend 
+      const responseASB = await fetch('/api/usulan/bangunan-gedung/asb/store-index', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBodyASB),
+      });
+
+      if (!responseASB.ok) {
+        const errorData = await responseASB.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal menyimpan data ke server');
+      }
+
+      const resultASB = await responseASB.json();
+      const resultASBfiltered = resultASB.data?.data || resultASB.data || []
+      console.log('Backend responseASB:', resultASBfiltered);
+      
+      // Prepare request body for backend API
+      const requestBodyLantai = {
+          id_asb: resultASBfiltered.id,
+          id_asb_detail: [],
+          luas_lantai: floors.map(floor => parseFloat(floor.luas)),
+          id_asb_lantai: floors.map(floor => parseInt(floor.jenisLantai)),
+          id_asb_fungsi_ruang: floors.map(floor => parseInt(floor.fungsiLantai))
+      };
+
+      // Send UPDATE Store Lantai
+      const responseLantai = await fetch('/api/usulan/bangunan-gedung/asb/store-lantai', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBodyLantai),
+      });
+
+      if (!responseLantai.ok) {
+        const errorData = await responseLantai.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal mengubah data ke server');
+      }
+
+      const resultLt = await responseLantai.json();
+      const resultLantaifiltered = resultLt.data?.data || resultLt.data || []
+      console.log('Backend responseLantai:', resultLantaifiltered);
+
+      // Prepare request body for backend API
+      const requestBodyRekening = {
+          id_asb: resultASBfiltered.id,
+          id_rekening: formData.kodeRekeningBelanja1
+      };
+      
+      // Send UPDATE Store Rekening
+      const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBodyRekening),
+      });
+
+      if (!responseRekening.ok) {
+        const errorData = await responseRekening.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal mengubah data ke server');
+      }
+      
+      const resultRekening = await responseRekening.json();
+      const resultRekeningfiltered = resultRekening.data?.data || resultRekening.data || []
+      console.log('Backend responseRekening:', resultRekeningfiltered);
+
       // Save to localStorage
-      // We exclude file object as it can't be serialized
       const dataToSave = {
         formData: { ...formData, suratPermohonan: null },
-        floors
+        floors,
+        resultASBfiltered,
+        resultLantaifiltered,
+        resultRekeningfiltered
       };
       localStorage.setItem('usulan_bangunan_new_entry', JSON.stringify(dataToSave));
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       // Redirect to next step
       router.push('/usulan/bangunan-gedung/tambah/input-komponen-standar-bangunan');
+
     } catch (error) {
-      console.error('Error saving data:', error);
+      console.error('Error submitting data:', error);
+      alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -532,9 +625,8 @@ export default function TambahUsulanBangunanGedung() {
                 />
               </div>
 
-              
-
               {/* Luas Tanah */}
+              {formData.tipeBangunan == "2" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Luas Tanah (m²)* :
@@ -551,6 +643,7 @@ export default function TambahUsulanBangunanGedung() {
                   step="0.01"
                 />
               </div>
+              )}
 
               {/* Jumlah Lantai */}
               <div>

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
 
-    console.log("fetching fungsi ruang success")
+    console.log("fetching asb success")
     return NextResponse.json(data, { status: 200 });
 
   } catch (error) {
@@ -51,3 +51,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
