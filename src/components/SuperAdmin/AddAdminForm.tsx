@@ -17,7 +17,7 @@ export default function AddAdminForm({ onSuccess, onCancel }: AddAdminFormProps)
     username: '',
     password: '',
     name: '',
-    role: 'admin', // Always admin for this form
+    role: ['admin'], // Always admin for this form
   });
   const [errors, setErrors] = React.useState<CreateUserFormErrors>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -77,18 +77,44 @@ export default function AddAdminForm({ onSuccess, onCancel }: AddAdminFormProps)
     setSubmitError(null);
 
     try {
-      const result = await userService.createUser(formData);
+      // Get token from localStorage
+      const token = localStorage.getItem('accessToken');
       
-      if (result.success) {
+      if (!token) {
+        setSubmitError('Tidak ada token autentikasi. Silakan login kembali.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Call the API endpoint
+      const response = await fetch('/api/superadmin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+          roles: formData.role, // Send role as "roles" to match API expectation
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success !== false) {
+        // Success - redirect or call onSuccess
         if (onSuccess) {
           onSuccess();
         } else {
           router.push('/superadmin');
         }
       } else {
-        setSubmitError(result.error || 'Gagal membuat admin');
+        // Handle error from API
+        setSubmitError(data.error || data.message || 'Gagal membuat admin');
       }
     } catch (error) {
+      console.error('Error creating admin:', error);
       setSubmitError('Terjadi kesalahan saat membuat admin');
     } finally {
       setIsSubmitting(false);

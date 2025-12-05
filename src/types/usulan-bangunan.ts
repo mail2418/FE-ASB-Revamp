@@ -10,15 +10,14 @@ export interface VerificationStages {
 
 export interface UsulanBangunanGedung {
   id: string;
-  jenis: 'Pembangunan' | 'Pemeliharaan';
+  jenis: string;
   uraian: string;
   lokasi: string;
   klasifikasi: string;
   satuan: string;
   verificationStatus: VerificationStages;
-  nilaiBkf?: 'Sudah' | 'Belum' | 'Sedang'; // Deprecated, keeping for backward compatibility
-  sumberPembiayaan: 'APBN' | 'APBD';
-  status: 'Sukses' | 'Tolak' | 'Proses' | 'Draft';
+  nilaiBkf?: string;
+  status: string;
   suratPermohonan?: string;
   suratRekomendasi?: string;
   createdBy?: string;

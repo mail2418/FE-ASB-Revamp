@@ -21,128 +21,183 @@ const UsulanBangunanTable = dynamic(() => import('@/components/UsulanBangunan/Us
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
 });
 
-// Mock data - in production this would come from API
-const mockData: UsulanBangunanGedung[] = [
-  {
-    id: '1',
-    jenis: 'Pembangunan',
-    uraian: 'Pembangunan Gedung Kantor Dinas Pendidikan 3 Lantai',
-    lokasi: 'Jl. Gatot Subroto No. 45, Kota Bandung',
-    klasifikasi: 'Gedung Negara Tidak Sederhana',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Disetujui',
-      bpkad: 'Disetujui',
-    },
-    nilaiBkf: 'Sudah',
-    sumberPembiayaan: 'APBD',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-    createdBy: 'Anggito Anju',
-    createdDate: '15-11-2024',
-  },
-  {
-    id: '2',
-    jenis: 'Pembangunan',
-    uraian: 'Pembangunan Gedung Puskesmas Tipe B',
-    lokasi: 'Jl. Ahmad Yani Km 5, Kecamatan Cibiru',
-    klasifikasi: 'Gedung Negara Sederhana',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Disetujui',
-      bpkad: 'Menunggu',
-    },
-    nilaiBkf: 'Sudah',
-    sumberPembiayaan: 'APBD',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-    createdBy: 'Muhammad Ismail',
-    createdDate: '20-11-2024',
-  },
-  {
-    id: '3',
-    jenis: 'Pembangunan',
-    uraian: 'Renovasi dan Perluasan Balai Kota',
-    lokasi: 'Jl. Wastukencana No. 2, Bandung Wetan',
-    klasifikasi: 'Rumah Negara Tipe A',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Ditolak',
-      bpkad: 'Belum',
-    },
-    nilaiBkf: 'Belum',
-    sumberPembiayaan: 'APBN',
-    status: 'Tolak',
-    suratPermohonan: '/easb-document.pdf',
-    createdBy: 'Anggito Anju',
-    createdDate: '10-11-2024',
-  },
-  {
-    id: '4',
-    jenis: 'Pemeliharaan',
-    uraian: 'Rehabilitasi Gedung DPRD 2 Lantai',
-    lokasi: 'Jl. Diponegoro No. 10, Bandung',
-    klasifikasi: 'Gedung Negara Sederhana',
+// Interface for API response
+interface APIUsulanBangunan {
+  id: number;
+  idAsbJenis: number;
+  idAsbStatus: number;
+  idOpd: number;
+  idAsbTipeBangunan: number;
+  idRekening: number | null;
+  idRekeningReview: number | null;
+  idKabkota: number;
+  idAsbKlasifikasi: number | null;
+  tahunAnggaran: number;
+  namaAsb: string;
+  alamat: string;
+  jumlahKontraktor: number;
+  totalLantai: number;
+  rejectReason: string | null;
+  shst: number | null;
+  luasTotalBangunan: number | null;
+  totalBiayaPembangunan: number | null;
+  kabkota: {
+    id: number;
+    kode: string;
+    nama: string;
+  };
+  asbStatus: {
+    id: number;
+    status: string;
+  };
+  asbJenis: {
+    id: number;
+    jenis: string;
+    asb: string;
+  };
+  opd: {
+    id: number;
+    opd: string;
+    alias: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Map API status to display status
+const mapStatus = (asbStatus: { id: number; status: string }): string => {
+  const statusMap: { [key: string]: string } = {
+    'General Documents': 'Proses',
+    'Approved': 'Sukses',
+    'Rejected': 'Tolak',
+    'Pending': 'Proses',
+    'Review': 'Proses',
+  };
+  return statusMap[asbStatus.status] || 'Proses';
+};
+
+// Transform API data to display format
+const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanBangunanGedung[] => {
+  return apiData.map((item) => ({
+    id: item.id.toString(),
+    jenis:item.asbJenis?.jenis,
+    uraian: item.namaAsb,
+    lokasi: item.alamat,
+    klasifikasi: item.idAsbKlasifikasi ? `Klasifikasi ${item.idAsbKlasifikasi}` : 'Belum Ditentukan',
     satuan: 'm2',
     verificationStatus: {
       opd: 'Menunggu',
       bappeda: 'Belum',
       bpkad: 'Belum',
     },
-    nilaiBkf: 'Sedang',
-    sumberPembiayaan: 'APBD',
-    status: 'Proses',
+    nilaiBkf: item.shst ? 'Sudah' : 'Belum',
+    status: mapStatus(item.asbStatus),
     suratPermohonan: '/easb-document.pdf',
-    createdBy: 'Samarta Admin',
-    createdDate: '25-11-2024',
-  },
-];
-
-// Chart data - from API in production
-const barChartData = [
-  { name: 'Pembangunan', value: 8, color: '#ef4444' },
-  { name: 'Pemeliharaan', value: 12, color: '#f59e0b' },
-];
-
-const donutChartData1 = [
-  { name: 'Pembangunan', value: 25, color: '#ef4444' },
-  { name: 'Pemeliharaan', value: 20, color: '#f59e0b' },
-];
-
-const donutChartData2 = [
-  { name: 'Sukses', value: 40, color: '#3b82f6' },
-  { name: 'Proses', value: 30, color: '#22c55e' },
-  { name: 'Tolak', value: 30, color: '#84cc16' },
-];
+    createdBy: item.opd?.opd || 'Unknown',
+    createdDate: new Date(item.createdAt).toLocaleDateString('id-ID'),
+  }));
+};
 
 export default function UsulanBangunanGedungPage() {
   const router = useRouter();
-  const [data, setData] = useState<UsulanBangunanGedung[]>(mockData);
-  const [filteredData, setFilteredData] = useState<UsulanBangunanGedung[]>(mockData);
+  const [data, setData] = useState<UsulanBangunanGedung[]>([]);
+  const [filteredData, setFilteredData] = useState<UsulanBangunanGedung[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Chart data states
+  const [barChartData, setBarChartData] = useState([
+    { name: 'Pembangunan', value: 0, color: '#ef4444' },
+    { name: 'Pemeliharaan', value: 0, color: '#f59e0b' },
+  ]);
+  
+  const [donutChartData1, setDonutChartData1] = useState([
+    { name: 'Pembangunan', value: 0, color: '#ef4444' },
+    { name: 'Pemeliharaan', value: 0, color: '#f59e0b' },
+  ]);
+  
+  const [donutChartData2, setDonutChartData2] = useState([
+    { name: 'Sukses', value: 0, color: '#3b82f6' },
+    { name: 'Proses', value: 0, color: '#22c55e' },
+    { name: 'Tolak', value: 0, color: '#ef4444' },
+  ]);
 
-  // Load submitted usulan from localStorage on mount
+  // Fetch data from API
   useEffect(() => {
-    const loadSubmittedUsulan = () => {
-      const submittedData = localStorage.getItem('submitted_usulan_list');
-      if (submittedData) {
-        try {
-          const submissions = JSON.parse(submittedData);
-          // Merge submitted data with mock data
-          const combinedData = [...mockData, ...submissions];
-          setData(combinedData);
-          setFilteredData(combinedData);
-        } catch (e) {
-          console.error('Failed to load submitted usulan', e);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.error('No access token found');
+          setLoading(false);
+          return;
         }
+
+        const response = await fetch('/api/usulan/bangunan-gedung/asb', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
+          
+          console.log('API Response:', apiData);
+          
+          // Transform API data to display format
+          const transformedData = transformAPIData(apiData);
+          console.log('Transformed Data:', transformedData);
+          
+          setData(transformedData);
+          setFilteredData(transformedData);
+          
+          // Calculate chart data based on fetched data
+          const pembangunanCount = apiData.filter(d => d.asbJenis?.jenis === 'Pembangunan').length;
+          const pemeliharaanCount = apiData.filter(d => d.asbJenis?.jenis === 'Pemeliharaan' || d.asbJenis?.jenis === 'Rehabilitasi').length;
+
+          const percentagePembangunan = Math.floor(pembangunanCount / (pembangunanCount + pemeliharaanCount) * 100);
+          const percentagePemeliharaan = Math.floor(pemeliharaanCount / (pembangunanCount + pemeliharaanCount) * 100);
+          
+          // Update Bar Chart data
+          setBarChartData([
+            { name: 'Pembangunan', value: pembangunanCount, color: '#ef4444' },
+            { name: 'Pemeliharaan', value: pemeliharaanCount, color: '#f59e0b' },
+          ]);
+          
+          // Update Donut Chart 1 (Jenis distribution)
+          setDonutChartData1([
+            { name: 'Pembangunan', value: percentagePembangunan || 1, color: '#ef4444' },
+            { name: 'Pemeliharaan', value: percentagePemeliharaan || 1, color: '#f59e0b' },
+          ]);
+          
+          // Calculate status counts
+          const suksesCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Sukses').length;
+          const prosesCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Proses').length;
+          const tolakCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Tolak').length;
+          
+          const percentageSukses = Math.floor(suksesCount / (suksesCount + prosesCount + tolakCount) * 100);
+          const percentageProses = Math.floor(prosesCount / (suksesCount + prosesCount + tolakCount) * 100);
+          const percentageTolak = Math.floor(tolakCount / (suksesCount + prosesCount + tolakCount) * 100);
+          
+          // Update Donut Chart 2 (Status distribution)
+          setDonutChartData2([
+            { name: 'Sukses', value: percentageSukses || 1, color: '#3b82f6' },
+            { name: 'Proses', value: percentageProses || 1, color: '#22c55e' },
+            { name: 'Tolak', value: percentageTolak || 1, color: '#ef4444' },
+          ]);
+        } else {
+          console.error('Failed to fetch data:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching usulan data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadSubmittedUsulan();
+    fetchData();
   }, []);
 
   // Handle filter changes
@@ -186,6 +241,14 @@ export default function UsulanBangunanGedungPage() {
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Memuat data...</span>
+        </div>
+      )}
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -252,17 +315,19 @@ export default function UsulanBangunanGedungPage() {
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Distribusi Status</h3>
           <div className="grid grid-cols-2 gap-8">
             <div className="relative">
+              <p className="text-sm text-gray-500 text-center mb-2">Berdasarkan Jenis</p>
               <DonutChart
                 data={donutChartData1}
-                height={260}
+                height={220}
                 showLegend={true}
                 showLabels={false}
               />
             </div>
             <div className="relative">
+              <p className="text-sm text-gray-500 text-center mb-2">Berdasarkan Status</p>
               <DonutChart
                 data={donutChartData2}
-                height={260}
+                height={220}
                 showLegend={true}
                 showLabels={false}
               />

@@ -20,7 +20,7 @@ export default function SignInPage() {
 
       {/* Footer */}
       <footer className="absolute bottom-4 left-0 right-0 text-center text-sm text-gray-500">
-        <p>&copy; {new Date().getFullYear()} ASB Revamp. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} SISBE. All rights reserved.</p>
       </footer>
     </main>
   );

@@ -1,6 +1,5 @@
 // Defines the structure for a single row's state in the form
 export interface ComponentRowState {
-  classificationKey: string; // e.g., 'pondasi_batu_kali', 'struktur_beton_k250'
   percentage: number; // 0 to 100
   checked?: boolean; // Optional checkbox state for non-standard components
 }

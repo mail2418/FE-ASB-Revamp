@@ -23,13 +23,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/asb-fungsi-ruangs`, {
+    const response = await fetch(`${API_BASE_URL}/rekenings?page=1&amount=100`, {
       method: 'GET',
       headers: request.headers,
-      body: JSON.stringify({
-        page: 1,
-        amount: 100
-      }),
     });
 
     if (!response.ok) {
