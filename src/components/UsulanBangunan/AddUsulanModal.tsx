@@ -23,7 +23,6 @@ export default function AddUsulanModal({
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
     nilaiBkf: 'Belum',
-    sumberPembiayaan: 'APBD',
     status: 'Draft',
   });
 
@@ -84,7 +83,6 @@ export default function AddUsulanModal({
       klasifikasi: 'Gedung Negara Sederhana',
       satuan: 'm2',
       nilaiBkf: 'Belum',
-      sumberPembiayaan: 'APBD',
       status: 'Draft',
     });
     setErrors({});
@@ -278,24 +276,6 @@ export default function AddUsulanModal({
                   </p>
                 )}
               </div>
-            </div>
-
-            {/* Sumber Pembiayaan */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sumber Pembiayaan
-              </label>
-              <select
-                value={formData.sumberPembiayaan}
-                onChange={(e) =>
-                  setFormData({ ...formData, sumberPembiayaan: e.target.value as any })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="APBD">APBD</option>
-                <option value="APBN">APBN</option>
-                <option value="Lainnya">Lainnya</option>
-              </select>
             </div>
 
             {/* File Upload */}

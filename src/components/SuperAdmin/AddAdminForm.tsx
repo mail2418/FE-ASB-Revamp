@@ -17,7 +17,7 @@ export default function AddAdminForm({ onSuccess, onCancel }: AddAdminFormProps)
     username: '',
     password: '',
     name: '',
-    role: ['admin'], // Always admin for this form
+    role: 'admin', // Always admin for this form
   });
   const [errors, setErrors] = React.useState<CreateUserFormErrors>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
