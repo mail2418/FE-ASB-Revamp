@@ -136,7 +136,6 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
   const [editingData, setEditingData] = useState<UsulanBangunanGedung[]>(data);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState('Usulan Bangunan Gedung 2025');
   const [selectedYear, setSelectedYear] = useState('2025');
   const [userRole, setUserRole] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -184,13 +183,6 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
         status: statusFilter as any,
       });
     }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
   };
 
   // Handle verification status change

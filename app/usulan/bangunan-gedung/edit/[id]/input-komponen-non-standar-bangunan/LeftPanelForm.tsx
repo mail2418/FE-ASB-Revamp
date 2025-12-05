@@ -27,6 +27,7 @@ export default function LeftPanelForm() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  
   // Fetch non-standard components from API
   useEffect(() => {
     const fetchNonStandardComponents = async () => {
