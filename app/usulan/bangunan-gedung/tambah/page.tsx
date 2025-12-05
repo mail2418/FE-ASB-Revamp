@@ -414,8 +414,6 @@ export default function TambahUsulanBangunanGedung() {
 
       // Get current date in dd-mm-yyyy format
       const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
       const year = now.getFullYear();
 
       // Prepare request body for backend API
@@ -482,7 +480,7 @@ export default function TambahUsulanBangunanGedung() {
           id_asb: resultASBfiltered.id,
           id_rekening: formData.kodeRekeningBelanja1
       };
-      
+
       // Send UPDATE Store Rekening
       const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
         method: 'PUT',
