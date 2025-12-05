@@ -61,10 +61,28 @@ export async function PUT(request: NextRequest){
       );
     }
 
+    const body = await request.json();
+    const {
+      id_asb,
+      id_asb_bipek_nonstandard,
+      komponen_nonstd,
+      bobot_nonstd
+    } = body;
+
+    console.log("id_asb", id_asb);
+    console.log("id_asb_bipek_nonstandard", id_asb_bipek_nonstandard);
+    console.log("komponen_nonstd", komponen_nonstd);
+    console.log("bobot_nonstd", bobot_nonstd);
+    
     const response = await fetch(`${API_BASE_URL}/asb/store-bpns`, {
       method: 'PUT',
       headers: request.headers,
-      body: request.body,
+      body: JSON.stringify({
+        id_asb,
+        id_asb_bipek_nonstandard,
+        komponen_nonstd,
+        bobot_nonstd
+      }),
     });
 
     if (!response.ok) {

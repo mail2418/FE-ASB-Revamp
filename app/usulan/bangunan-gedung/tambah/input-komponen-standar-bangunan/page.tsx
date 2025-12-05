@@ -1,4 +1,3 @@
-import React from 'react';
 import { BuildingProvider } from './BuildingContext';
 import LeftPanelForm from './LeftPanelForm';
 import RightPanel3D from './RightPanel3D';

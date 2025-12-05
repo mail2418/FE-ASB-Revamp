@@ -1,7 +1,7 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Info, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import type { UsulanData } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -21,117 +21,226 @@ const DashboardTable = dynamic(() => import('@/components/Dashboard/DashboardTab
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
 });
 
-// Mock data - One month trend analysis (30 days)
-const lineChartData = [
-  { date: '1 Nov', bangunanGedung: 2, jalan: 1, saluran: 3 },
-  { date: '3 Nov', bangunanGedung: 3, jalan: 2, saluran: 4 },
-  { date: '5 Nov', bangunanGedung: 3, jalan: 3, saluran: 5 },
-  { date: '7 Nov', bangunanGedung: 4, jalan: 4, saluran: 6 },
-  { date: '9 Nov', bangunanGedung: 5, jalan: 6, saluran: 7 },
-  { date: '11 Nov', bangunanGedung: 5, jalan: 7, saluran: 8 },
-  { date: '13 Nov', bangunanGedung: 6, jalan: 8, saluran: 10 },
-  { date: '15 Nov', bangunanGedung: 6, jalan: 9, saluran: 11 },
-  { date: '17 Nov', bangunanGedung: 7, jalan: 10, saluran: 12 },
-  { date: '19 Nov', bangunanGedung: 7, jalan: 11, saluran: 13 },
-  { date: '21 Nov', bangunanGedung: 8, jalan: 11, saluran: 14 },
-  { date: '23 Nov', bangunanGedung: 8, jalan: 12, saluran: 15 },
-  { date: '25 Nov', bangunanGedung: 8, jalan: 12, saluran: 15 },
-  { date: '27 Nov', bangunanGedung: 8, jalan: 12, saluran: 16 },
-  { date: '29 Nov', bangunanGedung: 8, jalan: 12, saluran: 16 },
-];
-
+// Line chart configuration
 const lineChartLines = [
   { dataKey: 'bangunanGedung', color: '#ef4444', name: 'Bangunan Gedung' },
   { dataKey: 'jalan', color: '#f59e0b', name: 'Jalan' },
   { dataKey: 'saluran', color: '#eab308', name: 'Saluran' },
 ];
 
-const donutChartDataBangunanGedung = [
-  { name: 'Sukses', value: 40, color: '#ef4444' },
-  { name: 'Sedang diproses', value: 25, color: '#f59e0b' },
-  { name: 'Ditolak', value: 20, color: '#eab308' },
-  { name: 'Menunggu Verifikator', value: 15, color: '#22c55e' },
-];
+// Interface for API response
+interface APIUsulanBangunan {
+  id: number;
+  idAsbJenis: number;
+  idAsbStatus: number;
+  idOpd: number;
+  idAsbTipeBangunan: number;
+  idRekening: number | null;
+  idRekeningReview: number | null;
+  idKabkota: number;
+  idAsbKlasifikasi: number | null;
+  tahunAnggaran: number;
+  namaAsb: string;
+  alamat: string;
+  jumlahKontraktor: number;
+  totalLantai: number;
+  rejectReason: string | null;
+  shst: number | null;
+  luasTotalBangunan: number | null;
+  totalBiayaPembangunan: number | null;
+  kabkota: {
+    id: number;
+    kode: string;
+    nama: string;
+  };
+  asbStatus: {
+    id: number;
+    status: string;
+  };
+  asbJenis: {
+    id: number;
+    jenis: string;
+    asb: string;
+  };
+  opd: {
+    id: number;
+    opd: string;
+    alias: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
-const donutChartDataJalan = [
-  { name: 'Sukses', value: 15, color: '#ef4444' },
-  { name: 'Sedang diproses', value: 25, color: '#f59e0b' },
-  { name: 'Ditolak', value: 10, color: '#eab308' },
-  { name: 'Menunggu Verifikator', value: 50, color: '#22c55e' },
-];
+// Map API status to display status
+const mapStatus = (asbStatus: { id: number; status: string }): string => {
+  if (!asbStatus) return 'Sedang Diproses';
+  const statusMap: { [key: string]: string } = {
+    'General Documents': 'Sedang Diproses',
+    'Approved': 'Sukses',
+    'Rejected': 'Ditolak',
+    'Pending': 'Sedang Diproses',
+    'Review': 'Sedang Diproses',
+  };
+  return statusMap[asbStatus.status] || 'Sedang Diproses';
+};
 
-const donutChartDataSaluran = [
-  { name: 'Sukses', value: 55, color: '#ef4444' },
-  { name: 'Sedang diproses', value: 15, color: '#f59e0b' },
-  { name: 'Ditolak', value: 10, color: '#eab308' },
-  { name: 'Menunggu Verifikator', value: 20, color: '#22c55e' },
-];
-
-// GET FROM API
-const tableData: UsulanData[] = [
-  {
-    id: '1',
+// Transform API data to table format
+const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanData[] => {
+  return apiData.map((item) => ({
+    id: item.id.toString(),
     jenis: 'Bangunan',
-    uraian: 'Gedung Negara Sederhana',
-    status: 'Sedang Diproses',
+    uraian: item.namaAsb,
+    status: mapStatus(item.asbStatus),
     suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-  },
-  {
-    id: '2',
-    jenis: 'Bangunan',
-    uraian: 'Gedung Negara Tidak Sederhana',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-  },
-  {
-    id: '3',
-    jenis: 'Jalan',
-    uraian: 'Rumah Negara Tipe A',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-  },
-  {
-    id: '4',
-    jenis: 'Jalan',
-    uraian: 'Gedung Negara Sederhana',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-  },
-  {
-    id: '5',
-    jenis: 'Jalan',
-    uraian: 'Rumah Negara Tipe B',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-  },
-  {
-    id: '6',
-    jenis: 'Jalan',
-    uraian: 'Gedung Negara Tidak Sederhana',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-  },
-];
+    suratRekomendasi: item.asbStatus?.status === 'Approved' ? '/easb-document.pdf' : undefined,
+  }));
+};
 
 export default function DashboardPage() {
-  const [filteredData, setFilteredData] = React.useState(tableData);
-  const [selectedMonth, setSelectedMonth] = React.useState('November');
-  const [selectedYear, setSelectedYear] = React.useState('2024');
-  const [monthDropdownOpen, setMonthDropdownOpen] = React.useState(false);
-  const [yearDropdownOpen, setYearDropdownOpen] = React.useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tableData, setTableData] = useState<UsulanData[]>([]);
+  const [filteredData, setFilteredData] = useState<UsulanData[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState('November');
+  const [selectedYear, setSelectedYear] = useState('2024');
+  const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+  
+  // Chart data states
+  const [lineChartData, setLineChartData] = useState<any[]>([]);
+
+  const [donutChartDataBangunanGedung, setDonutChartDataBangunanGedung] = useState([
+    { name: 'Sukses', value: 1, color: '#22c55e' },
+    { name: 'Sedang diproses', value: 1, color: '#f59e0b' },
+    { name: 'Ditolak', value: 1, color: '#ef4444' },
+  ]);
+
+  const [donutChartDataJalan, setDonutChartDataJalan] = useState([
+    { name: 'Sukses', value: 1, color: '#22c55e' },
+    { name: 'Sedang diproses', value: 1, color: '#f59e0b' },
+    { name: 'Ditolak', value: 1, color: '#ef4444' },
+  ]);
+  const [donutChartDataSaluran, setDonutChartDataSaluran] = useState([
+    { name: 'Sukses', value: 1, color: '#22c55e' },
+    { name: 'Sedang diproses', value: 1, color: '#f59e0b' },
+    { name: 'Ditolak', value: 1, color: '#ef4444' },
+  ]);
+
+  // Statistics
+  const [stats, setStats] = useState({
+    total: 0,
+    sukses: 0,
+    sedangDiproses: 0,
+    ditolak: 0,
+  });
 
   // Available months and years
   const months = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
-  const years = ['2024', '2023', '2022', '2021'];
+  const years = ['2025', '2024', '2023', '2022', '2021'];
+
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.error('No access token found');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch('/api/usulan/bangunan-gedung/asb', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
+          
+          console.log('Dashboard API Response:', apiData);
+          
+          // Transform API data for table
+          const transformedData = transformAPIData(apiData);
+          setTableData(transformedData);
+          setFilteredData(transformedData);
+          
+          // Calculate statistics
+          const suksesCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Sukses').length;
+          const prosesCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Sedang Diproses').length;
+          const tolakCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Ditolak').length;
+          
+          const suksesCountPercentage = (suksesCount / apiData.length) * 100;
+          const prosesCountPercentage = (prosesCount / apiData.length) * 100;
+          const tolakCountPercentage = (tolakCount / apiData.length) * 100;
+          
+          setStats({
+            total: apiData.length,
+            sukses: suksesCount,
+            sedangDiproses: prosesCount,
+            ditolak: tolakCount,
+          });
+          
+          // Calculate donut chart data for Bangunan Gedung
+          const totalBangunan = suksesCount + prosesCount + tolakCount;
+          if (totalBangunan > 0) {
+            setDonutChartDataBangunanGedung([
+              { name: 'Sukses', value: suksesCountPercentage || 1, color: '#22c55e' },
+              { name: 'Sedang diproses', value: prosesCountPercentage || 1, color: '#f59e0b' },
+              { name: 'Ditolak', value: tolakCountPercentage || 1, color: '#ef4444' },
+            ]);
+          }
+          
+          // Generate line chart data (group by date)
+          const dateGroups: { [key: string]: number } = {};
+          apiData.forEach(item => {
+            const date = new Date(item.createdAt);
+            const dateKey = `${date.getDate()} ${months[date.getMonth()].substring(0, 3)}`;
+            dateGroups[dateKey] = (dateGroups[dateKey] || 0) + 1;
+          });
+          
+          // Create cumulative line chart data
+          let cumulative = 0;
+          const lineData = Object.entries(dateGroups)
+            .sort((a, b) => {
+              // Simple sort by date string
+              return 0;
+            })
+            .map(([date, count]) => {
+              cumulative += count;
+              return {
+                date,
+                bangunanGedung: cumulative,
+                jalan: 0,  // Placeholder for jalan data
+                saluran: 0, // Placeholder for saluran data
+              };
+            });
+          
+          if (lineData.length > 0) {
+            setLineChartData(lineData);
+          } else {
+            // Default data if no API data available
+            setLineChartData([
+              { date: 'Nov', bangunanGedung: apiData.length, jalan: 0, saluran: 0 },
+            ]);
+          }
+        } else {
+          console.error('Failed to fetch data:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleFilterChange = (filters: { search?: string; status?: string; jenis?: string }) => {
     let filtered = [...tableData];
@@ -159,6 +268,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+          <span className="ml-2 text-gray-600">Memuat data dashboard...</span>
+        </div>
+      )}
+
       {/* Charts Grid - Responsive Layout */}
       <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
         {/* Line Chart Card - Trend Analysis */}
@@ -243,7 +360,7 @@ export default function DashboardPage() {
           
           {/* Responsive Grid: Stack on mobile, 3 columns on desktop */}
           <div className="space-y-6 sm:space-y-0 sm:grid sm:grid-cols-3 sm:gap-6 lg:gap-8">
-            {/* Chart 1 */}
+            {/* Chart 1 - Bangunan Gedung */}
             <div className="rounded-lg p-4 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
@@ -260,7 +377,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Chart 2 */}
+            {/* Chart 2 - Jalan */}
             <div className="rounded-lg p-4 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
@@ -277,7 +394,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Chart 3 */}
+            {/* Chart 3 - Saluran */}
             <div className="rounded-lg p-4 relative">
               <div className="absolute top-2 right-2 z-10">
                 <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-100 text-teal-600 text-[10px] sm:text-xs font-bold">
@@ -299,19 +416,15 @@ export default function DashboardPage() {
           <div className="mt-4 sm:hidden border-t pt-4">
             <p className="text-xs text-gray-500 mb-2">Keterangan:</p>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              {[...donutChartDataBangunanGedung, ...donutChartDataJalan, ...donutChartDataSaluran]
-                .filter((item, index, self) => 
-                  index === self.findIndex(t => t.name === item.name)
-                )
-                .map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-1">
-                    <div 
-                      className="w-2 h-2 rounded-full shrink-0" 
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-gray-600">{item.name}</span>
-                  </div>
-                ))}
+              {donutChartDataBangunanGedung.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <div 
+                    className="w-2 h-2 rounded-full shrink-0" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-gray-600">{item.name}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -329,7 +442,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Total Usulan</p>
-              <p className="text-2xl font-bold text-gray-900">{tableData.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -343,9 +456,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Sukses</p>
-              <p className="text-2xl font-bold text-green-600">
-                {tableData.filter(d => d.status === 'Sukses').length}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{stats.sukses}</p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
               <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -359,9 +470,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Sedang Diproses</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {tableData.filter(d => d.status === 'Sedang Diproses').length}
-              </p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.sedangDiproses}</p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-lg">
               <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -375,9 +484,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Ditolak</p>
-              <p className="text-2xl font-bold text-red-600">
-                {tableData.filter(d => d.status === 'Ditolak').length}
-              </p>
+              <p className="text-2xl font-bold text-red-600">{stats.ditolak}</p>
             </div>
             <div className="p-3 bg-red-100 rounded-lg">
               <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

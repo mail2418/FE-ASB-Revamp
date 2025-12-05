@@ -61,10 +61,28 @@ export async function PUT(request: NextRequest){
       );
     }
 
+    const body = await request.json();
+    const {
+      id_asb,
+      id_asb_bipek_standard,
+      komponen_std,
+      bobot_std
+    } = body;
+    
+    console.log("id_asb", id_asb);
+    console.log("id_asb_bipek_standard", id_asb_bipek_standard);
+    console.log("komponen_std", komponen_std);
+    console.log("bobot_std", bobot_std);
+    
     const response = await fetch(`${API_BASE_URL}/asb/store-bps`, {
       method: 'PUT',
       headers: request.headers,
-      body: request.body,
+      body: JSON.stringify({
+        id_asb,
+        id_asb_bipek_standard,
+        komponen_std,
+        bobot_std
+      })
     });
 
     if (!response.ok) {
