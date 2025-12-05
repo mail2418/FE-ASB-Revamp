@@ -54,7 +54,7 @@ export default function TambahUsulanBangunanGedung() {
     kelurahan: '',
     jumlahLantai: '1',
     luasTanah: '',
-    kodeRekeningBelanja1: '',
+    kodeRekeningBelanja1: 0,
     klasifikasi: '',
     nilaiASB: '',
     jumlahKontraktor: '',
@@ -693,7 +693,7 @@ export default function TambahUsulanBangunanGedung() {
                           <div
                             key={rekening.id}
                             onClick={() => {
-                              setFormData(prev => ({ ...prev, kodeRekeningBelanja1: rekening.id.toString() }));
+                              setFormData(prev => ({ ...prev, kodeRekeningBelanja1: rekening.id }));
                               setSearchRekening('');
                             }}
                             className="px-4 py-2 hover:bg-orange-50 cursor-pointer text-sm"
@@ -714,7 +714,7 @@ export default function TambahUsulanBangunanGedung() {
                     <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
                       <div className="text-sm font-medium text-gray-900">{formData.kodeRekeningBelanja1}</div>
                       <div className="text-xs text-gray-600">
-                        {rekeningOptions.find(r => r.rekening_kode === formData.kodeRekeningBelanja1)?.rekening_uraian}
+                        {rekeningOptions.find(r => r.rekening_kode === formData.kodeRekeningBelanja1.toString())?.rekening_uraian}
                       </div>
                     </div>
                   )}
