@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, Search, Filter, Download } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Search, Filter, Download } from 'lucide-react';
 import type { UsulanData } from '@/types';
 
 interface DashboardTableProps {
@@ -78,6 +78,19 @@ export default function DashboardTable({
   const [selectedStatusFilter, setSelectedStatusFilter] = React.useState('all');
   const [selectedYear, setSelectedYear] = React.useState('2025');
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
+
+  // Calculate pagination
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = data.slice(startIndex, endIndex);
+
+  // Reset page when data changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [data]);
 
   const years = ['2025', '2024', '2023', '2022', '2021'];
 
@@ -249,7 +262,7 @@ export default function DashboardTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((item, index) => (
+            {paginatedData.map((item, index) => (
               <tr
                 key={item.id || index}
                 className="hover:bg-gray-50 transition-colors"
@@ -301,22 +314,61 @@ export default function DashboardTable({
 
       {/* Table Footer */}
       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between z-49">
+        <div className="flex items-center justify-between">
           <p className="text-sm text-gray-700">
-            Menampilkan <span className="font-medium">{data.length}</span> dari{' '}
+            Menampilkan <span className="font-medium">{data.length > 0 ? startIndex + 1 : 0}</span> - <span className="font-medium">{Math.min(endIndex, data.length)}</span> dari{' '}
             <span className="font-medium">{data.length}</span> hasil
           </p>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50" disabled>
-              Previous
-            </button>
-            <button className="px-3 py-1 text-sm bg-teal-500 text-white rounded hover:bg-teal-600">
-              1
-            </button>
-            <button className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900">
-              Next
-            </button>
-          </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-teal-500 text-white'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

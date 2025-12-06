@@ -35,7 +35,7 @@ const navigation = [
   },
   {
     name: 'Usulan Jalan',
-    href: '/404',
+    href: '/usulan/jalan',
     icon: Route,
     current: false,
   },

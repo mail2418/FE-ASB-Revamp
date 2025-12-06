@@ -35,7 +35,7 @@ const navigation = [
   },
   {
     name: 'Usulan Jalan',
-    href: '/404',
+    href: '/usulan/jalan',
     icon: Route,
     current: false,
   },
@@ -260,7 +260,15 @@ export default function DashboardLayout({ children }: LayoutProps) {
               {/* Page title */}
               <div className="flex-1 px-4 lg:px-0">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Usulan Jalan
+                  {pathname.includes('/tambah') 
+                    ? 'Tambah Usulan Jalan'
+                    : pathname.includes('/verify') || pathname.includes('/verifikasi')
+                    ? 'Verifikasi Usulan Jalan'
+                    : pathname.includes('/edit')
+                    ? 'Edit Usulan Jalan'
+                    : pathname.includes('/detail')
+                    ? 'Detail Usulan Jalan'
+                    : 'Usulan Jalan'}
                 </h2>
               </div>
 
