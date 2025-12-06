@@ -14,6 +14,7 @@ interface Floor {
   id: string;
   jenisLantai: string;
   fungsiLantai: string;
+  namaFungsiLantai: string;
   luas: string;
   notes: string;
 }
@@ -54,7 +55,11 @@ export default function TambahUsulanBangunanGedung() {
     kelurahan: '',
     jumlahLantai: '1',
     luasTanah: '',
-    kodeRekeningBelanja1: 0,
+    RekeningBelanja: {
+      id: 0,
+      kodeRekeningBelanja: "",
+      namaRekeningBelanja: "",
+    },
     klasifikasi: '',
     nilaiASB: '',
     jumlahKontraktor: '',
@@ -67,6 +72,7 @@ export default function TambahUsulanBangunanGedung() {
     id: '1',
     jenisLantai: '',
     fungsiLantai: '',
+    namaFungsiLantai: '',
     luas: '',
     notes: '',
   }]);
@@ -373,9 +379,21 @@ export default function TambahUsulanBangunanGedung() {
 
   // Update floor
   const handleFloorChange = (id: string, field: keyof Floor, value: string) => {
-    setFloors(floors.map(floor => 
-      floor.id === id ? { ...floor, [field]: value } : floor
-    ));
+    setFloors(floors.map(floor => {
+      if (floor.id !== id) return floor;
+      
+      if (field === 'fungsiLantai') {
+        // Find the selected option to get the name
+        const selectedOption = fungsiLantaiOptions.find(opt => opt.id.toString() === value);
+        return {
+          ...floor,
+          fungsiLantai: value,
+          namaFungsiLantai: selectedOption?.nama_fungsi_ruang || ''
+        };
+      }
+      
+      return { ...floor, [field]: value };
+    }));
   };
 
   // Handle jumlahLantai change - regenerate floors array
@@ -388,6 +406,7 @@ export default function TambahUsulanBangunanGedung() {
       id: `${i + 1}`,
       jenisLantai: `lantai-${i + 1}`,
       fungsiLantai: '',
+      namaFungsiLantai: '',
       luas: '',
       notes: '',
     }));
@@ -426,6 +445,7 @@ export default function TambahUsulanBangunanGedung() {
         idKabkota: parseInt(formData.kabKota || '1'),
         jumlahKontraktor: formData.jumlahKontraktor,
         idAsbJenis: parseInt(formData.jenis || '1'),
+        luas_tanah: formData.luasTanah,
       };
 
       // CREATE STORE INDEX
@@ -443,27 +463,20 @@ export default function TambahUsulanBangunanGedung() {
         throw new Error(errorData.message || 'Gagal menyimpan data ke server');
       }
 
+      console.log(`requestBodyASB: ${JSON.stringify(requestBodyASB)}`)
       const resultASB = await responseASB.json();
       console.log('Backend responseASB:', resultASB);
       const resultASBfiltered = resultASB.data?.data || resultASB.data || []
       console.log('Backend responseASB:', resultASBfiltered);
-      
-      // Prepare request body for backend API
-      const requestBodyLantai = {
-          id_asb: resultASBfiltered.id,
-          id_asb_detail: [],
-          luas_lantai: floors.map(floor => parseFloat(floor.luas)),
-          id_asb_lantai: floors.map(floor => parseInt(floor.jenisLantai)),
-          id_asb_fungsi_ruang: floors.map(floor => parseInt(floor.fungsiLantai))
-      };
-
-      // Send UPDATE Store Rekening
 
       // Prepare request body for backend API
       const requestBodyRekening = {
-          id_asb: resultASBfiltered.id,
-          id_rekening: formData.kodeRekeningBelanja1
+          id_asb: resultASBfiltered.id || '',
+          id_rekening: formData.RekeningBelanja.id
       };
+
+      console.log(`requestBodyRekening: ${JSON.stringify(requestBodyRekening)}`);
+      // Send UPDATE Store Rekening
       const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
         method: 'PUT',
         headers: {
@@ -482,6 +495,14 @@ export default function TambahUsulanBangunanGedung() {
       const resultRekeningfiltered = resultRekening.data?.data || resultRekening.data || []
       console.log('Backend responseRekening:', resultRekeningfiltered);
 
+      // Prepare request body for backend API
+      const requestBodyLantai = {
+          id_asb: resultASBfiltered.id,
+          id_asb_detail: [],
+          luas_lantai: floors.map(floor => parseFloat(floor.luas)),
+          id_asb_lantai: floors.map(floor => parseInt(floor.jenisLantai)),
+          id_asb_fungsi_ruang: floors.map(floor => parseInt(floor.fungsiLantai))
+      };
       // Send UPDATE Store Lantai
       const responseLantai = await fetch('/api/usulan/bangunan-gedung/asb/store-lantai', {
         method: 'PUT',
@@ -501,9 +522,19 @@ export default function TambahUsulanBangunanGedung() {
       const resultLantaifiltered = resultLt.data?.data || resultLt.data || []
       console.log('Backend responseLantai:', resultLantaifiltered);
 
-      // Save to localStorage
+      // Save to localStorage with resolved names
+      const kabKotaNama = kabKotaOptions.find(k => k.id.toString() === formData.kabKota)?.nama || '';
+      const kecamatanNama = kecamatanOptions.find(k => k.id.toString() === formData.kecamatan)?.namaKecamatan || '';
+      const kelurahanNama = kelurahanOptions.find(k => k.id.toString() === formData.kelurahan)?.namaKelurahan || '';
+      
       const dataToSave = {
-        formData: { ...formData, suratPermohonan: null },
+        formData: { 
+          ...formData, 
+          suratPermohonan: null,
+          kabKotaNama,
+          kecamatanNama,
+          kelurahanNama,
+        },
         floors,
         resultASBfiltered,
         resultLantaifiltered,
@@ -693,7 +724,11 @@ export default function TambahUsulanBangunanGedung() {
                           <div
                             key={rekening.id}
                             onClick={() => {
-                              setFormData(prev => ({ ...prev, kodeRekeningBelanja1: rekening.id }));
+                              setFormData(prev => ({ ...prev, RekeningBelanja: {
+                                id: rekening.id,
+                                kodeRekeningBelanja: rekening.rekening_kode,
+                                namaRekeningBelanja: rekening.rekening_uraian,
+                              } }));
                               setSearchRekening('');
                             }}
                             className="px-4 py-2 hover:bg-orange-50 cursor-pointer text-sm"
@@ -710,11 +745,11 @@ export default function TambahUsulanBangunanGedung() {
                       )}
                     </div>
                   )}
-                  {formData.kodeRekeningBelanja1 && !searchRekening && (
+                  {formData.RekeningBelanja.kodeRekeningBelanja && !searchRekening && (
                     <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
-                      <div className="text-sm font-medium text-gray-900">{formData.kodeRekeningBelanja1}</div>
+                      <div className="text-sm font-medium text-gray-900">{formData.RekeningBelanja.kodeRekeningBelanja}</div>
                       <div className="text-xs text-gray-600">
-                        {rekeningOptions.find(r => r.rekening_kode === formData.kodeRekeningBelanja1.toString())?.rekening_uraian}
+                        {rekeningOptions.find(r => r.rekening_kode === formData.RekeningBelanja.kodeRekeningBelanja)?.rekening_uraian}
                       </div>
                     </div>
                   )}

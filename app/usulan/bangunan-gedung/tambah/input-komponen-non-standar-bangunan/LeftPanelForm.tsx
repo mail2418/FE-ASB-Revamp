@@ -88,6 +88,48 @@ export default function LeftPanelForm() {
     fetchNonStandardComponents();
   }, [buildingData]); // Re-run when buildingData changes
 
+  // Fetch ASB By ID in order to gain Klasifikasi and SHST Value
+  useEffect(() => {
+    // Only run if buildingData exists and has resultASBfiltered
+    if (!buildingData?.resultASBfiltered?.id) return;
+
+    const fetchASBById = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${buildingData.resultASBfiltered.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('ASB By ID (Non-Standard):', data);
+          
+          // Update buildingData with klasifikasi and shst from API
+          if (data.data) {
+            setBuildingData((prev: any) => ({
+              ...prev,
+              resultASBfiltered: {
+                ...prev.resultASBfiltered,
+                klasifikasi: data.data.klasifikasi,
+                shst: data.data.shst,
+              },
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching ASB By ID:', error);
+      }
+    };
+    
+    fetchASBById();
+  }, [buildingData?.resultASBfiltered?.id]); // Only re-run when the ID changes
+
   const handlePercentageChange = (componentId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
     val = Math.max(0, Math.min(100, val));
@@ -222,13 +264,15 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.klasifikasi || '-'}
+                {buildingData.resultASBfiltered?.klasifikasi || buildingData.formData?.klasifikasi || '[Belum terklasifikasi]'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
               <p className="text-base font-semibold text-lime-600">
-                {buildingData.formData?.nilaiASB || '-'}
+                {buildingData.resultASBfiltered?.shst 
+                  ? `Rp ${Number(buildingData.resultASBfiltered.shst).toLocaleString('id-ID')} / m²`
+                  : buildingData.formData?.nilaiASB || '[Belum terkalkulasi]'}
               </p>
             </div>
           </div>

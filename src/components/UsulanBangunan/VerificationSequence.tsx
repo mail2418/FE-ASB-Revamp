@@ -46,7 +46,7 @@ export default function VerificationSequence({
   onStatusChange,
 }: VerificationSequenceProps) {
   const stages = [
-    { key: 'opd' as const, label: 'OPD', role: 'verifikator_opd' },
+    { key: 'opd' as const, label: 'Adpem', role: 'verifikator_opd' },
     { key: 'bappeda' as const, label: 'BAPPEDA', role: 'verifikator_bappeda' },
     { key: 'bpkad' as const, label: 'BPKAD', role: 'verifikator_bpkad' },
   ];

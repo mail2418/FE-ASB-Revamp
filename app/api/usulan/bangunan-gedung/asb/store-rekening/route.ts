@@ -28,6 +28,10 @@ export async function PUT(request: NextRequest) {
         id_asb,
         id_rekening
     } = body;
+    
+    console.log(id_asb)
+    console.log(id_rekening)
+
     const response = await fetch(`${API_BASE_URL}/asb/store-rekening`, {
       method: 'PUT',
       headers: {

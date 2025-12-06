@@ -1,183 +1,152 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Building2, TrendingUp, FileText, CheckCircle } from 'lucide-react';
-import type { UsulanBangunanGedung, FilterUsulanBangunan } from '@/types/usulan-bangunan';
+import { Route, Search, Plus, Eye, Download, ChevronDown, ChevronLeft, ChevronRight, CheckCircle, Clock, XCircle } from 'lucide-react';
 
-// Dynamic imports for better performance
-const BarChart = dynamic(() => import('@/components/Charts/BarChart'), {
-  ssr: false,
-  loading: () => <div className="h-[250px] bg-gray-100 animate-pulse rounded-lg" />,
-});
+// Interface for Jalan form data
+interface UsulanJalan {
+  id: string;
+  jenisUsulan: 'Perawatan' | 'Pembuatan';
+  lebarJalan: string;
+  strukturPerkerasan: 'Perkerasan Lentur' | 'Perkerasan Kaku';
+  repetisiBeban: string;
+  nilaiCBR: string;
+  spesifikasiDesain: string;
+  mutuBeton?: string;
+  ruangLingkup: string[];
+  keteranganTambahan: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+}
 
-const DonutChart = dynamic(() => import('@/components/Charts/DonutChart'), {
-  ssr: false,
-  loading: () => <div className="h-[180px] bg-gray-100 animate-pulse rounded-lg" />,
-});
+// Status badge component
+const StatusBadge = ({ status }: { status: string }) => {
+  const config = {
+    Pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-3 h-3" /> },
+    Approved: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-3 h-3" /> },
+    Rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-3 h-3" /> },
+  };
+  const c = config[status as keyof typeof config] || config.Pending;
+  
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>
+      {c.icon}
+      {status}
+    </span>
+  );
+};
 
-const UsulanBangunanTable = dynamic(() => import('@/components/UsulanBangunan/UsulanBangunanTable'), {
-  ssr: false,
-  loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
-});
+// Jenis badge component
+const JenisBadge = ({ jenis }: { jenis: string }) => {
+  const isPembuatan = jenis === 'Pembuatan';
+  return (
+    <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
+      isPembuatan ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+    }`}>
+      {jenis}
+    </span>
+  );
+};
 
 // Mock data - in production this would come from API
-const mockData: UsulanBangunanGedung[] = [
+const mockData: UsulanJalan[] = [
   {
     id: '1',
-    jenis: 'Pembangunan',
-    uraian: 'Pembangunan Gedung Kantor Dinas Pendidikan 3 Lantai',
-    lokasi: 'Jl. Gatot Subroto No. 45, Kota Bandung',
-    klasifikasi: 'Gedung Negara Tidak Sederhana',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Disetujui',
-      bpkad: 'Disetujui',
-    },
-    nilaiBkf: 'Sudah',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-    createdBy: 'Anggito Anju',
-    createdDate: '15-11-2024',
+    jenisUsulan: 'Pembuatan',
+    lebarJalan: '5 m',
+    strukturPerkerasan: 'Perkerasan Lentur',
+    repetisiBeban: '10',
+    nilaiCBR: '6',
+    spesifikasiDesain: 'Bagan Desain 3 : Opsi Biaya Minimum dengan CTB',
+    ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Galian Tanah'],
+    keteranganTambahan: 'Tebal galian 30 cm',
+    status: 'Approved',
+    createdAt: '2024-11-15',
   },
   {
     id: '2',
-    jenis: 'Pembangunan',
-    uraian: 'Pembangunan Gedung Puskesmas Tipe B',
-    lokasi: 'Jl. Ahmad Yani Km 5, Kecamatan Cibiru',
-    klasifikasi: 'Gedung Negara Sederhana',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Disetujui',
-      bpkad: 'Menunggu',
-    },
-    nilaiBkf: 'Sudah',
-    status: 'Sukses',
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: '/easb-document.pdf',
-    createdBy: 'Muhammad Ismail',
-    createdDate: '20-11-2024',
+    jenisUsulan: 'Perawatan',
+    lebarJalan: '7 m',
+    strukturPerkerasan: 'Perkerasan Kaku',
+    repetisiBeban: '15',
+    nilaiCBR: '8',
+    spesifikasiDesain: 'Bagan Desain 4 : Perkerasan Kaku untuk Beban Lalu Lintas Berat',
+    mutuBeton: "f'c 25 Mpa",
+    ruangLingkup: ['Perkerasan Beton', 'Lapis Pondasi', 'Pemadatan Tanah', 'Marka dan Rambu Jalan'],
+    keteranganTambahan: 'Tebal timbunan 50 cm',
+    status: 'Pending',
+    createdAt: '2024-11-20',
   },
   {
     id: '3',
-    jenis: 'Pembangunan',
-    uraian: 'Renovasi dan Perluasan Balai Kota',
-    lokasi: 'Jl. Wastukencana No. 2, Bandung Wetan',
-    klasifikasi: 'Rumah Negara Tipe A',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Disetujui',
-      bappeda: 'Ditolak',
-      bpkad: 'Belum',
-    },
-    nilaiBkf: 'Belum',
-    status: 'Tolak',
-    suratPermohonan: '/easb-document.pdf',
-    createdBy: 'Anggito Anju',
-    createdDate: '10-11-2024',
+    jenisUsulan: 'Pembuatan',
+    lebarJalan: '4 m',
+    strukturPerkerasan: 'Perkerasan Lentur',
+    repetisiBeban: '5',
+    nilaiCBR: '4',
+    spesifikasiDesain: 'Bagan Desain 3A : Opsi Biaya Minimum dengan HRS',
+    ruangLingkup: ['Perkerasan Aspal', 'Galian Tanah', 'Timbunan Tanah'],
+    keteranganTambahan: 'Tebal urugan 20 cm',
+    status: 'Rejected',
+    createdAt: '2024-11-10',
   },
   {
     id: '4',
-    jenis: 'Pemeliharaan',
-    uraian: 'Rehabilitasi Gedung DPRD 2 Lantai',
-    lokasi: 'Jl. Diponegoro No. 10, Bandung',
-    klasifikasi: 'Gedung Negara Sederhana',
-    satuan: 'm2',
-    verificationStatus: {
-      opd: 'Menunggu',
-      bappeda: 'Belum',
-      bpkad: 'Belum',
-    },
-    nilaiBkf: 'Sedang',
-    status: 'Proses',
-    suratPermohonan: '/easb-document.pdf',
-    createdBy: 'Samarta Admin',
-    createdDate: '25-11-2024',
+    jenisUsulan: 'Perawatan',
+    lebarJalan: '10 m',
+    strukturPerkerasan: 'Perkerasan Lentur',
+    repetisiBeban: '20',
+    nilaiCBR: '10',
+    spesifikasiDesain: 'Bagan Desain 3B : Aspal dengan Lapis Fondasi Berbutir',
+    ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Pemadatan Tanah', 'Median Jalan'],
+    keteranganTambahan: '-',
+    status: 'Approved',
+    createdAt: '2024-11-25',
   },
 ];
 
-// Chart data - from API in production
-const barChartData = [
-  { name: 'Pembangunan', value: 8, color: '#ef4444' },
-  { name: 'Pemeliharaan', value: 12, color: '#f59e0b' },
-];
-
-const donutChartData1 = [
-  { name: 'Pembangunan', value: 25, color: '#ef4444' },
-  { name: 'Pemeliharaan', value: 20, color: '#f59e0b' },
-];
-
-const donutChartData2 = [
-  { name: 'Sukses', value: 40, color: '#3b82f6' },
-  { name: 'Proses', value: 30, color: '#22c55e' },
-  { name: 'Tolak', value: 30, color: '#84cc16' },
-];
-
-export default function UsulanBangunanGedungPage() {
+export default function UsulanJalanPage() {
   const router = useRouter();
-  const [data, setData] = useState<UsulanBangunanGedung[]>(mockData);
-  const [filteredData, setFilteredData] = useState<UsulanBangunanGedung[]>(mockData);
+  const [data, setData] = useState<UsulanJalan[]>(mockData);
+  const [filteredData, setFilteredData] = useState<UsulanJalan[]>(mockData);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Load submitted usulan from localStorage on mount
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
+
+  // Handle search and filters
   useEffect(() => {
-    const loadSubmittedUsulan = () => {
-      const submittedData = localStorage.getItem('submitted_usulan_list');
-      if (submittedData) {
-        try {
-          const submissions = JSON.parse(submittedData);
-          // Merge submitted data with mock data
-          const combinedData = [...mockData, ...submissions];
-          setData(combinedData);
-          setFilteredData(combinedData);
-        } catch (e) {
-          console.error('Failed to load submitted usulan', e);
-        }
-      }
-    };
-
-    loadSubmittedUsulan();
-  }, []);
-
-  // Handle filter changes
-  const handleFilterChange = (filters: FilterUsulanBangunan) => {
     let filtered = [...data];
 
-    if (filters.search) {
+    if (searchTerm) {
       filtered = filtered.filter(
         (item) =>
-          item.uraian.toLowerCase().includes(filters.search!.toLowerCase()) ||
-          item.lokasi.toLowerCase().includes(filters.search!.toLowerCase()) ||
-          item.klasifikasi.toLowerCase().includes(filters.search!.toLowerCase())
+          item.jenisUsulan.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.strukturPerkerasan.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.lebarJalan.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    if (filters.jenis && filters.jenis !== 'all') {
-      filtered = filtered.filter((item) => item.jenis === filters.jenis);
-    }
-
-    if (filters.status && filters.status !== 'all') {
-      filtered = filtered.filter((item) => item.status === filters.status);
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((item) => item.status === statusFilter);
     }
 
     setFilteredData(filtered);
-  };
-
-  // Handle add new proposal
-  const handleAddNew = () => {
-    router.push('/usulan/bangunan-gedung/tambah');
-  };
+    setCurrentPage(1); // Reset to first page on filter change
+  }, [searchTerm, statusFilter, data]);
 
   // Calculate statistics
   const stats = {
     total: data.length,
-    sukses: data.filter((d) => d.status === 'Sukses').length,
-    proses: data.filter((d) => d.status === 'Proses').length,
-    tolak: data.filter((d) => d.status === 'Tolak').length,
-    pembangunan: data.filter((d) => d.jenis === 'Pembangunan').length,
-    pemeliharaan: data.filter((d) => d.jenis === 'Pemeliharaan').length,
+    approved: data.filter((d) => d.status === 'Approved').length,
+    pending: data.filter((d) => d.status === 'Pending').length,
+    rejected: data.filter((d) => d.status === 'Rejected').length,
   };
 
   return (
@@ -190,8 +159,8 @@ export default function UsulanBangunanGedungPage() {
               <p className="text-sm text-gray-500">Total Usulan</p>
               <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Building2 className="w-6 h-6 text-blue-600" />
+            <div className="p-3 bg-teal-100 rounded-lg">
+              <Route className="w-6 h-6 text-teal-600" />
             </div>
           </div>
         </div>
@@ -199,8 +168,8 @@ export default function UsulanBangunanGedungPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Sukses</p>
-              <p className="text-2xl font-bold text-green-600">{stats.sukses}</p>
+              <p className="text-sm text-gray-500">Disetujui</p>
+              <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600" />
@@ -211,11 +180,11 @@ export default function UsulanBangunanGedungPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Dalam Proses</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.proses}</p>
+              <p className="text-sm text-gray-500">Menunggu</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-lg">
-              <FileText className="w-6 h-6 text-yellow-600" />
+              <Clock className="w-6 h-6 text-yellow-600" />
             </div>
           </div>
         </div>
@@ -224,55 +193,166 @@ export default function UsulanBangunanGedungPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Ditolak</p>
-              <p className="text-2xl font-bold text-red-600">{stats.tolak}</p>
+              <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
             </div>
             <div className="p-3 bg-red-100 rounded-lg">
-              <TrendingUp className="w-6 h-6 text-red-600" />
+              <XCircle className="w-6 h-6 text-red-600" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bar Chart */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Persebaran Aktivitas</h3>
-          <div className="h-[250px]">
-            <BarChart data={barChartData} height={220} />
+      {/* Table Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Table Header with Filters */}
+        <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 className="text-lg font-semibold text-white">Daftar Usulan Jalan</h2>
+            <div className="flex flex-wrap gap-3">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Cari..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent w-48"
+                />
+              </div>
+              
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <button
+                  onClick={() => router.push('/usulan/jalan/tambah')}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium cursor-pointer"
+                >
+                  <Plus className="w-5 h-5" />
+                  Tambah Usulan
+                </button>
+              </div>  
+            </div>
           </div>
         </div>
 
-        {/* Donut Charts Grid */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Distribusi Status</h3>
-          <div className="grid grid-cols-2 gap-8">
-            <div className="relative">
-              <DonutChart
-                data={donutChartData1}
-                height={260}
-                showLegend={true}
-                showLabels={false}
-              />
-            </div>
-            <div className="relative">
-              <DonutChart
-                data={donutChartData2}
-                height={260}
-                showLegend={true}
-                showLabels={false}
-              />
-            </div>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">No</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Jenis Usulan</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lebar Jalan</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Struktur Perkerasan</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sumbu Kumulatif (ESA5)</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nilai CBR Tanah</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {paginatedData.length > 0 ? (
+                paginatedData.map((item, index) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}</td>
+                    <td className="px-6 py-4">
+                      <JenisBadge jenis={item.jenisUsulan} />
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.lebarJalan}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
+                        item.strukturPerkerasan === 'Perkerasan Lentur' 
+                          ? 'bg-indigo-100 text-indigo-800' 
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {item.strukturPerkerasan}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.repetisiBeban} juta</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.nilaiCBR}%</td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={item.status} />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => router.push(`/usulan/jalan/detail/${item.id}`)}
+                          className="p-1.5 text-teal-600 hover:bg-teal-50 rounded transition-colors cursor-pointer"
+                          title="Lihat Detail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors cursor-pointer"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <Route className="w-12 h-12 text-gray-300" />
+                      <p className="text-lg font-medium">Tidak ada data</p>
+                      <p className="text-sm">Belum ada usulan jalan yang sesuai dengan filter</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Table Footer with Pagination */}
+        <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Menampilkan <span className="font-medium">{startIndex + 1}</span> - <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> dari <span className="font-medium">{filteredData.length}</span> data
+            </p>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-teal-500 text-white'
+                          : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Data Table */}
-      <UsulanBangunanTable
-        data={filteredData}
-        onFilterChange={handleFilterChange}
-        onAddNew={handleAddNew}
-      />
     </div>
   );
 }

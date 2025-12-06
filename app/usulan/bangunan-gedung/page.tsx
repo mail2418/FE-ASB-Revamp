@@ -1,21 +1,18 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Building2, TrendingUp, FileText, CheckCircle } from 'lucide-react';
 import type { UsulanBangunanGedung, FilterUsulanBangunan } from '@/types/usulan-bangunan';
-
 // Dynamic imports for better performance
 const BarChart = dynamic(() => import('@/components/Charts/BarChart'), {
   ssr: false,
   loading: () => <div className="h-[250px] bg-gray-100 animate-pulse rounded-lg" />,
 });
-
 const DonutChart = dynamic(() => import('@/components/Charts/DonutChart'), {
   ssr: false,
   loading: () => <div className="h-[180px] bg-gray-100 animate-pulse rounded-lg" />,
 });
-
 const UsulanBangunanTable = dynamic(() => import('@/components/UsulanBangunan/UsulanBangunanTable'), {
   ssr: false,
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
@@ -63,7 +60,6 @@ interface APIUsulanBangunan {
   createdAt: string;
   updatedAt: string;
 }
-
 // Map API status to display status
 const mapStatus = (asbStatus: { id: number; status: string }): string => {
   const statusMap: { [key: string]: string } = {
@@ -75,7 +71,6 @@ const mapStatus = (asbStatus: { id: number; status: string }): string => {
   };
   return statusMap[asbStatus.status] || 'Proses';
 };
-
 // Transform API data to display format
 const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanBangunanGedung[] => {
   return apiData.map((item) => ({
@@ -107,12 +102,12 @@ export default function UsulanBangunanGedungPage() {
   // Chart data states
   const [barChartData, setBarChartData] = useState([
     { name: 'Pembangunan', value: 0, color: '#ef4444' },
-    { name: 'Pemeliharaan', value: 0, color: '#f59e0b' },
+    { name: 'Perawatan', value: 0, color: '#f59e0b' },
   ]);
   
   const [donutChartData1, setDonutChartData1] = useState([
     { name: 'Pembangunan', value: 0, color: '#ef4444' },
-    { name: 'Pemeliharaan', value: 0, color: '#f59e0b' },
+    { name: 'Perawatan', value: 0, color: '#f59e0b' },
   ]);
   
   const [donutChartData2, setDonutChartData2] = useState([
@@ -155,7 +150,7 @@ export default function UsulanBangunanGedungPage() {
           
           // Calculate chart data based on fetched data
           const pembangunanCount = apiData.filter(d => d.asbJenis?.jenis === 'Pembangunan').length;
-          const pemeliharaanCount = apiData.filter(d => d.asbJenis?.jenis === 'Pemeliharaan' || d.asbJenis?.jenis === 'Rehabilitasi').length;
+          const pemeliharaanCount = apiData.filter(d => d.asbJenis?.jenis === 'Perawatan' || d.asbJenis?.jenis === 'Rehabilitasi').length;
 
           const percentagePembangunan = Math.floor(pembangunanCount / (pembangunanCount + pemeliharaanCount) * 100);
           const percentagePemeliharaan = Math.floor(pemeliharaanCount / (pembangunanCount + pemeliharaanCount) * 100);
@@ -163,13 +158,13 @@ export default function UsulanBangunanGedungPage() {
           // Update Bar Chart data
           setBarChartData([
             { name: 'Pembangunan', value: pembangunanCount, color: '#ef4444' },
-            { name: 'Pemeliharaan', value: pemeliharaanCount, color: '#f59e0b' },
+            { name: 'Perawatan', value: pemeliharaanCount, color: '#f59e0b' },
           ]);
           
           // Update Donut Chart 1 (Jenis distribution)
           setDonutChartData1([
             { name: 'Pembangunan', value: percentagePembangunan || 1, color: '#ef4444' },
-            { name: 'Pemeliharaan', value: percentagePemeliharaan || 1, color: '#f59e0b' },
+            { name: 'Perawatan', value: percentagePemeliharaan || 1, color: '#f59e0b' },
           ]);
           
           // Calculate status counts
@@ -236,7 +231,7 @@ export default function UsulanBangunanGedungPage() {
     proses: data.filter((d) => d.status === 'Proses').length,
     tolak: data.filter((d) => d.status === 'Tolak').length,
     pembangunan: data.filter((d) => d.jenis === 'Pembangunan').length,
-    pemeliharaan: data.filter((d) => d.jenis === 'Pemeliharaan').length,
+    pemeliharaan: data.filter((d) => d.jenis === 'Perawatan').length,
   };
 
   return (

@@ -39,12 +39,10 @@ export default function LeftPanelForm() {
       }
     }
   }, []);
-
   // Fetch standard components from API - runs AFTER buildingData is loaded
   useEffect(() => {
     // Only fetch when buildingData is available
     if (!buildingData) return;
-    
     const fetchStandardComponents = async () => {
       setLoading(true);
       try {
@@ -83,9 +81,8 @@ export default function LeftPanelForm() {
         setLoading(false);
       }
     };
-    
     fetchStandardComponents();
-  }, [buildingData]); // Re-run when buildingData changes
+  }, [buildingData]);
 
   // Fetch ASB By ID in order to gain Klasifikasi and SHST Value
   useEffect(()=>{
@@ -106,14 +103,25 @@ export default function LeftPanelForm() {
         if (response.ok) {
           const data = await response.json();
           console.log('ASB By ID:', data);
+          
+          const updatedResultASBfiltered = {
+            ...buildingData?.resultASBfiltered,
+            klasifikasi: data.data.klasifikasi,
+            shst: data.data.shst,
+          };
+          
           setBuildingData((prev: any) => ({
             ...prev,
-            resultASBfiltered: {
-              ...prev.resultASBfiltered,
-              klasifikasi: data.data.klasifikasi,
-              shst: data.data.shst,
-            },
+            resultASBfiltered: updatedResultASBfiltered,
           }));
+          
+          // Update localStorage with the new klasifikasi and shst values
+          const existingData = localStorage.getItem('usulan_bangunan_new_entry');
+          if (existingData) {
+            const parsedData = JSON.parse(existingData);
+            parsedData.resultASBfiltered = updatedResultASBfiltered;
+            localStorage.setItem('usulan_bangunan_new_entry', JSON.stringify(parsedData));
+          }
         }
       } catch (error) {
         console.error('Error fetching ASB By ID:', error);
@@ -122,7 +130,7 @@ export default function LeftPanelForm() {
       }
     };
     fetchASBById();
-  }, [buildingData]);
+  }, []);
 
   const handlePercentageChange = (componentId: number, componentKomponen: string, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
@@ -244,13 +252,15 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.klasifikasi || '-'}
+                {buildingData.resultASBfiltered?.asbKlasifikasi || buildingData.formData?.klasifikasi || '[Belum terklasifikasi]'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
               <p className="text-base font-semibold text-blue-600">
-                {buildingData.formData?.nilaiSHST || '-'}
+                {buildingData.resultASBfiltered?.shst 
+                  ? `Rp ${Number(buildingData.resultASBfiltered.shst).toLocaleString('id-ID')} / m²`
+                  : buildingData.formData?.nilaiSHST || '[Belum terkalkulasi]'}
               </p>
             </div>
           </div>

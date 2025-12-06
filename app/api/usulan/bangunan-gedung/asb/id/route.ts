@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/asb/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/asb/id?id=${id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

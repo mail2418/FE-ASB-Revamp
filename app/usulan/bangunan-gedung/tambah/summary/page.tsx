@@ -18,10 +18,25 @@ interface BasicFormData {
   namaBangunan: string;
   lokasi: string;
   kabKota: string;
-  kodeRekening: string;
+  kabKotaNama?: string;
+  kecamatan: string;
+  kecamatanNama?: string;
+  kelurahan: string;
+  kelurahanNama?: string;
+  RekeningBelanja: {
+    id: Number,
+    kodeRekeningBelanja: string,
+    namaRekeningBelanja: string
+  };
   deskripsiBangunan: string;
   luasTanah: string;
   jumlahLantai: string;
+  resultASBfiltered?: {
+    id?: number;
+    klasifikasi?: string;
+    shst?: number;
+    [key: string]: any;
+  };
 }
 
 interface FloorData {
@@ -29,6 +44,7 @@ interface FloorData {
   jenisLantai: string;
   luas: string;
   fungsiLantai: string;
+  namaFungsiLantai: string;
   fungsiRuangId?: string;
 }
 
@@ -220,7 +236,7 @@ export default function SummaryPage() {
               </div>
               <div className="space-y-3">
                 <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-medium">
-                  {basicData?.tipeBangunan || 'Gedung Negara Tidak Sederhana'}
+                  {basicData?.resultASBfiltered?.klasifikasi || basicData?.tipeBangunan || 'Gedung Negara Tidak Sederhana'}
                 </div>
                 <div className="text-sm text-gray-600 text-center">
                   Jenis: <span className="font-medium">{basicData?.jenis || '-'}</span>
@@ -234,7 +250,7 @@ export default function SummaryPage() {
                 <div>
                   <label className="text-sm text-gray-600">Nilai SHST per (m²)</label>
                   <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                    Rp 5.600.000 / m²
+                    Rp {basicData?.resultASBfiltered?.shst ? Number(basicData.resultASBfiltered.shst).toLocaleString('id-ID') : '0'} / m²
                   </div>
                 </div>
 
@@ -245,12 +261,15 @@ export default function SummaryPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-sm text-gray-600">Luas Tanah</label>
-                  <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                    {basicData?.luasTanah || '0'} m²
+                {/* Only show Luas Tanah if tipeBangunan contains 'Rumah Negara' */}
+                {basicData?.tipeBangunan?.toLowerCase().includes('rumah negara') && (
+                  <div>
+                    <label className="text-sm text-gray-600">Luas Tanah</label>
+                    <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                      {basicData?.luasTanah || '0'} m²
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -260,14 +279,28 @@ export default function SummaryPage() {
                 <div>
                   <label className="text-sm text-gray-600">Kode Rekening</label>
                   <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-mono mt-1">
-                    {basicData?.kodeRekening || '1.01.012.15.0001'}
+                    {basicData?.RekeningBelanja.kodeRekeningBelanja || '-'}
                   </div>
                 </div>
 
                 <div>
                   <label className="text-sm text-gray-600">Kabupaten/Kota</label>
                   <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                    {basicData?.kabKota || '-'}
+                    {basicData?.kabKotaNama || basicData?.kabKota || '-'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-600">Kecamatan</label>
+                  <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                    {basicData?.kecamatanNama || basicData?.kecamatan || '-'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-600">Kelurahan</label>
+                  <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                    {basicData?.kelurahanNama || basicData?.kelurahan || '-'}
                   </div>
                 </div>
 
@@ -321,7 +354,7 @@ export default function SummaryPage() {
                       <tr key={floor.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{floor.jenisLantai}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{floor.luas} m²</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{floor.fungsiLantai}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{floor.namaFungsiLantai}</td>
                       </tr>
                     )) : (
                       <tr>
@@ -381,62 +414,8 @@ export default function SummaryPage() {
               </div>
             </div>
 
-            {/* PDF Generation & Verify Buttons */}
-            <div className="space-y-4">
-              {/* Generate PDF Button */}
-              <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                <div className="flex items-center gap-3 mb-4">
-                  <FileDown className="w-6 h-6 text-orange-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Surat Permohonan</h3>
-                </div>
-                
-                {generatedPdfPath ? (
-                  <div className="space-y-3">
-                    <div className="bg-green-100 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5" />
-                      <span className="font-medium">Surat Permohonan telah dibuat</span>
-                    </div>
-                    <a
-                      href={generatedPdfPath}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 text-orange-600 hover:text-orange-700 font-medium"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Lihat PDF
-                    </a>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-600">
-                      Generate Surat Permohonan sebelum melakukan verifikasi
-                    </p>
-                    <button
-                      onClick={handleGeneratePDF}
-                      disabled={isGeneratingPdf || !basicData}
-                      className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all shadow-md hover:shadow-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      {isGeneratingPdf ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <FileDown className="w-5 h-5" />
-                          Generate Surat Permohonan
-                        </>
-                      )}
-                    </button>
-                    {pdfError && (
-                      <p className="text-sm text-red-600">{pdfError}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-between items-center gap-4">
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center gap-4">
                 {/* Previous Button */}
                 <button
                   onClick={() => router.push('/usulan/bangunan-gedung/tambah/input-komponen-non-standar-bangunan')}
@@ -472,15 +451,13 @@ export default function SummaryPage() {
                   {/* Verify Button */}
                   <button
                     onClick={handleVerify}
-                    disabled={!generatedPdfPath}
-                    className="flex items-center gap-2 px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all shadow-lg hover:shadow-xl font-semibold text-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400"
+                    className="flex items-center gap-2 px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all shadow-lg hover:shadow-xl font-semibold text-lg cursor-pointer"
                   >
                     <CheckCircle2 className="w-5 h-5" />
-                    Verifikasi Sekarang
+                    Ajukan Permohonan
                   </button>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
