@@ -266,7 +266,7 @@ export default function VerifyKomponenStandarPage() {
             className="inline-flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
           >
             <X className="w-5 h-5" />
-            Batal
+            Kembali
           </button>
           {idAsbStatus !== null && idAsbStatus !== 9 && (
             <span className="text-xs text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">

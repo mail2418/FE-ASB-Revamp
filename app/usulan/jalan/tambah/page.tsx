@@ -138,19 +138,35 @@ export default function TambahUsulanJalanPage() {
     setIsSubmitting(true);
 
     try {
-      // For now, just save to localStorage and redirect
+      // Get user data for createdBy
+      let createdBy = 'Current User';
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          const parsed = JSON.parse(userData);
+          createdBy = parsed.name || parsed.username || 'Current User';
+        } catch (e) {
+          console.error('Error parsing userData:', e);
+        }
+      }
+
+      // Create submission data with 3-stage verification status
       const submissionData = {
         ...formData,
         id: Date.now().toString(),
-        userName: 'Current User', // Would come from auth context
-        status: 'Pending',
+        createdBy,
+        verificationStatus: {
+          adpem: 'Menunggu',
+          bappeda: 'Belum',
+          bpkad: 'Belum',
+        },
         createdAt: new Date().toISOString().split('T')[0],
       };
 
       // Get existing submissions or create new array
       const existingData = localStorage.getItem('usulan_jalan_submissions');
       const submissions = existingData ? JSON.parse(existingData) : [];
-      submissions.push(submissionData);
+      submissions.unshift(submissionData); // Add to beginning
       localStorage.setItem('usulan_jalan_submissions', JSON.stringify(submissions));
 
       alert('Usulan Jalan berhasil disimpan!');

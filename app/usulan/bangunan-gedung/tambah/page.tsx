@@ -26,7 +26,7 @@ interface requestBodyASB{
     idAsbTipeBangunan: number;
     idKabkota: number;
     jumlahKontraktor: number;
-    id: number;
+    idAsbJenis: number;
     luasTanah?: string;
 }
 export default function TambahUsulanBangunanGedung() {
@@ -454,7 +454,7 @@ export default function TambahUsulanBangunanGedung() {
         idAsbTipeBangunan: parseInt(formData.tipeBangunan || '1'),
         idKabkota: parseInt(formData.kabKota || '1'),
         jumlahKontraktor: formData.jumlahKontraktor,
-        id: parseInt(formData.jenis || '1'),
+        idAsbJenis: parseInt(formData.jenis || '1'),
         luasTanah: formData?.luasTanah,
       };
 

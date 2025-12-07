@@ -116,14 +116,16 @@ export default function VerifyUsulanPage() {
         alert('Sesi Anda telah berakhir. Silakan login kembali.');
         return;
       }
-
+      const requestBody = {
+        id_asb: apiData.id,
+      };
       const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-lantai', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ id_asb: apiData.id }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -261,44 +263,6 @@ export default function VerifyUsulanPage() {
     }
   };
 
-  // Handler for viewing Kertas Kerja
-  const handleViewKertasKerja = async () => {
-    if (!apiData) return;
-    setIsLoadingDocument(true);
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        alert('Sesi Anda telah berakhir. Silakan login kembali.');
-        return;
-      }
-
-      const response = await fetch(`/api/usulan/bangunan-gedung/document/download-kertas-kerja?idAsb=${apiData.id}&view=true`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Gagal memuat dokumen');
-      }
-
-      const data = await response.json();
-      // Open the document URL in a new tab
-      if (data.data?.url || data.url) {
-        window.open(data.data?.url || data.url, '_blank');
-      } else {
-        alert('URL dokumen tidak ditemukan');
-      }
-    } catch (error) {
-      console.error('Error viewing kertas kerja:', error);
-      alert(`Gagal memuat dokumen: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
-    } finally {
-      setIsLoadingDocument(false);
-    }
-  };
-
   useEffect(() => {
     // Check if user is verificator/verifikator
     const checkAuth = () => {
@@ -313,13 +277,11 @@ export default function VerifyUsulanPage() {
           
           // Get verifikator type from localStorage
           const verifikatorInfo = localStorage.getItem('verifikatorInfo');
-          console.log('Verifikator info:', verifikatorInfo);
-          
+
           if (verifikatorInfo) {
             setJenisVerifikator(verifikatorInfo);
-            console.log('Verifikator type:', jenisVerifikator);
           }
-          
+
           // Redirect if not one of the verificator roles
           const allowedRoles = ['verifikator'];
           if (!allowedRoles.includes(userData.role)) {
@@ -337,6 +299,7 @@ export default function VerifyUsulanPage() {
     checkAuth();
   }, [router]);
 
+  console.log(jenisVerifikator)
   // Fetch data from API
   useEffect(() => {
     const fetchUsulanData = async () => {
@@ -350,7 +313,8 @@ export default function VerifyUsulanPage() {
           setIsLoading(false);
           return;
         }
-        const response = await fetch('/api/usulan/bangunan-gedung/asb', {
+
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb?idAsb=${params.id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -359,14 +323,13 @@ export default function VerifyUsulanPage() {
         
         if (response.ok) {
           const result = await response.json();
-          const allData: APIUsulanBangunan[] = result.data?.data || result.data || [];
+          const allData: APIUsulanBangunan = result.data?.data || result.data;
           
-          const id = Array.isArray(params.id) ? params.id[0] : params.id;
-          const foundItem = allData.find(item => item.id.toString() === id);
-          
-          if (foundItem) {
-            setApiData(foundItem);
-            const transformed = transformAPIData(foundItem);
+          console.log(allData)
+
+          if (allData) {
+            setApiData(allData);
+            const transformed = transformAPIData(allData);
             setUsulanData(transformed);
             setEditedUraian(transformed.uraian);
             setEditedLokasi(transformed.lokasi);

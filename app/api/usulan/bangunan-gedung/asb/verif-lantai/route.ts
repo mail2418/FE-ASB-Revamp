@@ -24,14 +24,26 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    const { 
+      id_asb ,
+      verif_luas_lantai,
+      verif_id_asb_lantai,
+      verif_id_asb_fungsi_ruang
+    } = body;
+    console.log(id_asb);
 
-    const response = await fetch(`${API_BASE_URL}/asb/verif-lantai`, {
+    const response = await fetch(`${API_BASE_URL}/asb/verify-lantai`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        id_asb,
+        verif_luas_lantai,
+        verif_id_asb_lantai,
+        verif_id_asb_fungsi_ruang
+      }),
     });
 
     if (!response.ok) {

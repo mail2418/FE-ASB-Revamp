@@ -12,102 +12,143 @@ import {
   Layers,
   FileText,
   Settings,
-  Ruler
+  Ruler,
+  Edit2,
+  Loader2
 } from 'lucide-react';
+
+// Verification status types
+type VerificationStatus = 'Belum' | 'Disetujui' | 'Ditolak' | 'Menunggu';
+
+interface VerificationStages {
+  adpem: VerificationStatus;
+  bappeda: VerificationStatus;
+  bpkad: VerificationStatus;
+}
 
 // Interface for Jalan form data
 interface UsulanJalanDetail {
   id: string;
   jenisUsulan: 'Perawatan' | 'Pembuatan';
   lebarJalan: string;
-  strukturPerkerasan: 'Perkerasan Lentur' | 'Perkerasan Kaku';
+  strukturPerkerasan: string;
   repetisiBeban: string;
   nilaiCBR: string;
   spesifikasiDesain: string;
   mutuBeton?: string;
   ruangLingkup: string[];
   keteranganTambahan: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  verificationStatus: VerificationStages;
   createdAt: string;
   createdBy?: string;
 }
 
-// Mock data - in production this would come from API
+// Mock data with 3-stage verification - fallback when localStorage is empty
 const mockDataMap: { [key: string]: UsulanJalanDetail } = {
-  '1': {
-    id: '1',
+  'mock-1': {
+    id: 'mock-1',
     jenisUsulan: 'Pembuatan',
-    lebarJalan: '5 m',
-    strukturPerkerasan: 'Perkerasan Lentur',
+    lebarJalan: '5',
+    strukturPerkerasan: 'lentur',
     repetisiBeban: '10',
     nilaiCBR: '6',
-    spesifikasiDesain: 'Bagan Desain 3 : Opsi Biaya Minimum dengan CTB',
+    spesifikasiDesain: 'bagan_3',
     ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Galian Tanah'],
     keteranganTambahan: 'Tebal galian 30 cm',
-    status: 'Approved',
+    verificationStatus: {
+      adpem: 'Disetujui',
+      bappeda: 'Disetujui',
+      bpkad: 'Disetujui',
+    },
     createdAt: '2024-11-15',
     createdBy: 'Anggito Anju',
   },
-  '2': {
-    id: '2',
+  'mock-2': {
+    id: 'mock-2',
     jenisUsulan: 'Perawatan',
-    lebarJalan: '7 m',
-    strukturPerkerasan: 'Perkerasan Kaku',
+    lebarJalan: '7',
+    strukturPerkerasan: 'kaku',
     repetisiBeban: '15',
     nilaiCBR: '8',
-    spesifikasiDesain: 'Bagan Desain 4 : Perkerasan Kaku untuk Beban Lalu Lintas Berat',
-    mutuBeton: "f'c 25 Mpa",
+    spesifikasiDesain: 'bagan_4',
+    mutuBeton: "fc_25",
     ruangLingkup: ['Perkerasan Beton', 'Lapis Pondasi', 'Pemadatan Tanah', 'Marka dan Rambu Jalan'],
     keteranganTambahan: 'Tebal timbunan 50 cm',
-    status: 'Pending',
+    verificationStatus: {
+      adpem: 'Disetujui',
+      bappeda: 'Menunggu',
+      bpkad: 'Belum',
+    },
     createdAt: '2024-11-20',
     createdBy: 'Muhammad Ismail',
   },
-  '3': {
-    id: '3',
+  'mock-3': {
+    id: 'mock-3',
     jenisUsulan: 'Pembuatan',
-    lebarJalan: '4 m',
-    strukturPerkerasan: 'Perkerasan Lentur',
+    lebarJalan: '4',
+    strukturPerkerasan: 'lentur',
     repetisiBeban: '5',
     nilaiCBR: '4',
-    spesifikasiDesain: 'Bagan Desain 3A : Opsi Biaya Minimum dengan HRS',
+    spesifikasiDesain: 'bagan_3a',
     ruangLingkup: ['Perkerasan Aspal', 'Galian Tanah', 'Timbunan Tanah'],
     keteranganTambahan: 'Tebal urugan 20 cm',
-    status: 'Rejected',
+    verificationStatus: {
+      adpem: 'Disetujui',
+      bappeda: 'Ditolak',
+      bpkad: 'Belum',
+    },
     createdAt: '2024-11-10',
     createdBy: 'Samarta Admin',
   },
-  '4': {
-    id: '4',
-    jenisUsulan: 'Perawatan',
-    lebarJalan: '10 m',
-    strukturPerkerasan: 'Perkerasan Lentur',
-    repetisiBeban: '20',
-    nilaiCBR: '10',
-    spesifikasiDesain: 'Bagan Desain 3B : Aspal dengan Lapis Fondasi Berbutir',
-    ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Pemadatan Tanah', 'Median Jalan'],
-    keteranganTambahan: '-',
-    status: 'Approved',
-    createdAt: '2024-11-25',
-    createdBy: 'Budi Santoso',
-  },
 };
 
-// Status badge component
-const StatusBadge = ({ status }: { status: string }) => {
+// Verification badge component
+const VerificationBadge = ({ status, label }: { status: VerificationStatus; label: string }) => {
   const config = {
-    Pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-4 h-4" />, label: 'Menunggu' },
-    Approved: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-4 h-4" />, label: 'Disetujui' },
-    Rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-4 h-4" />, label: 'Ditolak' },
+    Belum: { bg: 'bg-gray-100', text: 'text-gray-600', icon: <Clock className="w-4 h-4" /> },
+    Menunggu: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-4 h-4" /> },
+    Disetujui: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-4 h-4" /> },
+    Ditolak: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-4 h-4" /> },
   };
-  const c = config[status as keyof typeof config] || config.Pending;
+  const c = config[status] || config.Menunggu;
   
   return (
-    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${c.bg} ${c.text}`}>
+    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${c.bg}`}>
       {c.icon}
-      {c.label}
-    </span>
+      <div>
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className={`text-sm font-medium ${c.text}`}>{status}</p>
+      </div>
+    </div>
   );
+};
+
+// Format functions
+const formatStruktur = (s: string): string => {
+  if (s === 'lentur') return 'Perkerasan Lentur';
+  if (s === 'kaku') return 'Perkerasan Kaku';
+  return s;
+};
+
+const formatSpesifikasi = (s: string): string => {
+  const map: { [key: string]: string } = {
+    'bagan_3': 'Bagan Desain 3 : Opsi Biaya Minimum dengan CTB',
+    'bagan_3a': 'Bagan Desain 3A : Opsi Biaya Minimum dengan HRS',
+    'bagan_3b': 'Bagan Desain 3B : Aspal dengan Lapis Fondasi Berbutir',
+    'bagan_3c': 'Bagan Desain 3C : Penyesuaian LPA pada Bagan Desain 3B untuk Tanah Dasar CBR ≥ 7%',
+    'bagan_4': 'Bagan Desain 4 : Perkerasan Kaku untuk Beban Lalu Lintas Berat',
+    'bagan_4a': 'Bagan Desain 4A : Perkerasan Kaku untuk Beban Lalu Lintas Ringan',
+  };
+  return map[s] || s;
+};
+
+const formatMutuBeton = (s: string | undefined): string => {
+  if (!s) return '-';
+  const map: { [key: string]: string } = {
+    'fc_20': "f'c 20 Mpa",
+    'fc_25': "f'c 25 Mpa",
+  };
+  return map[s] || s;
 };
 
 export default function DetailUsulanJalanPage() {
@@ -115,22 +156,48 @@ export default function DetailUsulanJalanPage() {
   const params = useParams();
   const [data, setData] = useState<UsulanJalanDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
-    // In production, fetch from API
-    const id = params.id as string;
-    const usulanData = mockDataMap[id];
-    
-    if (usulanData) {
-      setData(usulanData);
+    // Get user role
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        setUserRole(parsed.role || '');
+      } catch (e) {
+        console.error('Error parsing userData:', e);
+      }
     }
+
+    // Load data from localStorage first, then fallback to mock
+    const id = params.id as string;
+    let foundItem: UsulanJalanDetail | null = null;
+    
+    // Try localStorage first
+    const storedData = localStorage.getItem('usulan_jalan_submissions');
+    if (storedData) {
+      try {
+        const submissions: UsulanJalanDetail[] = JSON.parse(storedData);
+        foundItem = submissions.find(item => item.id === id) || null;
+      } catch (e) {
+        console.error('Error parsing stored data:', e);
+      }
+    }
+    
+    // Fallback to mock data
+    if (!foundItem) {
+      foundItem = mockDataMap[id] || null;
+    }
+    
+    setData(foundItem);
     setLoading(false);
   }, [params.id]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
+        <Loader2 className="w-12 h-12 text-teal-500 animate-spin" />
       </div>
     );
   }
@@ -162,7 +229,15 @@ export default function DetailUsulanJalanPage() {
           <ArrowLeft className="w-5 h-5" />
           Kembali
         </button>
-        <StatusBadge status={data.status} />
+        {userRole === 'opd' && (
+          <button
+            onClick={() => router.push(`/usulan/jalan/edit/${data.id}`)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <Edit2 className="w-4 h-4" />
+            Edit
+          </button>
+        )}
       </div>
 
       {/* Main Info Card */}
@@ -178,6 +253,16 @@ export default function DetailUsulanJalanPage() {
         </div>
 
         <div className="p-6">
+          {/* Verification Status Section */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Status Verifikasi</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <VerificationBadge status={data.verificationStatus.adpem} label="ADPEM" />
+              <VerificationBadge status={data.verificationStatus.bappeda} label="BAPPEDA" />
+              <VerificationBadge status={data.verificationStatus.bpkad} label="BPKAD" />
+            </div>
+          </div>
+
           {/* Basic Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Jenis Usulan */}
@@ -201,7 +286,7 @@ export default function DetailUsulanJalanPage() {
                 <Ruler className="w-4 h-4" />
                 <span className="text-xs uppercase tracking-wide font-medium">Lebar Jalan</span>
               </div>
-              <p className="text-lg font-semibold text-gray-900">{data.lebarJalan}</p>
+              <p className="text-lg font-semibold text-gray-900">{data.lebarJalan} m</p>
             </div>
 
             {/* Struktur Perkerasan */}
@@ -211,11 +296,11 @@ export default function DetailUsulanJalanPage() {
                 <span className="text-xs uppercase tracking-wide font-medium">Struktur Perkerasan</span>
               </div>
               <span className={`inline-flex px-3 py-1 rounded text-sm font-medium ${
-                data.strukturPerkerasan === 'Perkerasan Lentur' 
+                data.strukturPerkerasan === 'lentur' || data.strukturPerkerasan === 'Perkerasan Lentur'
                   ? 'bg-indigo-100 text-indigo-800' 
                   : 'bg-purple-100 text-purple-800'
               }`}>
-                {data.strukturPerkerasan}
+                {formatStruktur(data.strukturPerkerasan)}
               </span>
             </div>
 
@@ -226,7 +311,7 @@ export default function DetailUsulanJalanPage() {
                   <Settings className="w-4 h-4" />
                   <span className="text-xs uppercase tracking-wide font-medium">Mutu Beton</span>
                 </div>
-                <p className="text-lg font-semibold text-gray-900">{data.mutuBeton}</p>
+                <p className="text-lg font-semibold text-gray-900">{formatMutuBeton(data.mutuBeton)}</p>
               </div>
             )}
 
@@ -260,7 +345,7 @@ export default function DetailUsulanJalanPage() {
         </div>
         <div className="p-6">
           <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-            <p className="text-teal-800 font-medium">{data.spesifikasiDesain}</p>
+            <p className="text-teal-800 font-medium">{formatSpesifikasi(data.spesifikasiDesain)}</p>
           </div>
         </div>
       </div>
@@ -322,21 +407,6 @@ export default function DetailUsulanJalanPage() {
         >
           Kembali ke Dashboard
         </button>
-        
-        {data.status === 'Pending' && (
-          <div className="flex gap-3">
-            <button
-              className="px-6 py-3 border-2 border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
-            >
-              Tolak
-            </button>
-            <button
-              className="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-medium"
-            >
-              Setujui
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
