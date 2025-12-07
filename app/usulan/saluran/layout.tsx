@@ -41,7 +41,7 @@ const navigation = [
   },
   {
     name: 'Usulan Saluran',
-    href: '/404',
+    href: '/usulan/saluran',
     icon: Droplets,
     current: false,
   },
@@ -89,6 +89,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('rememberedUsername');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('verifikatorInfo');
       }
       
       // Redirect to login page
@@ -100,6 +102,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('rememberedUsername');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('verifikatorInfo');
       }
       
       // Still redirect on error
@@ -260,7 +264,11 @@ export default function DashboardLayout({ children }: LayoutProps) {
               {/* Page title */}
               <div className="flex-1 px-4 lg:px-0">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Usulan Saluran
+                  {pathname.includes('/tambah') ? 'Tambah Usulan Saluran' :
+                   pathname.includes('/verify') ? 'Verifikasi Usulan Saluran' :
+                   pathname.includes('/edit') ? 'Edit Usulan Saluran' :
+                   pathname.includes('/detail') ? 'Detail Usulan Saluran' :
+                   'Usulan Saluran'}
                 </h2>
               </div>
 

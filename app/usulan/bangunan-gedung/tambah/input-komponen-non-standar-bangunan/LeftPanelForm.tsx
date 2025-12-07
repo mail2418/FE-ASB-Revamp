@@ -67,10 +67,6 @@ export default function LeftPanelForm() {
           //   c.idAsbJenis.toString() === buildingData.formData?.jenis &&
           //   c.idAsbTipeBangunan.toString() === buildingData.formData?.tipeBangunan
           // );
-          
-          console.log('Non-Standard Components:', components);
-          console.log('Filter criteria - jenis:', buildingData.formData?.jenis, 'tipeBangunan:', buildingData.formData?.tipeBangunan);
-          
           setAllComponents(components);
           
           // If 10 or less, auto-select all
@@ -158,23 +154,6 @@ export default function LeftPanelForm() {
 
   const needsDropdown = allComponents.length > 10;
 
-  // Calculate totals for non-standard components
-  const calculateTotals = () => {
-    let checkedCount = 0;
-    let totalPercentage = 0;
-
-    Object.values(formState).forEach((state: any) => {
-      if (state?.checked) {
-        checkedCount++;
-        totalPercentage += state.percentage || 0;
-      }
-    });
-
-    const averagePercentage = checkedCount > 0 ? totalPercentage / checkedCount : 0;
-
-    return { checkedCount, totalPercentage, averagePercentage };
-  };
-
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -229,6 +208,21 @@ export default function LeftPanelForm() {
         throw new Error(errorData.message || 'Gagal menyimpan data komponen non-standar');
       }
 
+      // Send PUT request to Update Status of ASB 
+      const responseUpdateStatus = await fetch('/api/usulan/bangunan-gedung/asb/store-bpns', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!responseUpdateStatus.ok) {
+        const errorData = await responseUpdateStatus.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal menyimpan data komponen non-standar');
+      }
+
       const result = await response.json();
       console.log('Non-standard components saved:', result);
 
@@ -264,15 +258,15 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.resultASBfiltered?.klasifikasi || buildingData.formData?.klasifikasi || '[Belum terklasifikasi]'}
+                {buildingData.asb_shst_klasifikasi.klasifikasi ||'[Belum terklasifikasi]'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
               <p className="text-base font-semibold text-lime-600">
-                {buildingData.resultASBfiltered?.shst 
-                  ? `Rp ${Number(buildingData.resultASBfiltered.shst).toLocaleString('id-ID')} / m²`
-                  : buildingData.formData?.nilaiASB || '[Belum terkalkulasi]'}
+                {buildingData.asb_shst_klasifikasi.shst 
+                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst).toLocaleString('id-ID')} / m²`
+                  : '[Belum terkalkulasi]'}
               </p>
             </div>
           </div>

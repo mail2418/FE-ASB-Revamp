@@ -89,6 +89,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('rememberedUsername');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('verifikatorInfo');
       }
       
       // Redirect to login page
@@ -100,6 +102,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('rememberedUsername');
+        localStorage.removeItem('userInfo');
+        localStorage.removeItem('verifikatorInfo');
       }
       
       // Still redirect on error

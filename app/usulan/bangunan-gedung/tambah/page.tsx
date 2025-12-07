@@ -18,7 +18,17 @@ interface Floor {
   luas: string;
   notes: string;
 }
-
+interface requestBodyASB{
+    tahunAnggaran: number;
+    namaAsb: string;
+    alamat: string;
+    totalLantai: number;
+    idAsbTipeBangunan: number;
+    idKabkota: number;
+    jumlahKontraktor: number;
+    id: number;
+    luasTanah?: string;
+}
 export default function TambahUsulanBangunanGedung() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +64,7 @@ export default function TambahUsulanBangunanGedung() {
     kecamatan: '',
     kelurahan: '',
     jumlahLantai: '1',
-    luasTanah: '',
+    luasTanah: '1',
     RekeningBelanja: {
       id: 0,
       kodeRekeningBelanja: "",
@@ -62,7 +72,7 @@ export default function TambahUsulanBangunanGedung() {
     },
     klasifikasi: '',
     nilaiASB: '',
-    jumlahKontraktor: '',
+    jumlahKontraktor: 1,
     suratPermohonan: null as File | null,
   });
 
@@ -161,7 +171,7 @@ export default function TambahUsulanBangunanGedung() {
 
     fetchRekening();
   }, []);
-  // Fetch Jenis data (Pembangunan, Rehabilitasi, etc.)
+  // Fetch Jenis data 
   React.useEffect(() => {
     const fetchJenis = async () => {
       setLoadingJenis(true);
@@ -391,7 +401,7 @@ export default function TambahUsulanBangunanGedung() {
           namaFungsiLantai: selectedOption?.nama_fungsi_ruang || ''
         };
       }
-      
+
       return { ...floor, [field]: value };
     }));
   };
@@ -436,7 +446,7 @@ export default function TambahUsulanBangunanGedung() {
       const year = now.getFullYear();
 
       // Prepare request body for backend API
-      const requestBodyASB = {
+      const requestBodyASB: requestBodyASB = {
         tahunAnggaran: year,
         namaAsb: formData.deskripsiBangunan,
         alamat: formData.lokasi,
@@ -444,9 +454,11 @@ export default function TambahUsulanBangunanGedung() {
         idAsbTipeBangunan: parseInt(formData.tipeBangunan || '1'),
         idKabkota: parseInt(formData.kabKota || '1'),
         jumlahKontraktor: formData.jumlahKontraktor,
-        idAsbJenis: parseInt(formData.jenis || '1'),
-        luas_tanah: formData.luasTanah,
+        id: parseInt(formData.jenis || '1'),
+        luasTanah: formData?.luasTanah,
       };
+
+      console.log(`requestBodyASB: ${JSON.stringify(requestBodyASB)}`);
 
       // CREATE STORE INDEX
       const responseASB = await fetch('/api/usulan/bangunan-gedung/asb/store-index', {
@@ -457,15 +469,15 @@ export default function TambahUsulanBangunanGedung() {
         },
         body: JSON.stringify(requestBodyASB),
       });
+      
+      const resultASB = await responseASB.json();
+      console.log('Backend responseASB Bfore filter:', resultASB);
 
       if (!responseASB.ok) {
         const errorData = await responseASB.json().catch(() => ({}));
         throw new Error(errorData.message || 'Gagal menyimpan data ke server');
       }
 
-      console.log(`requestBodyASB: ${JSON.stringify(requestBodyASB)}`)
-      const resultASB = await responseASB.json();
-      console.log('Backend responseASB:', resultASB);
       const resultASBfiltered = resultASB.data?.data || resultASB.data || []
       console.log('Backend responseASB:', resultASBfiltered);
 
@@ -476,6 +488,7 @@ export default function TambahUsulanBangunanGedung() {
       };
 
       console.log(`requestBodyRekening: ${JSON.stringify(requestBodyRekening)}`);
+
       // Send UPDATE Store Rekening
       const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
         method: 'PUT',
@@ -503,6 +516,9 @@ export default function TambahUsulanBangunanGedung() {
           id_asb_lantai: floors.map(floor => parseInt(floor.jenisLantai)),
           id_asb_fungsi_ruang: floors.map(floor => parseInt(floor.fungsiLantai))
       };
+
+      console.log(`requestBodyLantai: ${JSON.stringify(requestBodyLantai)}`);
+
       // Send UPDATE Store Lantai
       const responseLantai = await fetch('/api/usulan/bangunan-gedung/asb/store-lantai', {
         method: 'PUT',
@@ -519,8 +535,9 @@ export default function TambahUsulanBangunanGedung() {
       }
 
       const resultLt = await responseLantai.json();
+      console.log('Backend responseLantai:', resultLt);
+
       const resultLantaifiltered = resultLt.data?.data || resultLt.data || []
-      console.log('Backend responseLantai:', resultLantaifiltered);
 
       // Save to localStorage with resolved names
       const kabKotaNama = kabKotaOptions.find(k => k.id.toString() === formData.kabKota)?.nama || '';

@@ -11,7 +11,8 @@ function getAuthToken(request: NextRequest): string | null {
   return null;
 }
 
-export async function PUT(request: NextRequest){
+// GET - Fetch all verifikator
+export async function GET(request: NextRequest) {
   try {
     const token = getAuthToken(request);
 
@@ -22,23 +23,11 @@ export async function PUT(request: NextRequest){
       );
     }
 
-    const body = await request.json();
-    const {
-      id_asb,
-      id_asb_bipek_nonstandard,
-      komponen_nonstd,
-      bobot_nonstd
-    } = body;
-
-    const response = await fetch(`${API_BASE_URL}/asb/verify`, {
-      method: 'PUT',
-      headers: request.headers,
-      body: JSON.stringify({
-        id_asb,
-        id_asb_bipek_nonstandard,
-        komponen_nonstd,
-        bobot_nonstd
-      }),
+    const response = await fetch(`${API_BASE_URL}/verifikators`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
@@ -51,11 +40,11 @@ export async function PUT(request: NextRequest){
 
     const data = await response.json();
 
-    console.log("fetching success")
+    console.log("fetching verifikator success")
     return NextResponse.json(data, { status: 200 });
 
   } catch (error) {
-    console.error('Error fetching fungsi ruang:', error);
+    console.error('Error fetching verifikator:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

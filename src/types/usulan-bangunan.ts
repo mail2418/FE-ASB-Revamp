@@ -3,7 +3,7 @@
 export type VerificationStatus = 'Belum' | 'Disetujui' | 'Ditolak' | 'Menunggu';
 
 export interface VerificationStages {
-  opd: VerificationStatus;
+  adpem: VerificationStatus;
   bappeda: VerificationStatus;
   bpkad: VerificationStatus;
 }
@@ -17,7 +17,13 @@ export interface UsulanBangunanGedung {
   satuan: string;
   verificationStatus: VerificationStages;
   nilaiBkf?: string;
-  status: string;
+  status?: string;
+  statusInfo?: string; // Detailed status from STATUS_ID_MAP
+  idAsbStatus?: number; // Raw status ID for conditional logic
+  idVerifikatorAdpem?: number | null;
+  idVerifikatorBappeda?: number | null;
+  idVerifikatorBpkad?: number | null;
+  rejectReason?: string | null; // Rejection reason when status is 7
   suratPermohonan?: string;
   suratRekomendasi?: string;
   createdBy?: string;

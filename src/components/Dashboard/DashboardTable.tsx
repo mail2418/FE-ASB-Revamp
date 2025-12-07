@@ -72,13 +72,68 @@ export default function DashboardTable({
 }: DashboardTableProps) {
   const [jenisFilterOpen, setJenisFilterOpen] = React.useState(false);
   const [statusFilterOpen, setStatusFilterOpen] = React.useState(false);
-  const [projectDropdownOpen, setProjectDropdownOpen] = React.useState(false);
   const [yearDropdownOpen, setYearDropdownOpen] = React.useState(false);
   const [selectedJenisFilter, setSelectedJenisFilter] = React.useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = React.useState('all');
   const [selectedYear, setSelectedYear] = React.useState('2025');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [downloadingId, setDownloadingId] = React.useState<string | null>(null);
+
+  // Handle Surat Permohonan download (uses API without view param for direct download)
+  const handleDownloadSuratPermohonan = async (id: string): Promise<void> => {
+    try {
+      setDownloadingId(`permohonan-${id}`);
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`/api/usulan/bangunan-gedung/document/download-surat-permohonan?idAsb=${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data?.url) {
+          // Open the download URL
+          window.open(data.data.url, '_blank');
+        }
+      } else {
+        console.error('Failed to download surat permohonan');
+      }
+    } catch (error) {
+      console.error('Error downloading surat permohonan:', error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  // Handle Surat Rekomendasi download (only if all verifikators approved)
+  const handleDownloadSuratRekomendasi = async (id: string): Promise<void> => {
+    try {
+      setDownloadingId(`rekomendasi-${id}`);
+      const token = localStorage.getItem('accessToken');
+      
+      const response = await fetch(`/api/usulan/bangunan-gedung/document/download-surat-rekomendasi?idAsb=${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data?.url) {
+          window.open(data.data.url, '_blank');
+        }
+      } else {
+        console.error('Failed to download surat rekomendasi');
+      }
+    } catch (error) {
+      console.error('Error downloading surat rekomendasi:', error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
   const itemsPerPage = 10;
 
   // Calculate pagination
@@ -219,7 +274,7 @@ export default function DashboardTable({
                 </div>
               </th>
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Uraian
+                Nama Usulan Anggaran Belanja
               </th>
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Surat Permohonan
@@ -271,36 +326,42 @@ export default function DashboardTable({
                   <JenisBadge jenis={item.jenis} />
                 </td>
                 <td className="px-4 py-3 text-base text-gray-900">
-                  {item.uraian || '-'}
+                  {item.namaAsb || '-'}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {item.suratPermohonan ? (
-                    <a
-                      href={item.suratPermohonan}
-                      className="inline-flex items-center gap-1.5 text-red-600 hover:text-red-700 text-base font-medium"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => handleDownloadSuratPermohonan(item.id)}
+                      disabled={downloadingId === `permohonan-${item.id}`}
+                      className="inline-flex items-center gap-1.5 text-red-600 hover:text-red-700 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Download className="w-4 h-4" />
+                      {downloadingId === `permohonan-${item.id}` ? (
+                        <span className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
                       PDF
-                    </a>
+                    </button>
                   ) : (
                     <span className="text-base text-gray-400">-</span>
                   )}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {item.suratRekomendasi ? (
-                    <a
-                      href={item.suratRekomendasi}
-                      className="inline-flex items-center gap-1.5 text-green-600 hover:text-green-700 text-base font-medium"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => handleDownloadSuratRekomendasi(item.id)}
+                      disabled={downloadingId === `rekomendasi-${item.id}`}
+                      className="inline-flex items-center gap-1.5 text-green-600 hover:text-green-700 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Download className="w-4 h-4" />
+                      {downloadingId === `rekomendasi-${item.id}` ? (
+                        <span className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
                       PDF
-                    </a>
+                    </button>
                   ) : (
-                    <span className="text-base text-gray-400">-</span>
+                    <span className="text-base text-gray-400" title="Menunggu verifikasi lengkap">-</span>
                   )}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">

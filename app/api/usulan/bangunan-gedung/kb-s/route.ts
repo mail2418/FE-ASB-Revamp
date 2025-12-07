@@ -23,10 +23,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/asb-komponen-bangunans?page=1&amount=100`, {
-      method: 'GET',
-      headers: request.headers,
-    });
+    // Get idAsb from query parameters
+    const { searchParams } = new URL(request.url);
+    const idAsb = searchParams.get('idAsb');
+
+    let response;
+    if(idAsb){
+      response = await fetch(`${API_BASE_URL}/asb-komponen-bangunans?idAsb=${idAsb}`, {
+        method: 'GET',
+        headers: request.headers,
+      });
+    }else{
+      response = await fetch(`${API_BASE_URL}/asb-komponen-bangunans?page=1&amount=100`, {
+        method: 'GET',
+        headers: request.headers,
+      });
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

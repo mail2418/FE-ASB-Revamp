@@ -2,8 +2,8 @@ import { Metadata } from 'next';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 
 export const metadata: Metadata = {
-  title: 'Forgot Password | ASB Revamp Dashboard',
-  description: 'Request password reset assistance for ASB Revamp Dashboard',
+  title: 'Lupa Password | SISBE TulungAgung Dashboard',
+  description: 'Request password reset assistance for SISBE TulungAgung Dashboard',
   robots: 'noindex, nofollow',
 };
 
@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
 
       {/* Footer */}
       <footer className="absolute bottom-4 left-0 right-0 text-center text-sm text-gray-500">
-        <p>&copy; {new Date().getFullYear()} ASB Revamp. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Samarta. All rights reserved.</p>
       </footer>
     </main>
   );

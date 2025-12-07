@@ -29,6 +29,9 @@ interface APIUsulanBangunan {
   idRekeningReview: number | null;
   idKabkota: number;
   idAsbKlasifikasi: number | null;
+  idVerifikatorAdpem: number | null;
+  idVerifikatorBappeda: number | null;
+  idVerifikatorBpkad: number | null;
   tahunAnggaran: number;
   namaAsb: string;
   alamat: string;
@@ -60,17 +63,83 @@ interface APIUsulanBangunan {
   createdAt: string;
   updatedAt: string;
 }
-// Map API status to display status
+
+// Status ID to status name mapping (based on sequence)
+const STATUS_ID_MAP: { [key: number]: string } = {
+  1: 'General Documents',
+  2: 'Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
+  3: 'Kebutuhan Biaya Pekerjaan Standar (BPS)',
+  4: 'Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
+  5: 'Setup Rekening',
+  6: 'Proses Verifikasi',
+  7: 'Tidak Memenuhi Syarat',
+  8: 'Memenuhi Syarat',
+  9: 'Verifikasi Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
+  10: 'Verifikasi Kebutuhan Biaya Pekerjaan Standart (BPS)',
+  11: 'Verifikasi Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
+  12: 'Verifikasi Rekening Belanja',
+  13: 'Verifikasi Biaya Pekerjaan',
+};
+
+// Get status name from ID
+const getStatusNameById = (id: number): string => {
+  return STATUS_ID_MAP[id] || 'Unknown';
+};
+
+// Map API status to display status for table/charts
 const mapStatus = (asbStatus: { id: number; status: string }): string => {
-  const statusMap: { [key: string]: string } = {
+  // Map status to simplified display categories
+  const statusDisplayMap: { [key: string]: string } = {
     'General Documents': 'Proses',
+    'Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)': 'Proses',
+    'Kebutuhan Biaya Pekerjaan Standar (BPS)': 'Proses',
+    'Kebutuhan Biaya Pekerjaan Non Standar (BPNS)': 'Proses',
+    'Setup Rekening': 'Proses',
+    'Proses Verifikasi': 'Proses',
+    'Tidak Memenuhi Syarat': 'Tolak',
+    'Memenuhi Syarat': 'Sukses',
+    'Verifikasi Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)': 'Proses',
+    'Verifikasi Kebutuhan Biaya Pekerjaan Standart (BPS)': 'Proses',
+    'Verifikasi Kebutuhan Biaya Pekerjaan Non Standar (BPNS)': 'Proses',
+    'Verifikasi Rekening Belanja': 'Proses',
+    'Verifikasi Biaya Pekerjaan': 'Proses',
     'Approved': 'Sukses',
     'Rejected': 'Tolak',
     'Pending': 'Proses',
     'Review': 'Proses',
   };
-  return statusMap[asbStatus.status] || 'Proses';
+  return statusDisplayMap[asbStatus.status] || 'Proses';
 };
+// Helper function to determine verification status based on idAsbStatus and verifikator IDs
+const getVerificationStatus = (item: APIUsulanBangunan) => {
+  const statusId = item.asbStatus?.id || item.idAsbStatus;
+  
+  // If rejected (idAsbStatus = 7), all statuses are Ditolak
+  if (statusId === 7) {
+    return {
+      adpem: 'Ditolak' as const,
+      bappeda: 'Ditolak' as const,
+      bpkad: 'Ditolak' as const,
+    };
+  }
+  
+  // If approved by ADPEM (idAsbStatus = 8 and idVerifikatorAdpem exists)
+  if (statusId === 8 && item.idVerifikatorAdpem) {
+    return {
+      adpem: 'Disetujui' as const,
+      bappeda: item.idVerifikatorBappeda ? 'Disetujui' as const : 'Menunggu' as const,
+      bpkad: item.idVerifikatorBpkad ? 'Disetujui' as const : 'Menunggu' as const,
+    };
+  }
+  
+  // Default status based on verifikator IDs
+  return {
+    adpem: item.idVerifikatorAdpem ? 'Disetujui' as const : 'Menunggu' as const,
+    bappeda: item.idVerifikatorBappeda ? 'Disetujui' as const : 'Belum' as const,
+    bpkad: item.idVerifikatorBpkad ? 'Disetujui' as const : 'Belum' as const,
+  };
+};
+
 // Transform API data to display format
 const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanBangunanGedung[] => {
   return apiData.map((item) => ({
@@ -80,13 +149,15 @@ const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanBangunanGedung[] 
     lokasi: item.alamat,
     klasifikasi: item.idAsbKlasifikasi ? `Klasifikasi ${item.idAsbKlasifikasi}` : 'Belum Ditentukan',
     satuan: 'm2',
-    verificationStatus: {
-      opd: 'Menunggu',
-      bappeda: 'Belum',
-      bpkad: 'Belum',
-    },
+    verificationStatus: getVerificationStatus(item),
     nilaiBkf: item.shst ? 'Sudah' : 'Belum',
     status: mapStatus(item.asbStatus),
+    statusInfo: getStatusNameById(item.asbStatus?.id || item.idAsbStatus),
+    idAsbStatus: item.asbStatus?.id || item.idAsbStatus,
+    idVerifikatorAdpem: item.idVerifikatorAdpem,
+    idVerifikatorBappeda: item.idVerifikatorBappeda,
+    idVerifikatorBpkad: item.idVerifikatorBpkad,
+    rejectReason: item.rejectReason,
     suratPermohonan: '/easb-document.pdf',
     createdBy: item.opd?.opd || 'Unknown',
     createdDate: new Date(item.createdAt).toLocaleDateString('id-ID'),

@@ -31,7 +31,8 @@ export async function POST(request: NextRequest){
         idAsbTipeBangunan,
         idKabkota,
         jumlahKontraktor,
-        idAsbJenis
+        id,
+        luasTanah
     } = requestData;
 
     console.log(tahunAnggaran)
@@ -41,25 +42,48 @@ export async function POST(request: NextRequest){
     console.log(idAsbTipeBangunan)
     console.log(idKabkota)
     console.log(jumlahKontraktor)
-    console.log(idAsbJenis)
+    console.log(id)
 
-    const response = await fetch(`${API_BASE_URL}/asb/store-index`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        tahunAnggaran,
-        namaAsb,
-        alamat,
-        totalLantai,
-        idAsbTipeBangunan,
-        idKabkota,
-        jumlahKontraktor,
-        idAsbJenis
-      }),
-    });
+    let response;
+    if(idAsbTipeBangunan == 2){
+        response = await fetch(`${API_BASE_URL}/asb/store-index`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tahunAnggaran,
+          namaAsb,
+          alamat,
+          totalLantai,
+          idAsbTipeBangunan,
+          idKabkota,
+          jumlahKontraktor,
+          id,
+          luasTanah
+        }),
+      });
+    }else
+    {
+      response = await fetch(`${API_BASE_URL}/asb/store-index`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tahunAnggaran,
+          namaAsb,
+          alamat,
+          totalLantai,
+          idAsbTipeBangunan,
+          idKabkota,
+          jumlahKontraktor,
+          id
+        }),
+      });
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
