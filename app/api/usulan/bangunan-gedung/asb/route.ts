@@ -23,7 +23,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/asb?page=1&amount=100`, {
+    // Get idAsb and view from query parameters
+    const { searchParams } = new URL(request.url);
+    const idAsb = searchParams.get('idAsb');
+
+    console.log(idAsb)
+
+    let apiUrl = `${API_BASE_URL}/asb?page=1&amount=100`;
+    if (idAsb) {
+      apiUrl = `${API_BASE_URL}/asb/id?id=${idAsb}`;
+    }
+
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

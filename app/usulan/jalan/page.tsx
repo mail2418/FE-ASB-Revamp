@@ -1,35 +1,46 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Route, Search, Plus, Eye, Download, ChevronDown, ChevronLeft, ChevronRight, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Route, Search, Plus, Eye, Edit2, Download, ChevronDown, ChevronLeft, ChevronRight, CheckCircle, Clock, XCircle } from 'lucide-react';
+
+// Verification status types
+type VerificationStatus = 'Belum' | 'Disetujui' | 'Ditolak' | 'Menunggu';
+
+interface VerificationStages {
+  adpem: VerificationStatus;
+  bappeda: VerificationStatus;
+  bpkad: VerificationStatus;
+}
 
 // Interface for Jalan form data
 interface UsulanJalan {
   id: string;
   jenisUsulan: 'Perawatan' | 'Pembuatan';
   lebarJalan: string;
-  strukturPerkerasan: 'Perkerasan Lentur' | 'Perkerasan Kaku';
+  strukturPerkerasan: string;
   repetisiBeban: string;
   nilaiCBR: string;
   spesifikasiDesain: string;
   mutuBeton?: string;
   ruangLingkup: string[];
   keteranganTambahan: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  verificationStatus: VerificationStages;
   createdAt: string;
+  createdBy?: string;
 }
 
-// Status badge component
-const StatusBadge = ({ status }: { status: string }) => {
+// Verification badge component
+const VerificationBadge = ({ status }: { status: VerificationStatus }) => {
   const config = {
-    Pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-3 h-3" /> },
-    Approved: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-3 h-3" /> },
-    Rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-3 h-3" /> },
+    Belum: { bg: 'bg-gray-100', text: 'text-gray-600', icon: <Clock className="w-3 h-3" /> },
+    Menunggu: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Clock className="w-3 h-3" /> },
+    Disetujui: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-3 h-3" /> },
+    Ditolak: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-3 h-3" /> },
   };
-  const c = config[status as keyof typeof config] || config.Pending;
+  const c = config[status] || config.Menunggu;
   
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>
       {c.icon}
       {status}
     </span>
@@ -48,71 +59,116 @@ const JenisBadge = ({ jenis }: { jenis: string }) => {
   );
 };
 
-// Mock data - in production this would come from API
+// Mock data with 3-stage verification - fallback when localStorage is empty
 const mockData: UsulanJalan[] = [
   {
-    id: '1',
+    id: 'mock-1',
     jenisUsulan: 'Pembuatan',
-    lebarJalan: '5 m',
-    strukturPerkerasan: 'Perkerasan Lentur',
+    lebarJalan: '5',
+    strukturPerkerasan: 'lentur',
     repetisiBeban: '10',
     nilaiCBR: '6',
-    spesifikasiDesain: 'Bagan Desain 3 : Opsi Biaya Minimum dengan CTB',
+    spesifikasiDesain: 'bagan_3',
     ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Galian Tanah'],
     keteranganTambahan: 'Tebal galian 30 cm',
-    status: 'Approved',
+    verificationStatus: {
+      adpem: 'Disetujui',
+      bappeda: 'Disetujui',
+      bpkad: 'Disetujui',
+    },
     createdAt: '2024-11-15',
+    createdBy: 'Anggito Anju',
   },
   {
-    id: '2',
+    id: 'mock-2',
     jenisUsulan: 'Perawatan',
-    lebarJalan: '7 m',
-    strukturPerkerasan: 'Perkerasan Kaku',
+    lebarJalan: '7',
+    strukturPerkerasan: 'kaku',
     repetisiBeban: '15',
     nilaiCBR: '8',
-    spesifikasiDesain: 'Bagan Desain 4 : Perkerasan Kaku untuk Beban Lalu Lintas Berat',
-    mutuBeton: "f'c 25 Mpa",
+    spesifikasiDesain: 'bagan_4',
+    mutuBeton: "fc_25",
     ruangLingkup: ['Perkerasan Beton', 'Lapis Pondasi', 'Pemadatan Tanah', 'Marka dan Rambu Jalan'],
     keteranganTambahan: 'Tebal timbunan 50 cm',
-    status: 'Pending',
+    verificationStatus: {
+      adpem: 'Disetujui',
+      bappeda: 'Menunggu',
+      bpkad: 'Belum',
+    },
     createdAt: '2024-11-20',
+    createdBy: 'Muhammad Ismail',
   },
   {
-    id: '3',
+    id: 'mock-3',
     jenisUsulan: 'Pembuatan',
-    lebarJalan: '4 m',
-    strukturPerkerasan: 'Perkerasan Lentur',
+    lebarJalan: '4',
+    strukturPerkerasan: 'lentur',
     repetisiBeban: '5',
     nilaiCBR: '4',
-    spesifikasiDesain: 'Bagan Desain 3A : Opsi Biaya Minimum dengan HRS',
+    spesifikasiDesain: 'bagan_3a',
     ruangLingkup: ['Perkerasan Aspal', 'Galian Tanah', 'Timbunan Tanah'],
     keteranganTambahan: 'Tebal urugan 20 cm',
-    status: 'Rejected',
+    verificationStatus: {
+      adpem: 'Disetujui',
+      bappeda: 'Ditolak',
+      bpkad: 'Belum',
+    },
     createdAt: '2024-11-10',
-  },
-  {
-    id: '4',
-    jenisUsulan: 'Perawatan',
-    lebarJalan: '10 m',
-    strukturPerkerasan: 'Perkerasan Lentur',
-    repetisiBeban: '20',
-    nilaiCBR: '10',
-    spesifikasiDesain: 'Bagan Desain 3B : Aspal dengan Lapis Fondasi Berbutir',
-    ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Pemadatan Tanah', 'Median Jalan'],
-    keteranganTambahan: '-',
-    status: 'Approved',
-    createdAt: '2024-11-25',
+    createdBy: 'Samarta Admin',
   },
 ];
 
+// Helper to get overall status
+const getOverallStatus = (v: VerificationStages): string => {
+  if (v.adpem === 'Disetujui' && v.bappeda === 'Disetujui' && v.bpkad === 'Disetujui') {
+    return 'Sukses';
+  }
+  if (v.adpem === 'Ditolak' || v.bappeda === 'Ditolak' || v.bpkad === 'Ditolak') {
+    return 'Ditolak';
+  }
+  return 'Sedang Diproses';
+};
+
 export default function UsulanJalanPage() {
   const router = useRouter();
-  const [data, setData] = useState<UsulanJalan[]>(mockData);
-  const [filteredData, setFilteredData] = useState<UsulanJalan[]>(mockData);
+  const [data, setData] = useState<UsulanJalan[]>([]);
+  const [filteredData, setFilteredData] = useState<UsulanJalan[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [userRole, setUserRole] = useState<string>('');
   const itemsPerPage = 10;
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    // Get user role
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        setUserRole(parsed.role || '');
+      } catch (e) {
+        console.error('Error parsing userData:', e);
+      }
+    }
+
+    // Load localStorage data
+    const storedData = localStorage.getItem('usulan_jalan_submissions');
+    let localData: UsulanJalan[] = [];
+    
+    if (storedData) {
+      try {
+        localData = JSON.parse(storedData);
+      } catch (e) {
+        console.error('Error parsing stored data:', e);
+      }
+    }
+    
+    // Combine localStorage data with mock data
+    const combinedData = [...localData, ...mockData];
+    setData(combinedData);
+    setFilteredData(combinedData);
+  }, []);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -134,7 +190,7 @@ export default function UsulanJalanPage() {
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((item) => item.status === statusFilter);
+      filtered = filtered.filter((item) => getOverallStatus(item.verificationStatus) === statusFilter);
     }
 
     setFilteredData(filtered);
@@ -144,9 +200,16 @@ export default function UsulanJalanPage() {
   // Calculate statistics
   const stats = {
     total: data.length,
-    approved: data.filter((d) => d.status === 'Approved').length,
-    pending: data.filter((d) => d.status === 'Pending').length,
-    rejected: data.filter((d) => d.status === 'Rejected').length,
+    sukses: data.filter((d) => getOverallStatus(d.verificationStatus) === 'Sukses').length,
+    proses: data.filter((d) => getOverallStatus(d.verificationStatus) === 'Sedang Diproses').length,
+    ditolak: data.filter((d) => getOverallStatus(d.verificationStatus) === 'Ditolak').length,
+  };
+
+  // Format struktur perkerasan for display
+  const formatStruktur = (s: string): string => {
+    if (s === 'lentur') return 'Perkerasan Lentur';
+    if (s === 'kaku') return 'Perkerasan Kaku';
+    return s;
   };
 
   return (
@@ -168,8 +231,8 @@ export default function UsulanJalanPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Disetujui</p>
-              <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+              <p className="text-sm text-gray-500">Sukses</p>
+              <p className="text-2xl font-bold text-green-600">{stats.sukses}</p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
               <CheckCircle className="w-6 h-6 text-green-600" />
@@ -180,8 +243,8 @@ export default function UsulanJalanPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Menunggu</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+              <p className="text-sm text-gray-500">Sedang Diproses</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.proses}</p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-lg">
               <Clock className="w-6 h-6 text-yellow-600" />
@@ -193,7 +256,7 @@ export default function UsulanJalanPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Ditolak</p>
-              <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+              <p className="text-2xl font-bold text-red-600">{stats.ditolak}</p>
             </div>
             <div className="p-3 bg-red-100 rounded-lg">
               <XCircle className="w-6 h-6 text-red-600" />
@@ -222,13 +285,15 @@ export default function UsulanJalanPage() {
               </div>
               
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <button
-                  onClick={() => router.push('/usulan/jalan/tambah')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium cursor-pointer"
-                >
-                  <Plus className="w-5 h-5" />
-                  Tambah Usulan
-                </button>
+                {userRole === 'opd' && (
+                  <button
+                    onClick={() => router.push('/usulan/jalan/tambah')}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium cursor-pointer"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Tambah Usulan
+                  </button>
+                )}
               </div>  
             </div>
           </div>
@@ -239,40 +304,76 @@ export default function UsulanJalanPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">No</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Jenis Usulan</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lebar Jalan</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Struktur Perkerasan</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sumbu Kumulatif (ESA5)</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nilai CBR Tanah</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">No</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Jenis</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Lebar</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Struktur</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ESA5</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">CBR</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Info Status</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {paginatedData.length > 0 ? (
                 paginatedData.map((item, index) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 text-sm text-gray-900">{startIndex + index + 1}</td>
+                    <td className="px-4 py-3">
                       <JenisBadge jenis={item.jenisUsulan} />
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.lebarJalan}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 text-sm text-gray-900">{item.lebarJalan} m</td>
+                    <td className="px-4 py-3">
                       <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
-                        item.strukturPerkerasan === 'Perkerasan Lentur' 
+                        item.strukturPerkerasan === 'lentur' || item.strukturPerkerasan === 'Perkerasan Lentur'
                           ? 'bg-indigo-100 text-indigo-800' 
                           : 'bg-purple-100 text-purple-800'
                       }`}>
-                        {item.strukturPerkerasan}
+                        {formatStruktur(item.strukturPerkerasan)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.repetisiBeban} juta</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{item.nilaiCBR}%</td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={item.status} />
+                    <td className="px-4 py-3 text-sm text-gray-900">{item.repetisiBeban} juta</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{item.nilaiCBR}%</td>
+                    <td className="px-4 py-3">
+                      {/* Verification Sequence - similar to Usulan Bangunan */}
+                      <div className="flex items-center justify-center gap-1">
+                        {[
+                          { key: 'adpem', label: 'Adpem' },
+                          { key: 'bappeda', label: 'BAPPEDA' },
+                          { key: 'bpkad', label: 'BPKAD' },
+                        ].map((stage, idx) => {
+                          const status = item.verificationStatus[stage.key as keyof VerificationStages];
+                          const statusColors = {
+                            Disetujui: 'bg-green-100 text-green-700 border-green-300',
+                            Ditolak: 'bg-red-100 text-red-700 border-red-300',
+                            Menunggu: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+                            Belum: 'bg-gray-100 text-gray-500 border-gray-300',
+                          };
+                          const color = statusColors[status] || statusColors.Belum;
+                          
+                          return (
+                            <React.Fragment key={stage.key}>
+                              <div
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border min-w-[70px] justify-center ${color}`}
+                                title={`${stage.label} - ${status}`}
+                              >
+                                {status === 'Disetujui' && <CheckCircle className="w-3 h-3" />}
+                                {status === 'Ditolak' && <XCircle className="w-3 h-3" />}
+                                {status === 'Menunggu' && <Clock className="w-3 h-3" />}
+                                {status === 'Belum' && <Clock className="w-3 h-3" />}
+                                <span className="text-[10px] font-semibold">{stage.label}</span>
+                              </div>
+                              {idx < 2 && (
+                                <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => router.push(`/usulan/jalan/detail/${item.id}`)}
@@ -281,6 +382,15 @@ export default function UsulanJalanPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+                        {userRole === 'opd' && (
+                          <button
+                            onClick={() => router.push(`/usulan/jalan/edit/${item.id}`)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors cursor-pointer"
                           title="Download"
@@ -293,7 +403,7 @@ export default function UsulanJalanPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
                       <Route className="w-12 h-12 text-gray-300" />
                       <p className="text-lg font-medium">Tidak ada data</p>
@@ -310,7 +420,7 @@ export default function UsulanJalanPage() {
         <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              Menampilkan <span className="font-medium">{startIndex + 1}</span> - <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> dari <span className="font-medium">{filteredData.length}</span> data
+              Menampilkan <span className="font-medium">{filteredData.length > 0 ? startIndex + 1 : 0}</span> - <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> dari <span className="font-medium">{filteredData.length}</span> data
             </p>
             
             {/* Pagination Controls */}

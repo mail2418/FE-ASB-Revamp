@@ -31,7 +31,7 @@ export async function POST(request: NextRequest){
         idAsbTipeBangunan,
         idKabkota,
         jumlahKontraktor,
-        id,
+        idAsbJenis,
         luasTanah
     } = requestData;
 
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest){
     console.log(idAsbTipeBangunan)
     console.log(idKabkota)
     console.log(jumlahKontraktor)
-    console.log(id)
+    console.log(idAsbJenis)
 
     let response;
     if(idAsbTipeBangunan == 2){
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest){
           idAsbTipeBangunan,
           idKabkota,
           jumlahKontraktor,
-          id,
+          idAsbJenis,
           luasTanah
         }),
       });
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest){
           idAsbTipeBangunan,
           idKabkota,
           jumlahKontraktor,
-          id
+          idAsbJenis
         }),
       });
     }
