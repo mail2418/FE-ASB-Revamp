@@ -126,9 +126,37 @@ export default function SignInForm() {
         return;
       }
 
-      // Store accessToken in localStorage
+      // Store accessToken and user info in localStorage
       if (typeof window !== 'undefined' && data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
+        
+        // Store user information if available
+        if (data.user) {
+          localStorage.setItem('userInfo', JSON.stringify(data.user));
+        }
+        
+        // Fetch verifikator data and store in localStorage (filter by current user)
+        try {
+          const verifikatorCheck = await fetch('/api/verifikator/check-verifikator-type', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${data.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (verifikatorCheck.ok) {
+            // Handle both array and single object responses
+            const verifikatorResult = await verifikatorCheck.json();
+            
+            if (verifikatorResult.data) {
+              localStorage.setItem('verifikatorInfo', verifikatorResult.data);
+            }
+          }
+        } catch (verifikatorError) {
+          console.error('Error fetching verifikator data:', verifikatorError);
+          // Continue with login even if verifikator fetch fails
+        }
       }
 
       // Handle remember me
@@ -165,17 +193,17 @@ export default function SignInForm() {
           Sistem Informasi Standar Belanja Elektronik
         </h1>
         <p className="text-orange-100 text-center text-sm">
-          Membantu Pemerintah Daerah dalam pengelolaan belanja elektronik
+          Membantu Pemerintah Daerah Tulung Agung dalam pengelolaan belanja elektronik
         </p>
       </div>
 
       {/* Form Section */}
       <div className="p-8">
         <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-          Welcome Back
+          Selamat Datang
         </h2>
         <p className="text-gray-600 mb-6">
-          Please sign in to continue to your dashboard
+          Silahkan Log In untuk Masuk ke Halaman Dashboard
         </p>
 
         {/* General Error */}
@@ -209,7 +237,7 @@ export default function SignInForm() {
                 className={`block w-full pl-10 pr-3 py-3 border ${
                   errors.username ? 'border-red-300' : 'border-gray-300'
                 } rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors`}
-                placeholder="Enter your username"
+                placeholder="Masukkan Username"
                 disabled={isLoading}
                 aria-invalid={errors.username ? 'true' : 'false'}
                 aria-describedby={errors.username ? 'username-error' : undefined}
@@ -245,7 +273,7 @@ export default function SignInForm() {
                 className={`block w-full pl-10 pr-10 py-3 border ${
                   errors.password ? 'border-red-300' : 'border-gray-300'
                 } rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors`}
-                placeholder="Enter your password"
+                placeholder="Masukkan Password"
                 disabled={isLoading}
                 aria-invalid={errors.password ? 'true' : 'false'}
                 aria-describedby={errors.password ? 'password-error' : undefined}
@@ -288,7 +316,7 @@ export default function SignInForm() {
                 htmlFor="remember-me" 
                 className="ml-2 block text-sm text-gray-700 cursor-pointer select-none"
               >
-                Remember me
+                Ingat Saya
               </label>
             </div>
 
@@ -297,7 +325,7 @@ export default function SignInForm() {
               className="text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors"
               tabIndex={isLoading ? -1 : 0}
             >
-              Forgot password?
+              Lupa Password?
             </Link>
           </div>
 
@@ -333,7 +361,7 @@ export default function SignInForm() {
                 Signing in...
               </span>
             ) : (
-              'Sign In'
+              'Masuk'
             )}
           </button>
         </form>
@@ -341,7 +369,7 @@ export default function SignInForm() {
         {/* Help Text */}
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>
-            Need help? Contact{' '}
+            Butuh Bantuan? Hubungi{' '}
             <Link 
               href="/forgot-password"
               className="text-orange-600 hover:text-orange-700 font-medium"

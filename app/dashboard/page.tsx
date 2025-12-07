@@ -39,6 +39,9 @@ interface APIUsulanBangunan {
   idRekeningReview: number | null;
   idKabkota: number;
   idAsbKlasifikasi: number | null;
+  idVerifikatorAdpem: number | null;
+  idVerifikatorBappeda: number | null;
+  idVerifikatorBpkad: number | null;
   tahunAnggaran: number;
   namaAsb: string;
   alamat: string;
@@ -71,17 +74,31 @@ interface APIUsulanBangunan {
   updatedAt: string;
 }
 
-// Map API status to display status
-const mapStatus = (asbStatus: { id: number; status: string }): string => {
-  if (!asbStatus) return 'Sedang Diproses';
-  const statusMap: { [key: string]: string } = {
-    'General Documents': 'Sedang Diproses',
-    'Approved': 'Sukses',
-    'Rejected': 'Ditolak',
-    'Pending': 'Sedang Diproses',
-    'Review': 'Sedang Diproses',
-  };
-  return statusMap[asbStatus.status] || 'Sedang Diproses';
+// Status ID to name mapping based on idAsbStatus
+const STATUS_ID_MAP: { [key: number]: string } = {
+  1: 'General Documents',
+  2: 'Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
+  3: 'Kebutuhan Biaya Pekerjaan Standar (BPS)',
+  4: 'Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
+  5: 'Setup Rekening',
+  6: 'Proses Verifikasi',
+  7: 'Tidak Memenuhi Syarat',
+  8: 'Memenuhi Syarat',
+  9: 'Verifikasi Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
+  10: 'Verifikasi Kebutuhan Biaya Pekerjaan Standart (BPS)',
+  11: 'Verifikasi Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
+  12: 'Verifikasi Rekening Belanja',
+  13: 'Verifikasi Biaya Pekerjaan',
+};
+
+// Map API status to display status based on idAsbStatus
+const mapStatus = (idAsbStatus: number): string => {
+  // Sukses when idAsbStatus is 8
+  if (idAsbStatus === 8) return 'Sukses';
+  // Ditolak when idAsbStatus is 7
+  if (idAsbStatus === 7) return 'Ditolak';
+  // Sedang Diproses for all other statuses
+  return 'Sedang Diproses';
 };
 
 // Transform API data to table format
@@ -89,10 +106,17 @@ const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanData[] => {
   return apiData.map((item) => ({
     id: item.id.toString(),
     jenis: 'Bangunan',
-    uraian: item.namaAsb,
-    status: mapStatus(item.asbStatus),
-    suratPermohonan: '/easb-document.pdf',
-    suratRekomendasi: item.asbStatus?.status === 'Approved' ? '/easb-document.pdf' : undefined,
+    namaAsb: item.namaAsb,
+    status: mapStatus(item.asbStatus?.id || item.idAsbStatus),
+    idAsbStatus: item.asbStatus?.id || item.idAsbStatus,
+    idVerifikatorAdpem: item.idVerifikatorAdpem,
+    idVerifikatorBappeda: item.idVerifikatorBappeda,
+    idVerifikatorBpkad: item.idVerifikatorBpkad,
+    suratPermohonan: 'download', // Flag to indicate download is available
+    suratRekomendasi: (item.idVerifikatorAdpem !== null && 
+                       item.idVerifikatorBappeda !== null && 
+                       item.idVerifikatorBpkad !== null) ? 'download' : undefined,
+    createdAt: new Date(item.createdAt),
   }));
 };
 
@@ -100,8 +124,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [tableData, setTableData] = useState<UsulanData[]>([]);
   const [filteredData, setFilteredData] = useState<UsulanData[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState('November');
-  const [selectedYear, setSelectedYear] = useState('2024');
+  const [rawApiData, setRawApiData] = useState<APIUsulanBangunan[]>([]);
+  
+  // Get current month/year for initial values
+  const currentDate = new Date();
+  const currentMonthIndex = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear().toString();
+  
+  // Available months and years
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const years = ['2025', '2024', '2023', '2022', '2021'];
+  
+  const [selectedMonth, setSelectedMonth] = useState(months[currentMonthIndex]);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
   
@@ -133,12 +171,57 @@ export default function DashboardPage() {
     ditolak: 0,
   });
 
-  // Available months and years
-  const months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
-  const years = ['2025', '2024', '2023', '2022', '2021'];
+  // Function to update line chart data based on selected month/year
+  const updateLineChartData = (apiData: APIUsulanBangunan[], month: string, year: string) => {
+    const monthIndex = months.indexOf(month);
+    const yearNum = parseInt(year);
+    
+    // Filter data by selected month and year
+    const filteredByDate = apiData.filter(item => {
+      const date = new Date(item.createdAt);
+      return date.getMonth() === monthIndex && date.getFullYear() === yearNum;
+    });
+    
+    // Group by day
+    const dateGroups: { [key: string]: number } = {};
+    filteredByDate.forEach(item => {
+      const date = new Date(item.createdAt);
+      const dateKey = `${date.getDate()} ${month.substring(0, 3)}`;
+      dateGroups[dateKey] = (dateGroups[dateKey] || 0) + 1;
+    });
+    
+    // Create cumulative line chart data
+    let cumulative = 0;
+    const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+      const dayA = parseInt(a.split(' ')[0]);
+      const dayB = parseInt(b.split(' ')[0]);
+      return dayA - dayB;
+    });
+    
+    const lineData = sortedDates.map(dateKey => {
+      cumulative += dateGroups[dateKey];
+      return {
+        date: dateKey,
+        bangunanGedung: cumulative,
+        jalan: 0,
+        saluran: 0,
+      };
+    });
+    
+    if (lineData.length > 0) {
+      setLineChartData(lineData);
+    } else {
+      // Show empty state if no data for selected period
+      setLineChartData([{ date: `1 ${month.substring(0, 3)}`, bangunanGedung: 0, jalan: 0, saluran: 0 }]);
+    }
+  };
+
+  // Update line chart when month/year selection changes
+  useEffect(() => {
+    if (rawApiData.length > 0) {
+      updateLineChartData(rawApiData, selectedMonth, selectedYear);
+    }
+  }, [selectedMonth, selectedYear, rawApiData]);
 
   // Fetch data from API
   useEffect(() => {
@@ -170,14 +253,13 @@ export default function DashboardPage() {
           setTableData(transformedData);
           setFilteredData(transformedData);
           
-          // Calculate statistics
-          const suksesCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Sukses').length;
-          const prosesCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Sedang Diproses').length;
-          const tolakCount = apiData.filter(d => mapStatus(d.asbStatus) === 'Ditolak').length;
-          
-          const suksesCountPercentage = (suksesCount / apiData.length) * 100;
-          const prosesCountPercentage = (prosesCount / apiData.length) * 100;
-          const tolakCountPercentage = (tolakCount / apiData.length) * 100;
+          // Calculate statistics using idAsbStatus directly
+          const suksesCount = apiData.filter(d => (d.asbStatus?.id || d.idAsbStatus) === 8).length;
+          const tolakCount = apiData.filter(d => (d.asbStatus?.id || d.idAsbStatus) === 7).length;
+          const prosesCount = apiData.filter(d => {
+            const statusId = d.asbStatus?.id || d.idAsbStatus;
+            return statusId !== 8 && statusId !== 7;
+          }).length;
           
           setStats({
             total: apiData.length,
@@ -187,48 +269,20 @@ export default function DashboardPage() {
           });
           
           // Calculate donut chart data for Bangunan Gedung
-          const totalBangunan = suksesCount + prosesCount + tolakCount;
+          const totalBangunan = apiData.length;
           if (totalBangunan > 0) {
+            const suksesPercentage = Number(((suksesCount / totalBangunan) * 100).toFixed(2));
+            const prosesPercentage = Number(((prosesCount / totalBangunan) * 100).toFixed(2));
+            const tolakPercentage = Number(((tolakCount / totalBangunan) * 100).toFixed(2));
             setDonutChartDataBangunanGedung([
-              { name: 'Sukses', value: suksesCountPercentage || 1, color: '#22c55e' },
-              { name: 'Sedang diproses', value: prosesCountPercentage || 1, color: '#f59e0b' },
-              { name: 'Ditolak', value: tolakCountPercentage || 1, color: '#ef4444' },
+              { name: 'Sukses', value: suksesPercentage || 1, color: '#22c55e' },
+              { name: 'Sedang diproses', value: prosesPercentage || 1, color: '#f59e0b' },
+              { name: 'Ditolak', value: tolakPercentage || 1, color: '#ef4444' },
             ]);
           }
           
-          // Generate line chart data (group by date)
-          const dateGroups: { [key: string]: number } = {};
-          apiData.forEach(item => {
-            const date = new Date(item.createdAt);
-            const dateKey = `${date.getDate()} ${months[date.getMonth()].substring(0, 3)}`;
-            dateGroups[dateKey] = (dateGroups[dateKey] || 0) + 1;
-          });
-          
-          // Create cumulative line chart data
-          let cumulative = 0;
-          const lineData = Object.entries(dateGroups)
-            .sort((a, b) => {
-              // Simple sort by date string
-              return 0;
-            })
-            .map(([date, count]) => {
-              cumulative += count;
-              return {
-                date,
-                bangunanGedung: cumulative,
-                jalan: 0,  // Placeholder for jalan data
-                saluran: 0, // Placeholder for saluran data
-              };
-            });
-          
-          if (lineData.length > 0) {
-            setLineChartData(lineData);
-          } else {
-            // Default data if no API data available
-            setLineChartData([
-              { date: 'Nov', bangunanGedung: apiData.length, jalan: 0, saluran: 0 },
-            ]);
-          }
+          // Store raw API data for line chart filtering
+          setRawApiData(apiData);
         } else {
           console.error('Failed to fetch data:', response.statusText);
         }
@@ -251,7 +305,7 @@ export default function DashboardPage() {
       filtered = filtered.filter(
         (item) =>
           item.jenis.toLowerCase().includes(searchLower) ||
-          (item.uraian && item.uraian.toLowerCase().includes(searchLower)) ||
+          (item.namaAsb && item.namaAsb.toLowerCase().includes(searchLower)) ||
           item.status.toLowerCase().includes(searchLower)
       );
     }

@@ -9,7 +9,8 @@ import {
   Download,
   Pencil,
   Check,
-  X as CloseIcon
+  X as CloseIcon,
+  AlertCircle
 } from 'lucide-react';
 import type { UsulanBangunanGedung, FilterUsulanBangunan, VerificationStatus } from '@/types/usulan-bangunan';
 import { cn } from '@/lib/utils';
@@ -20,46 +21,6 @@ interface UsulanBangunanTableProps {
   onFilterChange?: (filters: FilterUsulanBangunan) => void;
   onAddNew?: () => void;
 }
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const statusConfig = {
-    'Sukses': {
-      bg: 'bg-green-100',
-      text: 'text-green-800',
-      icon: <Check className="w-3 h-3" />,
-    },
-    'Tolak': {
-      bg: 'bg-red-100',
-      text: 'text-red-800',
-      icon: <CloseIcon className="w-3 h-3" />,
-    },
-    'Proses': {
-      bg: 'bg-yellow-100',
-      text: 'text-yellow-800',
-      icon: null,
-    },
-    'Draft': {
-      bg: 'bg-gray-100',
-      text: 'text-gray-800',
-      icon: null,
-    },
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['Draft'];
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-        config.bg,
-        config.text
-      )}
-    >
-      {config.icon}
-      {status}
-    </span>
-  );
-};
 
 const JenisBadge = ({ jenis }: { jenis: string }) => {
   const jenisConfig = {
@@ -90,46 +51,6 @@ const JenisBadge = ({ jenis }: { jenis: string }) => {
   );
 };
 
-const NilaiBkfBadge = ({ status }: { status: string }) => {
-  const statusConfig = {
-    'Sudah': {
-      bg: 'bg-green-100',
-      text: 'text-green-800',
-      border: 'border-green-200',
-    },
-    'Belum': {
-      bg: 'bg-gray-100',
-      text: 'text-gray-800',
-      border: 'border-gray-200',
-    },
-    'Tolak': {
-      bg: 'bg-red-100',
-      text: 'text-red-800',
-      border: 'border-red-200',
-    },
-    'Sedang': {
-      bg: 'bg-yellow-100',
-      text: 'text-yellow-800',
-      border: 'border-yellow-200',
-    },
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['Belum'];
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border',
-        config.bg,
-        config.text,
-        config.border
-      )}
-    >
-      {status}
-    </span>
-  );
-};
-
 export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: UsulanBangunanTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
@@ -142,6 +63,8 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
   const [userRole, setUserRole] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showRejectReasonModal, setShowRejectReasonModal] = useState(false);
+  const [selectedRejectReason, setSelectedRejectReason] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   // Calculate pagination
@@ -185,19 +108,8 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
     }
   };
 
-  const handleJenisFilter = (jenis: string) => {
-    setJenisFilter(jenis);
-    if (onFilterChange) {
-      onFilterChange({ 
-        search: searchTerm,
-        jenis: jenis as any,
-        status: statusFilter as any,
-      });
-    }
-  };
-
   // Handle verification status change
-  const handleVerificationChange = (itemId: string, stage: 'opd' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
+  const handleVerificationChange = (itemId: string, stage: 'adpem' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
     setEditingData(prev => 
       prev.map(item => 
         item.id === itemId 
@@ -234,7 +146,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
         return;
       }
 
-      const response = await fetch(`/api/generate-surat-permohonan?idAsb=${itemId}`, {
+      const response = await fetch(`/api/usulan/bangunan-gedung/document/download-surat-permohonan?idAsb=${itemId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -271,6 +183,54 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
       setDownloadingId(null);
     }
   };
+
+  // Handle download Surat Rekomendasi
+  const handleDownloadSuratRekomendasi = async (itemId: string) => {
+    setDownloadingId(itemId);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch(`/api/usulan/bangunan-gedung/document/download-surat-rekomendasi?idAsb=${itemId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        // Try to parse error as JSON if it's not a PDF
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Gagal mengunduh dokumen');
+        }
+        throw new Error(`Gagal mengunduh dokumen: ${response.statusText}`);
+      }
+
+      // Get the PDF as blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `surat-rekomendasi-${itemId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error downloading surat rekomendasi:', error);
+      alert(`Gagal mengunduh: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -322,7 +282,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
               />
             </div>
-            {onAddNew && (
+            {userRole === 'admin' || userRole === 'opd' && onAddNew && (
               <button
                 onClick={onAddNew}
                 className="bg-white text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors whitespace-nowrap"
@@ -347,6 +307,9 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Lokasi
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                Info Status
               </th>
 
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -383,6 +346,11 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900">{item.lokasi}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200 max-w-[200px]" title={item.statusInfo}>
+                    {item.statusInfo || '-'}
+                  </div>
                 </td>
 
                 <td className="px-6 py-4 text-sm text-gray-900">
@@ -424,28 +392,28 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                   />
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {item.suratRekomendasi ? (
-                    <a
-                      href={item.suratRekomendasi}
-                      className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-sm"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {/* Surat Rekomendasi - Only visible when all 3 verifikators have approved and idAsbStatus is 8 */}
+                  {item.idAsbStatus === 8 && 
+                   item.idVerifikatorAdpem !== null && 
+                   item.idVerifikatorBappeda !== null && 
+                   item.idVerifikatorBpkad !== null ? (
+                    <button
+                      onClick={() => handleDownloadSuratRekomendasi(item.id)}
+                      className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-sm cursor-pointer"
                     >
                       <Download className="w-4 h-4" />
                       <span className="text-xs bg-red-100 text-red-600 px-1 rounded">PDF</span>
-                    </a>
-                  ) : item.status === 'Proses' ? (
-                    <button className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300 transition-colors">
-                      Proses
                     </button>
                   ) : (
-                    <span className="text-sm text-gray-400">-</span>
+                    <span className="text-sm text-gray-400" title="Menunggu verifikasi dari semua verifikator">
+                      -
+                    </span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    {/* Edit button for OPD role */}
-                    {userRole && userRole === 'opd' && (
+                    {/* Edit button for OPD role - hidden when status is rejected (idAsbStatus === 7) */}
+                    {userRole && userRole === 'opd' && item.idAsbStatus !== 7 && (
                       <button 
                         onClick={() => handleEditClick(item.id)}
                         className="text-blue-500 hover:text-blue-700 transition-colors p-1 rounded hover:bg-blue-50"
@@ -454,14 +422,27 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                         <Pencil className="w-5 h-5" />
                       </button>
                     )}
-                    {/* Verify button for verifikator roles */}
-                    {userRole && ['verifikator', 'verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && (
+                    {/* Verify button for verifikator roles - hidden when status is rejected (idAsbStatus === 7) */}
+                    {userRole && ['verifikator', 'verifikator_adpem', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && item.idAsbStatus !== 7 && (
                       <button 
                         onClick={() => handleVerifyClick(item.id)}
                         className="text-teal-500 hover:text-teal-700 transition-colors p-1 rounded hover:bg-teal-50"
                         title="Verify usulan"
                       >
                         <Pencil className="w-5 h-5" />
+                      </button>
+                    )}
+                    {/* Rejection reason icon - shown when status is rejected (idAsbStatus === 7) */}
+                    {item.idAsbStatus === 7 && (
+                      <button
+                        onClick={() => {
+                          setSelectedRejectReason(item.rejectReason || 'Tidak ada alasan yang diberikan');
+                          setShowRejectReasonModal(true);
+                        }}
+                        className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50"
+                        title="Lihat alasan penolakan"
+                      >
+                        <AlertCircle className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -531,6 +512,38 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
           )}
         </div>
       </div>
+
+      {/* Rejection Reason Modal */}
+      {showRejectReasonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-full">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Alasan Penolakan
+              </h3>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-gray-700">
+                {selectedRejectReason}
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setShowRejectReasonModal(false);
+                  setSelectedRejectReason(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

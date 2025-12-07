@@ -18,8 +18,12 @@ export interface DashboardData {
 export interface UsulanData {
   id: string;
   jenis: string;
-  uraian?: string;
+  namaAsb?: string;
   status: string;
+  idAsbStatus?: number;
+  idVerifikatorAdpem?: number | null;
+  idVerifikatorBappeda?: number | null;
+  idVerifikatorBpkad?: number | null;
   suratPermohonan?: string;
   suratRekomendasi?: string;
   createdAt?: Date;

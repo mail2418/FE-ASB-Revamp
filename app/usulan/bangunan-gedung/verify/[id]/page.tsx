@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Edit3, Save, X } from 'lucide-react';
-import type { UsulanBangunanGedung, VerificationStatus } from '@/types/usulan-bangunan';
-import VerificationSequence from '@/components/UsulanBangunan/VerificationSequence';
+import type { UsulanBangunanGedung } from '@/types/usulan-bangunan';
 
 // Interface for API response
 interface APIUsulanBangunan {
@@ -14,6 +13,9 @@ interface APIUsulanBangunan {
   idAsbTipeBangunan: number;
   idKabkota: number;
   idAsbKlasifikasi: number | null;
+  idVerifikatorAdpem: number | null;
+  idVerifikatorBappeda: number | null;
+  idVerifikatorBpkad: number | null;
   tahunAnggaran: number;
   namaAsb: string;
   alamat: string;
@@ -42,20 +44,28 @@ interface APIUsulanBangunan {
     opd: string;
     alias: string;
   };
+  asbTipeBangunan: {
+    id: number;
+    tipe_bangunan: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
 
-// Map API status to display status
-const mapStatus = (asbStatus: { id: number; status: string }): string => {
-  const statusMap: { [key: string]: string } = {
-    'General Documents': 'Proses',
-    'Approved': 'Sukses',
-    'Rejected': 'Tolak',
-    'Pending': 'Proses',
-    'Review': 'Proses',
-  };
-  return statusMap[asbStatus?.status] || 'Proses';
+const STATUS_ID_MAP: { [key: number]: string } = {
+  1: 'General Documents',
+  2: 'Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
+  3: 'Kebutuhan Biaya Pekerjaan Standar (BPS)',
+  4: 'Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
+  5: 'Setup Rekening',
+  6: 'Proses Verifikasi',
+  7: 'Tidak Memenuhi Syarat',
+  8: 'Memenuhi Syarat',
+  9: 'Verifikasi Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
+  10: 'Verifikasi Kebutuhan Biaya Pekerjaan Standart (BPS)',
+  11: 'Verifikasi Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
+  12: 'Verifikasi Rekening Belanja',
+  13: 'Verifikasi Biaya Pekerjaan',
 };
 
 // Transform API data to display format
@@ -68,13 +78,11 @@ const transformAPIData = (item: APIUsulanBangunan): UsulanBangunanGedung => {
     klasifikasi: item.idAsbKlasifikasi ? `Klasifikasi ${item.idAsbKlasifikasi}` : 'Belum Ditentukan',
     satuan: 'm2',
     verificationStatus: {
-      opd: 'Menunggu',
+      adpem: 'Menunggu',
       bappeda: 'Belum',
       bpkad: 'Belum',
     },
     nilaiBkf: item.shst ? 'Sudah' : 'Belum',
-    status: mapStatus(item.asbStatus),
-    suratPermohonan: '/easb-document.pdf',
     createdBy: item.opd?.opd || 'Unknown',
     createdDate: new Date(item.createdAt).toLocaleDateString('id-ID'),
   };
@@ -84,15 +92,212 @@ export default function VerifyUsulanPage() {
   const router = useRouter();
   const params = useParams();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [jenisVerifikator, setJenisVerifikator] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [usulanData, setUsulanData] = useState<UsulanBangunanGedung | null>(null);
   const [apiData, setApiData] = useState<APIUsulanBangunan | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
   
   // Editing states
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [editedUraian, setEditedUraian] = useState('');
   const [editedLokasi, setEditedLokasi] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Handler for Verifikasi Lantai API call
+  const handleVerifikasiLantai = async () => {
+    if (!apiData) return;
+    setIsVerifying(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-lantai', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id_asb: apiData.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal verifikasi lantai');
+      }
+
+      alert('Verifikasi Lantai berhasil!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error verifikasi lantai:', error);
+      alert(`Gagal verifikasi: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handler for Verifikasi Rekening API call
+  const handleVerifikasiRekening = async () => {
+    if (!apiData) return;
+    setIsVerifying(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-rekening', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id_asb: apiData.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal verifikasi rekening');
+      }
+
+      alert('Verifikasi Rekening Belanja berhasil!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error verifikasi rekening:', error);
+      alert(`Gagal verifikasi: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handler for Tolak (Reject) API call
+  const handleReject = async () => {
+    if (!apiData) return;
+    if (!rejectReason.trim()) {
+      alert('Mohon masukkan alasan penolakan.');
+      return;
+    }
+    setIsVerifying(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch('/api/usulan/bangunan-gedung/asb/reject', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          id_asb: apiData.id,
+          reject_reason: rejectReason 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal menolak usulan');
+      }
+
+      alert('Usulan berhasil ditolak!');
+      setShowRejectModal(false);
+      setRejectReason('');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error rejecting:', error);
+      alert(`Gagal menolak: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // State for document viewing
+  const [isLoadingDocument, setIsLoadingDocument] = useState(false);
+
+  // Handler for viewing Surat Permohonan
+  const handleViewSuratPermohonan = async () => {
+    if (!apiData) return;
+    setIsLoadingDocument(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch(`/api/usulan/bangunan-gedung/document/download-surat-permohonan?idAsb=${apiData.id}&view=true`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal memuat dokumen');
+      }
+
+      const data = await response.json();
+      // Open the document URL in a new tab
+      if (data.data?.url || data.url) {
+        window.open(data.data?.url || data.url, '_blank');
+      } else {
+        alert('URL dokumen tidak ditemukan');
+      }
+    } catch (error) {
+      console.error('Error viewing surat permohonan:', error);
+      alert(`Gagal memuat dokumen: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsLoadingDocument(false);
+    }
+  };
+
+  // Handler for viewing Kertas Kerja
+  const handleViewKertasKerja = async () => {
+    if (!apiData) return;
+    setIsLoadingDocument(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch(`/api/usulan/bangunan-gedung/document/download-kertas-kerja?idAsb=${apiData.id}&view=true`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal memuat dokumen');
+      }
+
+      const data = await response.json();
+      // Open the document URL in a new tab
+      if (data.data?.url || data.url) {
+        window.open(data.data?.url || data.url, '_blank');
+      } else {
+        alert('URL dokumen tidak ditemukan');
+      }
+    } catch (error) {
+      console.error('Error viewing kertas kerja:', error);
+      alert(`Gagal memuat dokumen: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsLoadingDocument(false);
+    }
+  };
 
   useEffect(() => {
     // Check if user is verificator/verifikator
@@ -106,8 +311,17 @@ export default function VerifyUsulanPage() {
           const userData = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
           setUserRole(userData.role);
           
+          // Get verifikator type from localStorage
+          const verifikatorInfo = localStorage.getItem('verifikatorInfo');
+          console.log('Verifikator info:', verifikatorInfo);
+          
+          if (verifikatorInfo) {
+            setJenisVerifikator(verifikatorInfo);
+            console.log('Verifikator type:', jenisVerifikator);
+          }
+          
           // Redirect if not one of the verificator roles
-          const allowedRoles = ['verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad', 'verifikator'];
+          const allowedRoles = ['verifikator'];
           if (!allowedRoles.includes(userData.role)) {
             router.push('/usulan/bangunan-gedung');
             return;
@@ -208,13 +422,10 @@ export default function VerifyUsulanPage() {
   };
 
   // Check if user can edit (verifikator role)
-  const canEdit = userRole === 'verifikator' || 
-                  userRole === 'verifikator_opd' || 
-                  userRole === 'verifikator_bappeda' || 
-                  userRole === 'verifikator_bpkad';
+  const canEdit = userRole === 'verifikator'
 
   // Don't show anything until auth check is complete
-  const allowedRoles = ['verifikator_opd', 'verifikator_bappeda', 'verifikator_bpkad', 'verifikator'];
+  const allowedRoles = ['verifikator'];
   if (!userRole || !allowedRoles.includes(userRole)) {
     return null;
   }
@@ -447,41 +658,6 @@ export default function VerifyUsulanPage() {
           </div>
         </div>
 
-      {/* Verification Status Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <CheckCircle className="w-5 h-5 text-teal-600" />
-          Status Verifikasi
-        </h3>
-        <div className="flex items-center justify-center py-4">
-          <VerificationSequence
-            verificationStatus={usulanData.verificationStatus}
-            userRole={userRole}
-            usulanId={usulanData.id}
-            onStatusChange={(stage, newStatus) => {
-              // Update local state
-              setUsulanData(prev => prev ? {
-                ...prev,
-                verificationStatus: {
-                  ...prev.verificationStatus,
-                  [stage]: newStatus
-                }
-              } : null);
-              // In production, this would call an API to save the change
-            }}
-          />
-        </div>
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Info:</strong> {userRole === 'verifikator_opd' ? 'Anda dapat mengubah status verifikasi OPD.' :
-              userRole === 'verifikator_bappeda' ? 'Anda dapat mengubah status verifikasi BAPPEDA.' :
-              userRole === 'verifikator_bpkad' ? 'Anda dapat mengubah status verifikasi BPKAD.' :
-              userRole === 'verifikator' ? 'Anda dapat mengedit summary dan melihat status verifikasi.' :
-              'Anda dapat melihat status verifikasi dari semua tahapan.'}
-          </p>
-        </div>
-      </div>
-
       {/* Creator Information */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -510,81 +686,173 @@ export default function VerifyUsulanPage() {
           <FileText className="w-5 h-5 text-teal-600" />
           Dokumen Terlampir
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Surat Permohonan */}
           <div className="border border-gray-200 rounded-lg p-4">
             <label className="text-sm font-medium text-gray-500 mb-2 block">Surat Permohonan</label>
-            {usulanData.suratPermohonan ? (
-              <a
-                href={usulanData.suratPermohonan}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
-              >
+            <button
+              onClick={handleViewSuratPermohonan}
+              disabled={isLoadingDocument}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoadingDocument ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-600 border-t-transparent" />
+              ) : (
                 <FileText className="w-4 h-4" />
-                <span>Lihat Dokumen PDF</span>
-              </a>
-            ) : (
-              <p className="text-gray-400">Tidak ada dokumen</p>
-            )}
+              )}
+              <span>Lihat Dokumen PDF</span>
+            </button>
           </div>
+        
+          {/* Surat Rekomendasi */}
           <div className="border border-gray-200 rounded-lg p-4">
             <label className="text-sm font-medium text-gray-500 mb-2 block">Surat Rekomendasi</label>
-            {usulanData.suratRekomendasi ? (
-              <a
-                href={usulanData.suratRekomendasi}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+            {apiData && apiData.asbStatus?.id === 8 && 
+             apiData.idVerifikatorAdpem !== null && 
+             apiData.idVerifikatorBappeda !== null && 
+             apiData.idVerifikatorBpkad !== null ? (
+              <button
+                onClick={() => console.log('View Surat Rekomendasi')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
               >
                 <FileText className="w-4 h-4" />
                 <span>Lihat Dokumen PDF</span>
-              </a>
+              </button>
             ) : (
-              <p className="text-gray-400">Tidak ada dokumen</p>
+              <p className="text-gray-400 text-sm">Menunggu verifikasi lengkap dari 3 verifikator</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Action Buttons - Only for verificators */}
-      {(userRole === 'verifikator_opd' || userRole === 'verifikator_bappeda' || userRole === 'verifikator_bpkad' || userRole === 'verifikator') && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
+      {/* ADPEM Verification Navigation - Only for ADPEM verifikator */}
+      {jenisVerifikator === 'ADPEM' && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-500 rounded-lg">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Verifikasi Komponen Bangunan</h3>
+              <p className="text-sm text-blue-600">Khusus Verifikator ADPEM</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Sebagai ADPEM, Anda dapat melakukan verifikasi pada komponen standar dan non-standar bangunan. Klik salah satu tombol di bawah untuk melihat dan memverifikasi data komponen.
+          </p>
           <div className="flex flex-wrap gap-3">
+            {/* Verifikasi Lantai - only enabled when idAsbStatus is 6 */}
+            <button 
+              onClick={handleVerifikasiLantai}
+              disabled={!apiData || apiData.asbStatus?.id !== 6 || isVerifying}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title={apiData?.asbStatus?.id !== 6 ? 'Hanya dapat diakses saat status adalah Proses Verifikasi (6)' : ''}
+            >
+              {isVerifying ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+              ) : (
+                <FileText className="w-5 h-5" />
+              )}
+              Verifikasi Lantai
+            </button>
+            
+            <button 
+              onClick={() => router.push(`/usulan/bangunan-gedung/verify/${params.id}/input-komponen-standar-bangunan`)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium shadow-sm cursor-pointer"
+            >
+              <CheckCircle className="w-5 h-5" />
+              Verifikasi Komponen Standar
+            </button>
+            <button 
+              onClick={() => router.push(`/usulan/bangunan-gedung/verify/${params.id}/input-komponen-standar-non-bangunan`)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm cursor-pointer"
+            >
+              <CheckCircle className="w-5 h-5" />
+              Verifikasi Komponen Non-Standar
+            </button>
+            
+            {/* Verifikasi Rekening Belanja - only enabled when idAsbStatus is 11 */}
+            <button 
+              onClick={handleVerifikasiRekening}
+              disabled={!apiData || apiData.asbStatus?.id !== 11 || isVerifying}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title={apiData?.asbStatus?.id !== 11 ? 'Hanya dapat diakses saat status adalah Verifikasi BPNS (11)' : ''}
+            >
+              {isVerifying ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+              ) : (
+                <FileText className="w-5 h-5" />
+              )}
+              Verifikasi Rekening Belanja
+            </button>
+          </div>
+          <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded-lg">
+            <p className="text-xs text-blue-800">
+              <strong>Info:</strong> Tombol navigasi ini hanya tersedia untuk verifikator ADPEM. BAPPEDA dan BPKAD tidak memiliki akses ke halaman verifikasi komponen.
+            </p>
+          </div>
+          {apiData && (
+            <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-xs text-gray-600">
+                <strong>Status ID Saat Ini:</strong> {apiData.asbStatus?.id || apiData.idAsbStatus} - 
+                Verifikasi Lantai aktif saat status 6, Rekening Belanja aktif saat status 11.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action Buttons - Only for verificators */}
+      {(userRole === 'verifikator') && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Aksi Verifikasi {jenisVerifikator ? `(${jenisVerifikator})` : ''}
+          </h3>
+          
+          {/* Status Info */}
+          {apiData && (
+            <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-sm text-gray-600">
+                <strong>Status Saat Ini:</strong> {STATUS_ID_MAP[apiData.asbStatus?.id || apiData.idAsbStatus] || 'Unknown'}
+              </p>
+            </div>
+          )}
+          
+          <div className="flex flex-wrap gap-3">
+            {/* Setujui Button - Only enabled when idAsbStatus is 13 or 8 AND corresponding verifikator field is null */}
             <button 
               onClick={() => {
-                const stage = userRole === 'verifikator_opd' ? 'opd' : 
-                              userRole === 'verifikator_bappeda' ? 'bappeda' : 'bpkad';
-                setUsulanData(prev => prev ? {
-                  ...prev,
-                  verificationStatus: {
-                    ...prev.verificationStatus,
-                    [stage]: 'Disetujui'
-                  }
-                } : null);
+                console.log('Setujui clicked');
+                // TODO: Call API to approve
               }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm"
+              disabled={
+                !apiData ||
+                (apiData.asbStatus?.id !== 13 && apiData.asbStatus?.id !== 8) ||
+                (jenisVerifikator === 'ADPEM' && apiData.idVerifikatorAdpem !== null) ||
+                (jenisVerifikator === 'BAPPEDA' && apiData.idVerifikatorBappeda !== null) ||
+                (jenisVerifikator === 'BPKAD' && apiData.idVerifikatorBpkad !== null)
+              }
+              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle className="w-5 h-5" />
               Setujui
             </button>
+            
+            {/* Tolak Button - For BAPPEDA and BPKAD, only enabled when idAsbStatus is 13 or 8 */}
             <button 
-              onClick={() => {
-                const stage = userRole === 'verifikator_opd' ? 'opd' : 
-                              userRole === 'verifikator_bappeda' ? 'bappeda' : 'bpkad';
-                setUsulanData(prev => prev ? {
-                  ...prev,
-                  verificationStatus: {
-                    ...prev.verificationStatus,
-                    [stage]: 'Ditolak'
-                  }
-                } : null);
-              }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm"
+              onClick={() => setShowRejectModal(true)}
+              disabled={
+                !apiData ||
+                isVerifying ||
+                ((jenisVerifikator === 'BAPPEDA' || jenisVerifikator === 'BPKAD') && 
+                 apiData.asbStatus?.id !== 13 && apiData.asbStatus?.id !== 8)
+              }
+              className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <XCircle className="w-5 h-5" />
               Tolak
             </button>
+            
             <button 
               onClick={() => router.push('/usulan/bangunan-gedung')}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
@@ -592,9 +860,74 @@ export default function VerifyUsulanPage() {
               Kembali
             </button>
           </div>
-          <p className="mt-3 text-xs text-gray-500">
-            Gunakan tombol di atas untuk approval/reject cepat, atau gunakan dropdown di atas untuk mengubah ke status spesifik (Menunggu, dll.)
-          </p>
+          
+          {/* Info text based on button states */}
+          <div className="mt-3 space-y-2">
+            {apiData && apiData.asbStatus?.id !== 13 && apiData.asbStatus?.id !== 8 && (
+              <p className="text-xs text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
+                <strong>Info:</strong> Tombol Setujui dan Tolak hanya aktif jika status adalah "Verifikasi Biaya Pekerjaan" (13) atau "Memenuhi Syarat" (8).
+              </p>
+            )}
+            {jenisVerifikator === 'ADPEM' && apiData?.idVerifikatorAdpem && (
+              <p className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                <strong>Info:</strong> Anda sudah melakukan verifikasi pada usulan ini.
+              </p>
+            )}
+            {jenisVerifikator === 'BAPPEDA' && apiData?.idVerifikatorBappeda && (
+              <p className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                <strong>Info:</strong> Anda sudah melakukan verifikasi pada usulan ini.
+              </p>
+            )}
+            {jenisVerifikator === 'BPKAD' && apiData?.idVerifikatorBpkad && (
+              <p className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                <strong>Info:</strong> Anda sudah melakukan verifikasi pada usulan ini.
+              </p>
+            )}
+            <p className="text-xs text-gray-500">
+              {jenisVerifikator === 'ADPEM' 
+                ? 'Gunakan tombol di atas untuk verifikasi, atau navigasi ke halaman komponen untuk verifikasi detail.'
+                : 'Gunakan tombol di atas untuk approval/reject.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Tolak Usulan
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Masukkan alasan penolakan untuk usulan ini:
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Alasan penolakan..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+              rows={4}
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason('');
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleReject}
+                disabled={isVerifying || !rejectReason.trim()}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isVerifying ? 'Memproses...' : 'Tolak Usulan'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

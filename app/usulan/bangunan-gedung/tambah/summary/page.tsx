@@ -58,17 +58,25 @@ interface SavedComponentData {
   selectedComponents: ComponentAPI[];
 }
 
+interface KlasifikasiSHST {
+  klasifikasi: string;
+  shst: number;
+}
+
+interface resultASBfiltered {
+  id: number;
+}
+
 export default function SummaryPage() {
   const router = useRouter();
   const [basicData, setBasicData] = useState<BasicFormData | null>(null);
+  const [klasifikasiSHST, setKlasifikasiSHST] = useState<KlasifikasiSHST | null>(null);
+  const [resultASBfiltered, setResultASBfiltered] = useState<resultASBfiltered | null>(null);
   const [floors, setFloors] = useState<FloorData[]>([]);
   const [standardComponents, setStandardComponents] = useState<{ [key: string]: ComponentState }>({});
   const [selectedStandardComponents, setSelectedStandardComponents] = useState<ComponentAPI[]>([]);
   const [nonStandardComponents, setNonStandardComponents] = useState<{ [key: string]: ComponentState }>({});
   const [selectedNonStandardComponents, setSelectedNonStandardComponents] = useState<ComponentAPI[]>([]);
-  const [generatedPdfPath, setGeneratedPdfPath] = useState<string>('');
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [pdfError, setPdfError] = useState<string>('');
 
   useEffect(() => {
     // Load all data from localStorage
@@ -80,6 +88,8 @@ export default function SummaryPage() {
       try {
         const parsed = JSON.parse(savedBasic);
         setBasicData(parsed.formData || null);
+        setKlasifikasiSHST(parsed.klasifikasiSHST || null);
+        setResultASBfiltered(parsed.resultASBfiltered || null);
         setFloors(parsed.floors || []);
         console.log('Loaded basic data:', parsed);
       } catch (e) {
@@ -136,38 +146,31 @@ export default function SummaryPage() {
     return rowKey.replace('row_', '').replace(/_/g, ' ');
   };
 
-  const handleGeneratePDF = async () => {
-
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
-    setIsGeneratingPdf(true);
-    setPdfError('');
-
-    try {
-      const response = await fetch('/api/generate-surat-permohonan', {
-        method: 'GET',
+  const handleVerify = async () => {
+    try{
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+      const requestBody = {
+        id_asb: resultASBfiltered?.id
+      }
+      console.log(requestBody);
+      const response = await fetch('/api/usulan/bangunan-gedung/asb/store-verif', {
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-        }
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        throw new Error('Gagal generate PDF');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal menyimpan data komponen standar');
       }
 
-      const data = await response.json();
-      setGeneratedPdfPath(data.filePath);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setPdfError('Gagal membuat Surat Permohonan. Silakan coba lagi.');
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
+      const result = await response.json();
+      console.log('Non-standard components saved:', result);
 
-  const handleVerify = async () => {
       // Clear form data after successful submission
       localStorage.removeItem('usulan_bangunan_new_entry');
       localStorage.removeItem('usulan_bangunan_standar_components');
@@ -176,7 +179,10 @@ export default function SummaryPage() {
       alert('Data berhasil diverifikasi dan disimpan!');
       // Navigate back to usulan list
       router.push('/usulan/bangunan-gedung');
+    }catch(error){
+      console.error('Error verifying data:', error);
     }
+  };
   // Get filtered standard components with percentages
   const getStandardComponentsDisplay = () => {
     if (selectedStandardComponents.length > 0) {
@@ -236,13 +242,17 @@ export default function SummaryPage() {
               </div>
               <div className="space-y-3">
                 <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-medium">
-                  {basicData?.resultASBfiltered?.klasifikasi || basicData?.tipeBangunan || 'Gedung Negara Tidak Sederhana'}
+                  {klasifikasiSHST?.klasifikasi ||'[Belum terklasifikasi]'}
                 </div>
                 <div className="text-sm text-gray-600 text-center">
-                  Jenis: <span className="font-medium">{basicData?.jenis || '-'}</span>
+                  Jenis Bangunan: <span className="font-medium">{basicData?.jenis == "1" ? "Pembangunan" : "Perawatan"}</span>
+                </div>
+                <div className="text-sm text-gray-600 text-center">
+                  Tipe Usulan: <span className="font-medium">{basicData?.tipeBangunan == "1" ? "Gedung negara" : "Rumah Negara"}</span>
                 </div>
               </div>
             </div>
+            
 
             {/* Financial Info Card */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
@@ -250,7 +260,7 @@ export default function SummaryPage() {
                 <div>
                   <label className="text-sm text-gray-600">Nilai SHST per (m²)</label>
                   <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                    Rp {basicData?.resultASBfiltered?.shst ? Number(basicData.resultASBfiltered.shst).toLocaleString('id-ID') : '0'} / m²
+                    Rp {klasifikasiSHST?.shst ? Number(klasifikasiSHST.shst).toLocaleString('id-ID') : '0'} / m²
                   </div>
                 </div>
 

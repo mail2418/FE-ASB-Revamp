@@ -34,6 +34,8 @@ export default function LeftPanelForm() {
       try {
         const parsed = JSON.parse(savedData);
         setBuildingData(parsed);
+        console.log('Building Data:', parsed);
+
       } catch (e) {
         console.error('Failed to load building data:', e);
       }
@@ -106,20 +108,20 @@ export default function LeftPanelForm() {
           
           const updatedResultASBfiltered = {
             ...buildingData?.resultASBfiltered,
-            klasifikasi: data.data.klasifikasi,
+            klasifikasi: data.data.asbKlasifikasi,
             shst: data.data.shst,
           };
           
           setBuildingData((prev: any) => ({
             ...prev,
-            resultASBfiltered: updatedResultASBfiltered,
+            asb_shst_klasifikasi: updatedResultASBfiltered,
           }));
           
           // Update localStorage with the new klasifikasi and shst values
           const existingData = localStorage.getItem('usulan_bangunan_new_entry');
           if (existingData) {
             const parsedData = JSON.parse(existingData);
-            parsedData.resultASBfiltered = updatedResultASBfiltered;
+            parsedData.asb_shst_klasifikasi = updatedResultASBfiltered;
             localStorage.setItem('usulan_bangunan_new_entry', JSON.stringify(parsedData));
           }
         }
@@ -200,8 +202,6 @@ export default function LeftPanelForm() {
           bobot_std: bobot_std
         };
 
-        console.log('Sending standard components:', requestBody);
-
         // Send PUT request to API
         const response = await fetch('/api/usulan/bangunan-gedung/kb-s', {
           method: 'PUT',
@@ -217,14 +217,27 @@ export default function LeftPanelForm() {
           throw new Error(errorData.message || 'Gagal menyimpan data komponen standar');
         }
 
-        const result = await response.json();
-        console.log('Standard components saved:', result);
+        // Send PUT request to Update Status of ASB 
+        const responseUpdateStatus = await fetch('/api/usulan/bangunan-gedung/asb/store-bps', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!responseUpdateStatus.ok) {
+          const errorData = await responseUpdateStatus.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Gagal menyimpan data komponen standar');
+        }
 
         // Save state with selected components to localStorage
         const saveData = {
           formState,
           selectedComponents: componentsToSave
         };
+
         localStorage.setItem('usulan_bangunan_standar_components', JSON.stringify(saveData));
         // Navigate to next page
         router.push('/usulan/bangunan-gedung/tambah/input-komponen-non-standar-bangunan');
@@ -252,7 +265,7 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.resultASBfiltered?.asbKlasifikasi || buildingData.formData?.klasifikasi || '[Belum terklasifikasi]'}
+                {buildingData.asb_shst_klasifikasi?.klasifikasi || '[Belum terklasifikasi]'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">

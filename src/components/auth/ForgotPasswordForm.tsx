@@ -79,21 +79,21 @@ export default function ForgotPasswordForm() {
               className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 mb-6 transition-colors group"
             >
               <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-medium">Back to Sign In</span>
+              <span className="text-sm font-medium">Kembali ke Login</span>
             </Link>
 
             <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-              Forgot Your Password?
+              Lupa Password?
             </h2>
             <p className="text-gray-600 mb-6">
-              Don't worry! Please contact our support team for assistance with resetting your password.
+              Jangan khawatir! Hubungi tim dukungan IT untuk membantu Anda mengatur ulang password Anda.
             </p>
 
             {/* Information Box */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-orange-800">
-                <strong>Important:</strong> For security reasons, password resets must be handled by our IT support team. 
-                Please contact them using the information below.
+                <strong>Penting:</strong> Untuk alasan keamanan, pengaturan ulang password harus dilakukan oleh tim dukungan IT. 
+                Hubungi mereka menggunakan informasi di bawah ini.
               </p>
             </div>
 
@@ -167,24 +167,20 @@ export default function ForgotPasswordForm() {
             <div className="bg-gray-50 rounded-lg p-5">
               <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-orange-600" />
-                What to Prepare
+                Apa yang perlu Anda persiapkan
               </h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-orange-600 font-bold mt-0.5">•</span>
-                  <span>Your registered username</span>
+                  <span>Username yang terdaftar</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-orange-600 font-bold mt-0.5">•</span>
-                  <span>Employee ID or identification number</span>
+                  <span>Role yang terdaftar (misal: Admin, OPD, Verifikator)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-orange-600 font-bold mt-0.5">•</span>
-                  <span>Your registered email address</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-600 font-bold mt-0.5">•</span>
-                  <span>Department or division information</span>
+                  <span>Departemen yang terdaftar</span>
                 </li>
               </ul>
             </div>
@@ -195,7 +191,7 @@ export default function ForgotPasswordForm() {
                 onClick={() => setShowSuccess(true)}
                 className="w-full bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-orange-500/30"
               >
-                I've Contacted Support
+                Sudah Menkontak Support
               </button>
             </div>
           </>

@@ -207,7 +207,6 @@ export async function POST(request: NextRequest) {
         }
       },
     );
-    
     // Set secure cookie with authentication token
     const cookieStore = await cookies();
     cookieStore.set('authToken', token, {
@@ -217,7 +216,6 @@ export async function POST(request: NextRequest) {
       maxAge: SESSION_DURATION / 1000, // Cookie expiration in seconds
       path: '/', // Available across the entire site
     });
-    
     // Set user data cookie (accessible to client for role checks)
     cookieStore.set('userData', 
       JSON.stringify({
@@ -267,12 +265,51 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    
+    // Forward to external API if configured, otherwise use mock
+    const externalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+
     // Clear authentication cookies
     cookieStore.delete('authToken');
     cookieStore.delete('userData');
     cookieStore.delete('csrfToken');
     
+    // Get accessToken from request Authorization header (localStorage is not available server-side)
+    const authHeader = request.headers.get('Authorization');
+    const accessToken = authHeader?.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : authHeader;
+    
+    console.log('Logout token:', accessToken);
+    
+    if (!accessToken) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'No access token provided',
+        },
+        { status: 401 }
+      );
+    }
+    
+    // Call external API
+    const externalResponse = await fetch(`${externalApiUrl}/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!externalResponse.ok) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Log out Failed',
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { 
         success: true,
@@ -283,7 +320,6 @@ export async function DELETE(request: NextRequest) {
     
   } catch (error) {
     console.error('Sign out error:', error);
-    
     return NextResponse.json(
       { 
         success: false,
