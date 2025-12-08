@@ -65,8 +65,7 @@ export function NonStandardBuildingProvider({ children }: { children: ReactNode 
 
 export function useNonStandardBuildingContext() {
   const context = useContext(NonStandardBuildingContext);
-  console.log("context render non standar");
-  console.info(context);
+
   if (context === undefined) {
     throw new Error('useNonStandardBuildingContext must be used within a NonStandardBuildingProvider');
   }

@@ -142,7 +142,7 @@ export default function UsulanJalanPage() {
   // Load data from localStorage on mount
   useEffect(() => {
     // Get user role
-    const userData = localStorage.getItem('userData');
+    const userData = localStorage.getItem('userInfo');
     if (userData) {
       try {
         const parsed = JSON.parse(userData);
@@ -170,6 +170,7 @@ export default function UsulanJalanPage() {
     setFilteredData(combinedData);
   }, []);
 
+  console.log(`userRole ${userRole}`)
   // Calculate pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

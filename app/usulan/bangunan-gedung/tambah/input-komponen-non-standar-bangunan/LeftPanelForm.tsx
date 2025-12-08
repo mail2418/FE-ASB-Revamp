@@ -62,11 +62,6 @@ export default function LeftPanelForm() {
           const data = await response.json();
           const components = data.data?.komponenBangunanNonstds || data.data || [];
           
-          // Filter components by jenis AND tipeBangunan from saved form data
-          // const filteredComponents = components.filter((c: any) =>
-          //   c.idAsbJenis.toString() === buildingData.formData?.jenis &&
-          //   c.idAsbTipeBangunan.toString() === buildingData.formData?.tipeBangunan
-          // );
           setAllComponents(components);
           
           // If 10 or less, auto-select all
@@ -84,6 +79,8 @@ export default function LeftPanelForm() {
     fetchNonStandardComponents();
   }, [buildingData]); // Re-run when buildingData changes
 
+  console.log(buildingData)
+
   // Fetch ASB By ID in order to gain Klasifikasi and SHST Value
   useEffect(() => {
     // Only run if buildingData exists and has resultASBfiltered
@@ -93,7 +90,7 @@ export default function LeftPanelForm() {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
-
+        
         const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${buildingData.resultASBfiltered.id}`, {
           method: 'GET',
           headers: {
@@ -102,9 +99,9 @@ export default function LeftPanelForm() {
           },
         });
 
+        console.log(response)
         if (response.ok) {
           const data = await response.json();
-          console.log('ASB By ID (Non-Standard):', data);
           
           // Update buildingData with klasifikasi and shst from API
           if (data.data) {
@@ -125,6 +122,8 @@ export default function LeftPanelForm() {
     
     fetchASBById();
   }, [buildingData?.resultASBfiltered?.id]); // Only re-run when the ID changes
+  
+  console.log(buildingData)
 
   const handlePercentageChange = (componentId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
@@ -258,15 +257,17 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.asb_shst_klasifikasi.klasifikasi ||'[Belum terklasifikasi]'}
+                {/* {buildingData.asb_shst_klasifikasi?.klasifikasi.klasifikasi ||'[Belum terklasifikasi]'} */}
+                'Belum terklasifikasi'
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
               <p className="text-base font-semibold text-lime-600">
-                {buildingData.asb_shst_klasifikasi.shst 
-                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst).toLocaleString('id-ID')} / m²`
-                  : '[Belum terkalkulasi]'}
+                {/* {buildingData.asb_shst_klasifikasi.shst?.shst 
+                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst.shst).toLocaleString('id-ID')} / m²`
+                  : '0'} */}
+                'Belum terklasifikasi'
               </p>
             </div>
           </div>

@@ -265,15 +265,15 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.asb_shst_klasifikasi?.klasifikasi || '[Belum terklasifikasi]'}
+                {buildingData.asb_shst_klasifikasi?.klasifikasi?.klasifikasi || '[Belum terklasifikasi]'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
               <p className="text-base font-semibold text-blue-600">
-                {buildingData.resultASBfiltered?.shst 
-                  ? `Rp ${Number(buildingData.resultASBfiltered.shst).toLocaleString('id-ID')} / m²`
-                  : buildingData.formData?.nilaiSHST || '[Belum terkalkulasi]'}
+                {buildingData.asb_shst_klasifikasi?.shst?.shst 
+                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst?.shst).toLocaleString('id-ID')} / m²`
+                  : '0'}
               </p>
             </div>
           </div>

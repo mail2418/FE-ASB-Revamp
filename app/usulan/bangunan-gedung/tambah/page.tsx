@@ -472,15 +472,14 @@ export default function TambahUsulanBangunanGedung() {
       
       const resultASB = await responseASB.json();
       console.log('Backend responseASB Bfore filter:', resultASB);
-
-      if (!responseASB.ok) {
+      
+      const resultASBfiltered = resultASB.data?.data || resultASB.data || []
+      console.log('Backend responseASB:', resultASBfiltered);
+      
+      if (resultASBfiltered.status == "error") {
         const errorData = await responseASB.json().catch(() => ({}));
         throw new Error(errorData.message || 'Gagal menyimpan data ke server');
       }
-
-      const resultASBfiltered = resultASB.data?.data || resultASB.data || []
-      console.log('Backend responseASB:', resultASBfiltered);
-
       // Prepare request body for backend API
       const requestBodyRekening = {
           id_asb: resultASBfiltered.id || '',
