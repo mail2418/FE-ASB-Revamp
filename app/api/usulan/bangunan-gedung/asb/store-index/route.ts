@@ -130,7 +130,8 @@ export async function PUT(request: NextRequest){
         idAsbJenis,
         luasTanah
     } = requestData;
-
+    
+    console.log(id)
     console.log(tahunAnggaran)
     console.log(namaAsb)
     console.log(alamat)

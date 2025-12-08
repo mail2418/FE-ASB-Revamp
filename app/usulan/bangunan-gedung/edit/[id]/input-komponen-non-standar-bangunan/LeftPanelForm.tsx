@@ -12,13 +12,33 @@ interface NonStandardComponentAPI {
   idAsbTipeBangunan: number;
 }
 
+// Interface for existing component data from API
+interface ExistingNonStdComponent {
+  id: number;
+  idAsb: number;
+  idAsbKomponenBangunanNonStd: number;
+  bobotInput: number;
+}
+
+// Interface for ASB data
+interface ASBData {
+  id: number;
+  namaAsb: string;
+  alamat: string;
+  shst: number | null;
+  asbKlasifikasi: {
+    id: number;
+    klasifikasi: string;
+  } | null;
+  asbBipekNonStds: ExistingNonStdComponent[];
+}
+
 export default function LeftPanelForm() {
   const router = useRouter();
   const params = useParams();
   const asbId = params.id as string;
   
   const { formState, updateRowState } = useEditNonStandardBuildingContext();
-  const [buildingData, setBuildingData] = useState<any>(null);
 
   // API data states
   const [allComponents, setAllComponents] = useState<NonStandardComponentAPI[]>([]);
@@ -27,20 +47,50 @@ export default function LeftPanelForm() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [asbData, setAsbData] = useState<ASBData | null>(null);
 
-  
-  // Load building data from localStorage first
+  // Fetch ASB data by ID (for Klasifikasi, SHST, and existing components)
   useEffect(() => {
-    const savedData = localStorage.getItem('usulan_bangunan_new_entry');
-    if (savedData) {
+    const fetchASBById = async () => {
+      if (!asbId) return;
+      
       try {
-        const parsed = JSON.parse(savedData);
-        setBuildingData(parsed);
-      } catch (e) {
-        console.error('Failed to load building data:', e);
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${asbId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.data;
+          console.log('ASB By ID (Non-Standard Components):', data);
+          setAsbData(data);
+
+          // Pre-populate existing component percentages and checked states
+          if (data.asbBipekNonStds && data.asbBipekNonStds.length > 0) {
+            data.asbBipekNonStds.forEach((existing: ExistingNonStdComponent) => {
+              if (existing.bobotInput > 0) {
+                updateRowState(`row_${existing.idAsbKomponenBangunanNonStd}`, { 
+                  percentage: existing.bobotInput,
+                  checked: true 
+                });
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching ASB By ID:', error);
       }
-    }
-  }, []);
+    };
+    
+    fetchASBById();
+  }, [asbId]);
     
   // Fetch non-standard components from API
   useEffect(() => {
@@ -201,28 +251,28 @@ export default function LeftPanelForm() {
       </div>
 
       {/* Building Information Section */}
-      {buildingData && (
+      {asbData && (
         <div className="bg-gradient-to-r from-lime-50 to-green-50 rounded-lg border border-lime-200 p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Bangunan</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.deskripsiBangunan || '-'}
+                {asbData.namaAsb || '-'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.asb_shst_klasifikasi.klasifikasi?.klasifikasi ||'[Belum terklasifikasi]'}
+                {asbData.asbKlasifikasi?.klasifikasi || '[Belum terklasifikasi]'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
               <p className="text-base font-semibold text-lime-600">
-                {buildingData.asb_shst_klasifikasi.shst?.shst 
-                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst.shst).toLocaleString('id-ID')} / m²`
-                  : '0'}
+                {asbData.shst 
+                  ? `Rp ${Number(asbData.shst).toLocaleString('id-ID')} / m²`
+                  : 'Belum dihitung'}
               </p>
             </div>
           </div>

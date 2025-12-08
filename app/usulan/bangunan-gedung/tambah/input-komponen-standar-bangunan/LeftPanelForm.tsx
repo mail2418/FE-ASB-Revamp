@@ -94,7 +94,7 @@ export default function LeftPanelForm() {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
-        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${buildingData?.resultASBfiltered?.id}`, {
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${buildingData?.resultASBfiltered.id}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -132,7 +132,7 @@ export default function LeftPanelForm() {
       }
     };
     fetchASBById();
-  }, []);
+  }, [buildingData?.resultASBfiltered.id]);
 
   const handlePercentageChange = (componentId: number, componentKomponen: string, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;

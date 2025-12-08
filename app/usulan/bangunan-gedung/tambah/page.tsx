@@ -71,7 +71,7 @@ export default function TambahUsulanBangunanGedung() {
       namaRekeningBelanja: "",
     },
     klasifikasi: '',
-    nilaiASB: '',
+    nilaiSHST: '',
     jumlahKontraktor: 1,
     suratPermohonan: null as File | null,
   });
@@ -423,7 +423,7 @@ export default function TambahUsulanBangunanGedung() {
     
     setFloors(newFloors);
     // Reset calculated values when floors change
-    setFormData(prev => ({ ...prev, klasifikasi: '', nilaiASB: '' }));
+    setFormData(prev => ({ ...prev, klasifikasi: '', nilaiSHST: '' }));
   };
 
   // Handle submit
@@ -476,7 +476,7 @@ export default function TambahUsulanBangunanGedung() {
       const resultASBfiltered = resultASB.data?.data || resultASB.data || []
       console.log('Backend responseASB:', resultASBfiltered);
       
-      if (resultASBfiltered.status == "error") {
+      if (!resultASBfiltered.ok) {
         const errorData = await responseASB.json().catch(() => ({}));
         throw new Error(errorData.message || 'Gagal menyimpan data ke server');
       }
@@ -509,7 +509,6 @@ export default function TambahUsulanBangunanGedung() {
 
       // Prepare request body for backend API
       const requestBodyLantai = {
-          id: resultASBfiltered.id,
           id_asb: resultASBfiltered.id,
           id_asb_detail: [],
           luas_lantai: floors.map(floor => parseFloat(floor.luas)),
@@ -724,6 +723,7 @@ export default function TambahUsulanBangunanGedung() {
                 </label>
                 <div className="relative">
                   <input
+                    required
                     type="text"
                     placeholder="Ketik untuk mencari kode rekening..."
                     value={searchRekening}
@@ -746,7 +746,7 @@ export default function TambahUsulanBangunanGedung() {
                                 kodeRekeningBelanja: rekening.rekening_kode,
                                 namaRekeningBelanja: rekening.rekening_uraian,
                               } }));
-                              setSearchRekening('');
+                              setSearchRekening(`${rekening.rekening_kode} - ${rekening.rekening_uraian}`);
                             }}
                             className="px-4 py-2 hover:bg-orange-50 cursor-pointer text-sm"
                           >
@@ -754,20 +754,6 @@ export default function TambahUsulanBangunanGedung() {
                             <div className="text-gray-600 text-xs">{rekening.rekening_uraian}</div>
                           </div>
                         ))}
-                      {rekeningOptions.filter(rekening => 
-                        rekening.rekening_kode.toLowerCase().includes(searchRekening.toLowerCase()) ||
-                        rekening.rekening_uraian.toLowerCase().includes(searchRekening.toLowerCase())
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">Tidak ada hasil</div>
-                      )}
-                    </div>
-                  )}
-                  {formData.RekeningBelanja.kodeRekeningBelanja && !searchRekening && (
-                    <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
-                      <div className="text-sm font-medium text-gray-900">{formData.RekeningBelanja.kodeRekeningBelanja}</div>
-                      <div className="text-xs text-gray-600">
-                        {rekeningOptions.find(r => r.rekening_kode === formData.RekeningBelanja.kodeRekeningBelanja)?.rekening_uraian}
-                      </div>
                     </div>
                   )}
                 </div>

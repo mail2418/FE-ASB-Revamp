@@ -24,6 +24,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    const {
+      id_asb
+    } = body;
 
     const response = await fetch(`${API_BASE_URL}/asb/store-verif`, {
       method: 'PUT',
@@ -31,7 +34,9 @@ export async function PUT(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        id_asb
+      }),
     });
 
     if (!response.ok) {
