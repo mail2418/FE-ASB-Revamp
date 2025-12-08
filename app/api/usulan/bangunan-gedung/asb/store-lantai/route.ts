@@ -25,6 +25,7 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     const {
+        id,
         id_asb,
         id_asb_detail,
         luas_lantai,
@@ -45,7 +46,7 @@ export async function PUT(request: NextRequest) {
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
-        id_asb:1,
+        id_asb:id,
         id_asb_detail,
         luas_lantai,
         id_asb_lantai,

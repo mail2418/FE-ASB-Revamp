@@ -509,6 +509,7 @@ export default function TambahUsulanBangunanGedung() {
 
       // Prepare request body for backend API
       const requestBodyLantai = {
+          id: resultASBfiltered.id,
           id_asb: resultASBfiltered.id,
           id_asb_detail: [],
           luas_lantai: floors.map(floor => parseFloat(floor.luas)),
