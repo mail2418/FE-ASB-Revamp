@@ -12,6 +12,27 @@ interface StandardComponentAPI {
   idAsbTipeBangunan: number;
 }
 
+// Interface for existing component data from API
+interface ExistingComponent {
+  id: number;
+  idAsb: number;
+  idAsbKomponenBangunanStd: number;
+  bobotInput: number;
+}
+
+// Interface for ASB data
+interface ASBData {
+  id: number;
+  namaAsb: string;
+  alamat: string;
+  shst: number | null;
+  asbKlasifikasi: {
+    id: number;
+    klasifikasi: string;
+  } | null;
+  asbBipekStandards: ExistingComponent[];
+}
+
 export default function LeftPanelForm() {
   const router = useRouter();
   const params = useParams();
@@ -26,9 +47,51 @@ export default function LeftPanelForm() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [buildingInfo, setBuildingInfo] = useState<any>(null);
+  const [asbData, setAsbData] = useState<ASBData | null>(null);
 
-  // Fetch existing data and components from API
+  // Fetch ASB data by ID (for Klasifikasi, SHST, and existing components)
+  useEffect(() => {
+    const fetchASBById = async () => {
+      if (!asbId) return;
+      
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${asbId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.data;
+          console.log('ASB By ID (Standard Components):', data);
+          setAsbData(data);
+
+          // Pre-populate existing component percentages
+          if (data.asbBipekStandards && data.asbBipekStandards.length > 0) {
+            data.asbBipekStandards.forEach((existing: ExistingComponent) => {
+              if (existing.bobotInput > 0) {
+                updateRowState(`row_${existing.idAsbKomponenBangunanStd}`, { 
+                  percentage: existing.bobotInput 
+                });
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching ASB By ID:', error);
+      }
+    };
+    
+    fetchASBById();
+  }, [asbId]);
+
+  // Fetch all standard components from API
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -54,11 +117,6 @@ export default function LeftPanelForm() {
             setSelectedComponents(components);
           }
         }
-
-        // TODO: Fetch existing ASB data by ID to pre-populate percentages
-        // For now, we'll just load the components
-        // You may need to create an API endpoint like /api/usulan/bangunan-gedung/asb/[id]
-        
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -188,6 +246,35 @@ export default function LeftPanelForm() {
         </p>
       </div>
 
+      {/* Building Information Section */}
+      {asbData && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Bangunan</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
+              <p className="text-base font-semibold text-gray-900">
+                {asbData.namaAsb || '-'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
+              <p className="text-base font-semibold text-gray-900">
+                {asbData.asbKlasifikasi?.klasifikasi || '[Belum terklasifikasi]'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
+              <p className="text-base font-semibold text-blue-600">
+                {asbData.shst 
+                  ? `Rp ${Number(asbData.shst).toLocaleString('id-ID')} / m²`
+                  : 'Belum dihitung'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Component Selection Dropdown (if more than 10 components) */}
       {needsDropdown && (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
@@ -315,7 +402,7 @@ export default function LeftPanelForm() {
           {/* Navigation Buttons */}
           <div className="flex justify-between p-6 bg-gray-50 border-t border-gray-200">
             <button
-              onClick={() => router.push('/usulan/bangunan-gedung')}
+              onClick={() => router.push(`/usulan/bangunan-gedung/edit/${asbId}`)}
               className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors font-medium flex items-center gap-2 cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">

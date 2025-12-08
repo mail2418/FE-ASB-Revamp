@@ -3,7 +3,8 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Lock, User, AlertCircle, Building2 } from 'lucide-react';
+import Image from 'next/image';
+import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
 interface FormData {
@@ -183,17 +184,23 @@ export default function SignInForm() {
   return (
     <div className="bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in">
       {/* Header Section */}
-      <div className="bg-linear-to-r from-orange-500 to-orange-600 p-8 text-white">
+      <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-8 text-white">
         <div className="flex items-center justify-center mb-4">
-          <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-            <Building2 className="h-8 w-8" />
+          <div className="bg-white p-4 rounded-2xl shadow-lg">
+            <Image 
+              src="/favicon.ico" 
+              alt="ASB Logo" 
+              width={64} 
+              height={64}
+              className="h-16 w-16"
+            />
           </div>
         </div>
         <h1 className="text-2xl font-bold text-center mb-2">
-          Sistem Informasi Standar Belanja Elektronik
+          Sistem Analisis Belanja Elektronik (e-ASB) Pemerintah Kabupaten Tulungagung.
         </h1>
-        <p className="text-orange-100 text-center text-sm">
-          Membantu Pemerintah Daerah Tulung Agung dalam pengelolaan belanja elektronik
+        <p className="text-teal-100 text-center text-sm">
+          Membantu Pemerintah - Daerah Kabupaten Tulungagung
         </p>
       </div>
 
@@ -236,7 +243,7 @@ export default function SignInForm() {
                 onChange={(e) => handleInputChange('username', e.target.value)}
                 className={`block w-full pl-10 pr-3 py-3 border ${
                   errors.username ? 'border-red-300' : 'border-gray-300'
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors`}
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors`}
                 placeholder="Masukkan Username"
                 disabled={isLoading}
                 aria-invalid={errors.username ? 'true' : 'false'}
@@ -272,7 +279,7 @@ export default function SignInForm() {
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 className={`block w-full pl-10 pr-10 py-3 border ${
                   errors.password ? 'border-red-300' : 'border-gray-300'
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors`}
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors`}
                 placeholder="Masukkan Password"
                 disabled={isLoading}
                 aria-invalid={errors.password ? 'true' : 'false'}
@@ -309,7 +316,7 @@ export default function SignInForm() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded cursor-pointer"
                 disabled={isLoading}
               />
               <label 
@@ -322,7 +329,7 @@ export default function SignInForm() {
 
             <Link 
               href="/forgot-password"
-              className="text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors"
+              className="text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
               tabIndex={isLoading ? -1 : 0}
             >
               Lupa Password?
@@ -333,7 +340,7 @@ export default function SignInForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/30"
+            className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-4 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-teal-500/30"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
@@ -372,7 +379,7 @@ export default function SignInForm() {
             Butuh Bantuan? Hubungi{' '}
             <Link 
               href="/forgot-password"
-              className="text-orange-600 hover:text-orange-700 font-medium"
+              className="text-teal-600 hover:text-teal-700 font-medium"
             >
               support
             </Link>

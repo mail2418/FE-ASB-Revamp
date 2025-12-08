@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   ArrowLeft, 
-  Building2, 
   Phone, 
   Mail, 
   User, 
@@ -33,13 +33,6 @@ export default function ForgotPasswordForm() {
       email: 'muhammadismail2418@gmail.com',
       availableHours: 'Monday - Friday, 08:00 - 18:00 WIB',
     },
-    // {
-    //   name: 'Help Desk',
-    //   role: 'Technical Support',
-    //   phone: '+62 813-9876-5432',
-    //   email: 'helpdesk@asb-revamp.id',
-    //   availableHours: 'Monday - Friday, 08:00 - 20:00 WIB',
-    // },
   ];
 
   const handleContactClick = (phone: string) => {
@@ -55,16 +48,22 @@ export default function ForgotPasswordForm() {
   return (
     <div className="bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in">
       {/* Header Section */}
-      <div className="bg-linear-to-r from-orange-500 to-orange-600 p-8 text-white">
+      <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-8 text-white">
         <div className="flex items-center justify-center mb-4">
-          <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-            <HelpCircle className="h-8 w-8" />
+          <div className="bg-white p-4 rounded-2xl shadow-lg">
+            <Image 
+              src="/favicon.ico" 
+              alt="ASB Logo" 
+              width={64} 
+              height={64}
+              className="h-16 w-16"
+            />
           </div>
         </div>
         <h1 className="text-2xl font-bold text-center mb-2">
           Password Assistance
         </h1>
-        <p className="text-orange-100 text-center text-sm">
+        <p className="text-teal-100 text-center text-sm">
           Get help resetting your password
         </p>
       </div>
@@ -76,7 +75,7 @@ export default function ForgotPasswordForm() {
             {/* Back to Sign In Link */}
             <Link 
               href="/"
-              className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 mb-6 transition-colors group"
+              className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6 transition-colors group"
             >
               <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
               <span className="text-sm font-medium">Kembali ke Login</span>
@@ -90,8 +89,8 @@ export default function ForgotPasswordForm() {
             </p>
 
             {/* Information Box */}
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-orange-800">
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-teal-800">
                 <strong>Penting:</strong> Untuk alasan keamanan, pengaturan ulang password harus dilakukan oleh tim dukungan IT. 
                 Hubungi mereka menggunakan informasi di bawah ini.
               </p>
@@ -100,19 +99,19 @@ export default function ForgotPasswordForm() {
             {/* Contact Persons */}
             <div className="space-y-4 mb-6">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <Phone className="h-5 w-5 text-orange-600" />
+                <Phone className="h-5 w-5 text-teal-600" />
                 Contact Support
               </h3>
 
               {contactPersons.map((person, index) => (
                 <div 
                   key={index}
-                  className="border border-gray-200 rounded-lg p-5 hover:border-orange-300 hover:shadow-md transition-all"
+                  className="border border-gray-200 rounded-lg p-5 hover:border-teal-300 hover:shadow-md transition-all"
                 >
                   {/* Person Info */}
                   <div className="flex items-start gap-3 mb-4">
-                    <div className="bg-orange-100 p-2 rounded-lg">
-                      <User className="h-5 w-5 text-orange-600" />
+                    <div className="bg-teal-100 p-2 rounded-lg">
+                      <User className="h-5 w-5 text-teal-600" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-800">{person.name}</h4>
@@ -125,12 +124,12 @@ export default function ForgotPasswordForm() {
                     {/* Phone */}
                     <button
                       onClick={() => handleContactClick(person.phone)}
-                      className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-orange-50 transition-colors group text-left"
+                      className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-teal-50 transition-colors group text-left"
                     >
-                      <Phone className="h-4 w-4 text-gray-600 group-hover:text-orange-600" />
+                      <Phone className="h-4 w-4 text-gray-600 group-hover:text-teal-600" />
                       <div className="flex-1">
                         <p className="text-xs text-gray-500 mb-0.5">Phone / WhatsApp</p>
-                        <p className="text-sm font-medium text-gray-800 group-hover:text-orange-600">
+                        <p className="text-sm font-medium text-gray-800 group-hover:text-teal-600">
                           {person.phone}
                         </p>
                       </div>
@@ -139,12 +138,12 @@ export default function ForgotPasswordForm() {
                     {/* Email */}
                     <button
                       onClick={() => handleEmailClick(person.email)}
-                      className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-orange-50 transition-colors group text-left"
+                      className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-teal-50 transition-colors group text-left"
                     >
-                      <Mail className="h-4 w-4 text-gray-600 group-hover:text-orange-600" />
+                      <Mail className="h-4 w-4 text-gray-600 group-hover:text-teal-600" />
                       <div className="flex-1">
                         <p className="text-xs text-gray-500 mb-0.5">Email</p>
-                        <p className="text-sm font-medium text-gray-800 group-hover:text-orange-600">
+                        <p className="text-sm font-medium text-gray-800 group-hover:text-teal-600">
                           {person.email}
                         </p>
                       </div>
@@ -166,20 +165,20 @@ export default function ForgotPasswordForm() {
             {/* Instructions */}
             <div className="bg-gray-50 rounded-lg p-5">
               <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-orange-600" />
+                <HelpCircle className="h-5 w-5 text-teal-600" />
                 Apa yang perlu Anda persiapkan
               </h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
-                  <span className="text-orange-600 font-bold mt-0.5">•</span>
+                  <span className="text-teal-600 font-bold mt-0.5">•</span>
                   <span>Username yang terdaftar</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-orange-600 font-bold mt-0.5">•</span>
+                  <span className="text-teal-600 font-bold mt-0.5">•</span>
                   <span>Role yang terdaftar (misal: Admin, OPD, Verifikator)</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-orange-600 font-bold mt-0.5">•</span>
+                  <span className="text-teal-600 font-bold mt-0.5">•</span>
                   <span>Departemen yang terdaftar</span>
                 </li>
               </ul>
@@ -189,7 +188,7 @@ export default function ForgotPasswordForm() {
             <div className="mt-6">
               <button
                 onClick={() => setShowSuccess(true)}
-                className="w-full bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-orange-500/30"
+                className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-4 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 shadow-lg shadow-teal-500/30"
               >
                 Sudah Menkontak Support
               </button>
@@ -209,7 +208,7 @@ export default function ForgotPasswordForm() {
             </p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 bg-linear-to-r from-orange-500 to-orange-600 text-white py-3 px-6 rounded-lg font-medium hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-lg shadow-orange-500/30"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-teal-500/30"
             >
               <ArrowLeft className="h-4 w-4" />
               Return to Sign In

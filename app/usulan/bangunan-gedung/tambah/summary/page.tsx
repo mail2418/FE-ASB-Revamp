@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, FileText, CheckCircle2, MapPin, Layers, FileDown } from 'lucide-react';
+import { Building2, FileText, CheckCircle2, MapPin, Layers, FileDown, DollarSign } from 'lucide-react';
 
 // Interface for API component data
 interface ComponentAPI {
@@ -67,6 +67,43 @@ interface resultASBfiltered {
   id: number;
 }
 
+// Interface for ASB API data
+interface ASBApiData {
+  id: number;
+  namaAsb: string;
+  alamat: string;
+  shst: number | null;
+  nominalBps: string | null;
+  nominalBpns: string | null;
+  totalLantai: number;
+  luasTanah: number | null;
+  luasTotalBangunan: number | null;
+  asbKlasifikasi: {
+    id: number;
+    klasifikasi: string;
+  } | null;
+  asbJenis: {
+    id: number;
+    jenis: string;
+  } | null;
+  asbTipeBangunan: {
+    id: number;
+    tipe_bangunan: string;
+  } | null;
+  kabkota: {
+    id: number;
+    nama: string;
+  } | null;
+  rekening: {
+    id: number;
+    rekening_kode: string;
+    rekening_uraian: string;
+  } | null;
+  asbDetails: any[];
+  asbBipekStandards: any[];
+  asbBipekNonStds: any[];
+}
+
 export default function SummaryPage() {
   const router = useRouter();
   const [basicData, setBasicData] = useState<BasicFormData | null>(null);
@@ -77,9 +114,11 @@ export default function SummaryPage() {
   const [selectedStandardComponents, setSelectedStandardComponents] = useState<ComponentAPI[]>([]);
   const [nonStandardComponents, setNonStandardComponents] = useState<{ [key: string]: ComponentState }>({});
   const [selectedNonStandardComponents, setSelectedNonStandardComponents] = useState<ComponentAPI[]>([]);
+  const [asbData, setAsbData] = useState<ASBApiData | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  // Load from localStorage first
   useEffect(() => {
-    // Load all data from localStorage
     const savedBasic = localStorage.getItem('usulan_bangunan_new_entry');
     const savedStandard = localStorage.getItem('usulan_bangunan_standar_components');
     const savedNonStandard = localStorage.getItem('usulan_bangunan_nonstandar_components');
@@ -100,15 +139,12 @@ export default function SummaryPage() {
     if (savedStandard) {
       try {
         const parsed: SavedComponentData = JSON.parse(savedStandard);
-        // Handle both new format (with formState and selectedComponents) and old format
         if (parsed.formState) {
           setStandardComponents(parsed.formState);
           setSelectedStandardComponents(parsed.selectedComponents || []);
         } else {
-          // Old format - just formState directly
           setStandardComponents(parsed as any);
         }
-        console.log('Loaded standard components:', parsed);
       } catch (e) {
         console.error('Failed to parse standard components', e);
       }
@@ -117,20 +153,56 @@ export default function SummaryPage() {
     if (savedNonStandard) {
       try {
         const parsed: SavedComponentData = JSON.parse(savedNonStandard);
-        // Handle both new format (with formState and selectedComponents) and old format
         if (parsed.formState) {
           setNonStandardComponents(parsed.formState);
           setSelectedNonStandardComponents(parsed.selectedComponents || []);
         } else {
-          // Old format - just formState directly
           setNonStandardComponents(parsed as any);
         }
-        console.log('Loaded non-standard components:', parsed);
       } catch (e) {
         console.error('Failed to parse non-standard components', e);
       }
     }
   }, []);
+
+  // Fetch ASB by ID after we have resultASBfiltered
+  useEffect(() => {
+    const fetchASBById = async () => {
+      if (!resultASBfiltered?.id) return;
+      
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${resultASBfiltered.id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.data;
+          console.log('ASB By ID (Tambah Summary):', data);
+          setAsbData(data);
+          
+          // Update klasifikasiSHST from API data if not already set
+          if ((data.asbKlasifikasi || data.shst) && !klasifikasiSHST?.klasifikasi) {
+            setKlasifikasiSHST({
+              klasifikasi: data.asbKlasifikasi?.klasifikasi || '',
+              shst: data.shst || 0
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching ASB By ID:', error);
+      }
+    };
+
+    fetchASBById();
+  }, [resultASBfiltered?.id]);
 
   // Calculate totals
   const totalArea = floors.reduce((sum, floor) => sum + (parseFloat(floor.luas) || 0), 0);
@@ -256,30 +328,50 @@ export default function SummaryPage() {
 
             {/* Financial Info Card */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+              <div className="flex items-center gap-3 mb-4">
+                <DollarSign className="w-6 h-6 text-teal-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Informasi Keuangan</h2>
+              </div>
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-gray-600">Nilai SHST per (m²)</label>
                   <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                    Rp {klasifikasiSHST?.shst ? Number(klasifikasiSHST.shst).toLocaleString('id-ID') : '0'} / m²
+                    Rp {asbData?.shst ? Number(asbData.shst).toLocaleString('id-ID') : (klasifikasiSHST?.shst ? Number(klasifikasiSHST.shst).toLocaleString('id-ID') : '0')} / m²
                   </div>
                 </div>
 
                 <div>
                   <label className="text-sm text-gray-600">Luas Total Bangunan</label>
                   <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                    {totalArea.toFixed(0)} m²
+                    {asbData?.luasTotalBangunan ? Number(asbData.luasTotalBangunan).toFixed(0) : totalArea.toFixed(0)} m²
                   </div>
                 </div>
 
                 {/* Only show Luas Tanah if tipeBangunan contains 'Rumah Negara' */}
-                {basicData?.tipeBangunan?.toLowerCase().includes('rumah negara') && (
+                {(asbData?.asbTipeBangunan?.tipe_bangunan?.toLowerCase().includes('rumah negara') || basicData?.tipeBangunan?.toLowerCase().includes('rumah negara')) && (
                   <div>
                     <label className="text-sm text-gray-600">Luas Tanah</label>
                     <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                      {basicData?.luasTanah || '0'} m²
+                      {asbData?.luasTanah || basicData?.luasTanah || '0'} m²
                     </div>
                   </div>
                 )}
+
+                {/* Nominal BPS */}
+                <div>
+                  <label className="text-sm text-gray-600">Nominal BPS (Biaya Pekerjaan Standar)</label>
+                  <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                    Rp {asbData?.nominalBps ? Number(asbData.nominalBps).toLocaleString('id-ID') : '0'}
+                  </div>
+                </div>
+
+                {/* Nominal BPNS */}
+                <div>
+                  <label className="text-sm text-gray-600">Nominal BPNS (Biaya Pekerjaan Non-Standar)</label>
+                  <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                    Rp {asbData?.nominalBpns ? Number(asbData.nominalBpns).toLocaleString('id-ID') : '0'}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -460,7 +552,7 @@ export default function SummaryPage() {
 
                   {/* Verify Button */}
                   <button
-                    onClick={handleVerify}
+                    onClick={() => setShowConfirmModal(true)}
                     className="flex items-center gap-2 px-8 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all shadow-lg hover:shadow-xl font-semibold text-lg cursor-pointer"
                   >
                     <CheckCircle2 className="w-5 h-5" />
@@ -471,6 +563,44 @@ export default function SummaryPage() {
           </div>
         </div>
       </div>
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md mx-4 transform animate-in zoom-in-95 duration-200">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-amber-100 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7 text-amber-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Konfirmasi Pengajuan</h3>
+              <p className="text-gray-600 mb-6">
+                <strong className="text-amber-600">Setelah mengajukan Permohonan Anda tidak dapat Mengedit.</strong>
+                <br />
+                <span className="text-sm">Pastikan semua data sudah benar sebelum melanjutkan.</span>
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-all font-medium"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    handleVerify();
+                  }}
+                  className="px-6 py-2.5 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-all font-medium flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Ya, Ajukan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

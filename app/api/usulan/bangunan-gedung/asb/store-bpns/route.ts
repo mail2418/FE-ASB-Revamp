@@ -24,7 +24,12 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-
+    const {
+      id_asb,
+      id_asb_bipek_nonstd,
+      komponen_nonstd,
+      bobot_nonstd
+    } = body;
     const response = await fetch(`${API_BASE_URL}/asb/store-bpns`, {
       method: 'PUT',
       headers: {

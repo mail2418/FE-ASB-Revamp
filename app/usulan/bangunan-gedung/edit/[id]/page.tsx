@@ -54,7 +54,7 @@ export default function TambahUsulanBangunanGedung() {
   const [loadingKabKota, setLoadingKabKota] = useState(false);
   const [loadingKecamatan, setLoadingKecamatan] = useState(false);
   const [loadingKelurahan, setLoadingKelurahan] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   // Search states for dropdowns
   const [searchRekening, setSearchRekening] = useState('');
 
@@ -75,8 +75,10 @@ export default function TambahUsulanBangunanGedung() {
       namaRekeningBelanja: "",
     },
     klasifikasi: '',
-    nilaiASB: '',
+    nilaiSHST: '',
     jumlahKontraktor: 1,
+    idAsbTipeBangunan: "1",
+    idAsbJenis: "1",
     suratPermohonan: null as File | null,
   });
 
@@ -357,26 +359,124 @@ export default function TambahUsulanBangunanGedung() {
       setFormData(prev => ({ ...prev, kelurahan: '' }));
     }
   }, [formData.kecamatan, kelurahanOptions]);
-
-  // Load saved state on mount
-  React.useEffect(() => {
-    const savedData = localStorage.getItem('usulan_bangunan_new_entry');
-    if (savedData) {
+  // Fetch ASB by ID to get data based on ID
+  React.useEffect(()=>{
+    if (!asbId) return;
+    
+    setLoading(true);
+    const fetchASBById = async () => {
       try {
-        const parsed = JSON.parse(savedData);
-        if (parsed.formData) {
-          // Note: File objects cannot be stored in localStorage, so suratPermohonan will be null
-          setFormData(prev => ({ ...prev, ...parsed.formData}));
-        }
-        if (parsed.floors) {
-          setFloors(parsed.floors);
-        }
-      } catch (e) {
-        console.error('Failed to parse saved form data', e);
-      }
-    }
-  }, []);
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
 
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb/id?id=${asbId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.data;
+          console.log('ASB By ID:', data);
+          
+          // Populate all form fields from API response
+          setFormData(prev => ({
+            ...prev,
+            jenis: data.asbJenis?.jenis|| '',
+            tipeBangunan: data.asbTipeBangunan?.tipe_bangunan|| '',
+            deskripsiBangunan: data.namaAsb || '',
+            lokasi: data.alamat || '',
+            kabKota: data.idKabkota?.toString() || data.kabkota?.id?.toString() || '',
+            jumlahLantai: data.totalLantai?.toString() || '1',
+            luasTanah: data.luasTanah?.toString() || '',
+            jumlahKontraktor: data.jumlahKontraktor || 1,
+            klasifikasi: data.asbKlasifikasi?.klasifikasi || '',
+            nilaiSHST: data.shst?.toString() || '',
+            RekeningBelanja: {
+              id: data.rekening?.id || data.idRekening || 0,
+              kodeRekeningBelanja: data.rekening?.rekening_kode || '',
+              namaRekeningBelanja: data.rekening?.rekening_uraian || '',
+            },
+            idAsbTipeBangunan: data.asbTipeBangunan?.id || 0,
+            idAsbJenis: data.asbJenis?.id || 0,
+          }));
+
+          // Set searchRekening to show selected rekening
+          if (data.rekening?.rekening_kode) {
+            setSearchRekening(`${data.rekening.rekening_kode} - ${data.rekening.rekening_uraian || ''}`);
+          }
+
+          // Populate floors from asbDetails if available
+          if (data.asbDetails && data.asbDetails.length > 0) {
+            const mappedFloors: Floor[] = data.asbDetails.map((detail: any, index: number) => ({
+              id: detail.id?.toString() || `${index + 1}`,
+              jenisLantai: detail.idAsbLantai?.toString() || '',
+              fungsiLantai: detail.idAsbFungsiRuang?.toString() || '',
+              namaFungsiLantai: '', // Will be set based on fungsiLantaiOptions
+              luas: detail.luas?.toString() || '',
+              notes: '',
+            }));
+            setFloors(mappedFloors);
+          } else if (data.totalLantai) {
+            // If no asbDetails but totalLantai exists, create empty floors
+            const numFloors = parseInt(data.totalLantai) || 1;
+            const newFloors: Floor[] = Array.from({ length: numFloors }, (_, i) => ({
+              id: `${i + 1}`,
+              jenisLantai: '',
+              fungsiLantai: '',
+              namaFungsiLantai: '',
+              luas: '',
+              notes: '',
+            }));
+            setFloors(newFloors);
+          }
+
+          // Update localStorage with the fetched data
+          const dataToSave = {
+            formData: {
+              jenis: data.asbJenis.jenis?.toString() || '',
+              tipeBangunan: data.idAsbTipeBangunan?.toString() || '',
+              deskripsiBangunan: data.namaAsb || '',
+              lokasi: data.alamat || '',
+              kabKota: data.idKabkota?.toString() || '',
+              jumlahLantai: data.totalLantai?.toString() || '1',
+              luasTanah: data.luasTanah?.toString() || '',
+              jumlahKontraktor: data.jumlahKontraktor || 1,
+              klasifikasi: data.asbKlasifikasi?.klasifikasi || '',
+              nilaiSHST: data.shst?.toString() || '',
+              RekeningBelanja: {
+                id: data.rekening?.id || 0,
+                kodeRekeningBelanja: data.rekening?.rekening_kode || '',
+                namaRekeningBelanja: data.rekening?.rekening_uraian || '',
+              },
+            },
+            floors: data.asbDetails?.map((detail: any, index: number) => ({
+              id: detail.id?.toString() || `${index + 1}`,
+              jenisLantai: detail.idAsbLantai?.toString() || '',
+              fungsiLantai: detail.idAsbFungsiRuang?.toString() || '',
+              namaFungsiLantai: '',
+              luas: detail.luas?.toString() || '',
+              notes: '',
+            })) || [],
+            resultASBfiltered: {
+              id: data.id,
+              ...data
+            },
+          };
+          localStorage.setItem('usulan_bangunan_new_entry', JSON.stringify(dataToSave));
+        }
+      } catch (error) {
+        console.error('Error fetching ASB By ID:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchASBById();
+  }, [asbId]);
+  
+  console.log(formData.jenis)
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -428,7 +528,7 @@ export default function TambahUsulanBangunanGedung() {
     
     setFloors(newFloors);
     // Reset calculated values when floors change
-    setFormData(prev => ({ ...prev, klasifikasi: '', nilaiASB: '' }));
+    setFormData(prev => ({ ...prev, klasifikasi: '', nilaiSHST: '' }));
   };
 
   // Handle submit
@@ -462,16 +562,16 @@ export default function TambahUsulanBangunanGedung() {
         namaAsb: formData.deskripsiBangunan,
         alamat: formData.lokasi,
         totalLantai: floors.length || parseInt(formData.jumlahLantai || '1'),
-        idAsbTipeBangunan: parseInt(formData.tipeBangunan || '1'),
+        idAsbTipeBangunan: parseInt(formData.idAsbTipeBangunan || '1'),
         idKabkota: parseInt(formData.kabKota || '1'),
         jumlahKontraktor: formData.jumlahKontraktor,
-        idAsbJenis: parseInt(formData.jenis || '1'),
+        idAsbJenis: parseInt(formData.idAsbJenis || '1'),
         luasTanah: formData?.luasTanah,
       };
 
       console.log(`requestBodyASB: ${JSON.stringify(requestBodyASB)}`);
 
-      // CREATE STORE INDEX
+      // PUT STORE INDEX
       const responseASB = await fetch(`/api/usulan/bangunan-gedung/asb/store-index`, {
         method: 'PUT',
         headers: {
@@ -736,6 +836,7 @@ export default function TambahUsulanBangunanGedung() {
                 </label>
                 <div className="relative">
                   <input
+                    required
                     type="text"
                     placeholder="Ketik untuk mencari kode rekening..."
                     value={searchRekening}
@@ -758,7 +859,7 @@ export default function TambahUsulanBangunanGedung() {
                                 kodeRekeningBelanja: rekening.rekening_kode,
                                 namaRekeningBelanja: rekening.rekening_uraian,
                               } }));
-                              setSearchRekening('');
+                              setSearchRekening(`${rekening.rekening_kode} - ${rekening.rekening_uraian}`);
                             }}
                             className="px-4 py-2 hover:bg-orange-50 cursor-pointer text-sm"
                           >
@@ -766,20 +867,6 @@ export default function TambahUsulanBangunanGedung() {
                             <div className="text-gray-600 text-xs">{rekening.rekening_uraian}</div>
                           </div>
                         ))}
-                      {rekeningOptions.filter(rekening => 
-                        rekening.rekening_kode.toLowerCase().includes(searchRekening.toLowerCase()) ||
-                        rekening.rekening_uraian.toLowerCase().includes(searchRekening.toLowerCase())
-                      ).length === 0 && (
-                        <div className="px-4 py-2 text-sm text-gray-500">Tidak ada hasil</div>
-                      )}
-                    </div>
-                  )}
-                  {formData.RekeningBelanja.kodeRekeningBelanja && !searchRekening && (
-                    <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
-                      <div className="text-sm font-medium text-gray-900">{formData.RekeningBelanja.kodeRekeningBelanja}</div>
-                      <div className="text-xs text-gray-600">
-                        {rekeningOptions.find(r => r.rekening_kode === formData.RekeningBelanja.kodeRekeningBelanja)?.rekening_uraian}
-                      </div>
                     </div>
                   )}
                 </div>
