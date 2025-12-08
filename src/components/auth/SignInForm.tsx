@@ -186,13 +186,13 @@ export default function SignInForm() {
       {/* Header Section */}
       <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-8 text-white">
         <div className="flex items-center justify-center mb-4">
-          <div className="bg-white p-4 rounded-2xl shadow-lg">
+          <div className="p-4 rounded-2xl">
             <Image 
               src="/favicon.ico" 
               alt="ASB Logo" 
               width={64} 
               height={64}
-              className="h-16 w-16"
+              className="h-64 w-64"
             />
           </div>
         </div>
