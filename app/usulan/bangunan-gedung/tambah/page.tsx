@@ -27,7 +27,7 @@ interface requestBodyASB{
     idKabkota: number;
     jumlahKontraktor: number;
     idAsbJenis: number;
-    luasTanah?: string;
+    luasTanah?: number;
 }
 export default function TambahUsulanBangunanGedung() {
   const router = useRouter();
@@ -64,7 +64,7 @@ export default function TambahUsulanBangunanGedung() {
     kecamatan: '',
     kelurahan: '',
     jumlahLantai: '1',
-    luasTanah: '1',
+    luasTanah: 1,
     RekeningBelanja: {
       id: 0,
       kodeRekeningBelanja: "",
@@ -470,16 +470,18 @@ export default function TambahUsulanBangunanGedung() {
         body: JSON.stringify(requestBodyASB),
       });
       
+      if (!responseASB.ok) {
+        const errorData = await responseASB.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal menyimpan data ke server');
+      }
+
       const resultASB = await responseASB.json();
       console.log('Backend responseASB Bfore filter:', resultASB);
       
       const resultASBfiltered = resultASB.data?.data || resultASB.data || []
       console.log('Backend responseASB:', resultASBfiltered);
       
-      if (!resultASBfiltered.ok) {
-        const errorData = await responseASB.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Gagal menyimpan data ke server');
-      }
+      
       // Prepare request body for backend API
       const requestBodyRekening = {
           id_asb: resultASBfiltered.id || '',

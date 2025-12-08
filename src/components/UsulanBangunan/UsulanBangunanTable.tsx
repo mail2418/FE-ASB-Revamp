@@ -414,8 +414,17 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    {/* Edit button for OPD role - hidden when status is rejected (idAsbStatus === 7) or status 6 */}
-                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus !== 7 && item.idAsbStatus !== 6 && (
+                    {/* Green checkmark when idAsbStatus is 8 (fully verified) - shown to all roles */}
+                    {item.idAsbStatus === 8 && (
+                      <div 
+                        className="text-green-500 p-1 rounded bg-green-50"
+                        title="Usulan telah disetujui"
+                      >
+                        <Check className="w-5 h-5" />
+                      </div>
+                    )}
+                    {/* Edit button for OPD/admin/superadmin role - hidden when status is rejected (7), pending verification (6), or approved (8) */}
+                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus !== 7 && item.idAsbStatus !== 6 && item.idAsbStatus !== 8 && (
                       <button 
                         onClick={() => handleEditClick(item.id)}
                         className="text-blue-500 hover:text-blue-700 transition-colors p-1 rounded hover:bg-blue-50"
@@ -433,8 +442,12 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                         <Clock className="w-5 h-5" />
                       </div>
                     )}
-                    {/* Verify button for verifikator roles - hidden when status is rejected (idAsbStatus === 7) */}
-                    {userRole && ['verifikator', 'verifikator_adpem', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && item.idAsbStatus !== 7 && (
+                    {/* Verify button for verifikator roles - only shown when idAsbStatus >= 6 AND NOT 7 or 8 */}
+                    {userRole && ['verifikator', 'verifikator_adpem', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && 
+                     item.idAsbStatus !== undefined && 
+                     item.idAsbStatus >= 6 && 
+                     item.idAsbStatus !== 7 && 
+                     item.idAsbStatus !== 8 && (
                       <button 
                         onClick={() => handleVerifyClick(item.id)}
                         className="text-teal-500 hover:text-teal-700 transition-colors p-1 rounded hover:bg-teal-50"
@@ -442,6 +455,16 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                       >
                         <ClipboardCheck className="w-5 h-5" />
                       </button>
+                    )}
+                    {/* Message for verifikator when status < 6 */}
+                    {userRole && ['verifikator', 'verifikator_adpem', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && 
+                     (item.idAsbStatus === undefined || item.idAsbStatus < 6) && (
+                      <div 
+                        className="text-gray-400 p-1 rounded bg-gray-50"
+                        title="Belum dapat diverifikasi"
+                      >
+                        <Clock className="w-5 h-5" />
+                      </div>
                     )}
                     {/* Rejection reason icon - shown when status is rejected (idAsbStatus === 7) */}
                     {item.idAsbStatus === 7 && (

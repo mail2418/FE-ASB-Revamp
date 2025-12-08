@@ -271,8 +271,8 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
               <p className="text-base font-semibold text-blue-600">
-                {buildingData.asb_shst_klasifikasi?.shst?.shst 
-                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst?.shst).toLocaleString('id-ID')} / m²`
+                {buildingData.asb_shst_klasifikasi?.shst
+                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst).toLocaleString('id-ID')} / m²`
                   : '0'}
               </p>
             </div>

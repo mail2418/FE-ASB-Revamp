@@ -426,12 +426,40 @@ export default function VerifyUsulanPage() {
           const result = await response.json();
           const allData: APIUsulanBangunan = result.data?.data || result.data;
           
-          console.log(allData)
+          console.log('ASB By ID (Verify Page):', allData);
 
           if (allData) {
             setApiData(allData);
             const transformed = transformAPIData(allData);
             setUsulanData(transformed);
+
+            // Store data to localStorage for child pages access
+            const dataToStore = {
+              id: allData.id,
+              namaAsb: allData.namaAsb,
+              alamat: allData.alamat,
+              shst: allData.shst,
+              nominalBps: allData.nominalBps,
+              nominalBpns: allData.nominalBpns,
+              totalLantai: allData.totalLantai,
+              luasTanah: allData.luasTanah,
+              luasTotalBangunan: allData.luasTotalBangunan,
+              koefisienLantaiTotal: allData.koefisienLantaiTotal,
+              koefisienFungsiRuangTotal: allData.koefisienFungsiRuangTotal,
+              totalBiayaPembangunan: allData.totalBiayaPembangunan,
+              rekapitulasiBiayaKonstruksi: allData.rekapitulasiBiayaKonstruksi,
+              asbKlasifikasi: allData.asbKlasifikasi,
+              asbJenis: allData.asbJenis,
+              asbTipeBangunan: allData.asbTipeBangunan,
+              kabkota: allData.kabkota,
+              opd: allData.opd,
+              rekening: allData.rekening,
+              asbStatus: allData.asbStatus,
+              asbDetails: allData.asbDetails,
+              asbBipekStandards: allData.asbBipekStandards,
+              asbBipekNonStds: allData.asbBipekNonStds,
+            };
+            localStorage.setItem('verify_asb_data', JSON.stringify(dataToStore));
           }
         } else {
           console.error('Failed to fetch data:', response.statusText);
@@ -532,7 +560,6 @@ export default function VerifyUsulanPage() {
           </div>
       </div>
 
-
       {/* Grid Layout similar to summary page */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Classification & Financial Info */}
@@ -558,6 +585,12 @@ export default function VerifyUsulanPage() {
 
           {/* Financial Info Card */}
           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-teal-600">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-lg font-semibold text-gray-900">Informasi Keuangan</h2>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-600">Nilai SHST per (m²)</label>
@@ -569,7 +602,7 @@ export default function VerifyUsulanPage() {
               <div>
                 <label className="text-sm text-gray-600">Luas Total Bangunan</label>
                 <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
-                  {apiData?.asbDetails?.reduce((sum, d) => sum + (d.luas || 0), 0).toFixed(0) || '0'} m²
+                  {apiData?.luasTotalBangunan ? Number(apiData.luasTotalBangunan).toFixed(0) : (apiData?.asbDetails?.reduce((sum, d) => sum + (d.luas || 0), 0).toFixed(0) || '0')} m²
                 </div>
               </div>
 
@@ -581,6 +614,22 @@ export default function VerifyUsulanPage() {
                   </div>
                 </div>
               )}
+
+              {/* Nominal BPS */}
+              <div>
+                <label className="text-sm text-gray-600">Nominal BPS (Biaya Pekerjaan Standar)</label>
+                <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  Rp {apiData?.nominalBps ? Number(apiData.nominalBps).toLocaleString('id-ID') : '0'}
+                </div>
+              </div>
+
+              {/* Nominal BPNS */}
+              <div>
+                <label className="text-sm text-gray-600">Nominal BPNS (Biaya Pekerjaan Non-Standar)</label>
+                <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  Rp {apiData?.nominalBpns ? Number(apiData.nominalBpns).toLocaleString('id-ID') : '0'}
+                </div>
+              </div>
             </div>
           </div>
 

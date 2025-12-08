@@ -28,7 +28,7 @@ interface requestBodyASB{
     idKabkota: number;
     jumlahKontraktor: number;
     idAsbJenis: number;
-    luasTanah?: string;
+    luasTanah?: number;
 }
 
 export default function TambahUsulanBangunanGedung() {
@@ -68,7 +68,7 @@ export default function TambahUsulanBangunanGedung() {
     kecamatan: '',
     kelurahan: '',
     jumlahLantai: '1',
-    luasTanah: '1',
+    luasTanah: 1,
     RekeningBelanja: {
       id: 0,
       kodeRekeningBelanja: "",
@@ -390,7 +390,7 @@ export default function TambahUsulanBangunanGedung() {
             lokasi: data.alamat || '',
             kabKota: data.idKabkota?.toString() || data.kabkota?.id?.toString() || '',
             jumlahLantai: data.totalLantai?.toString() || '1',
-            luasTanah: data.luasTanah?.toString() || '',
+            luasTanah: data.luasTanah || 1,
             jumlahKontraktor: data.jumlahKontraktor || 1,
             klasifikasi: data.asbKlasifikasi?.klasifikasi || '',
             nilaiSHST: data.shst?.toString() || '',

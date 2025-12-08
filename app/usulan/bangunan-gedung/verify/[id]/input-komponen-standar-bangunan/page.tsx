@@ -2,13 +2,40 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, CheckCircle, FileText, Save, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileText, Save, X, Building2 } from 'lucide-react';
 
-interface StandardComponent {
+// Interface for ASB BPS component from API
+interface AsbBipekStandard {
   id: number;
-  komponen: string;
-  satuan: string;
-  bobot: number;
+  idAsb: number;
+  idAsbKomponenBangunanStd: number;
+  bobotInput: number;
+  calculationMethod: string;
+  jumlahBobot: number;
+  rincianHarga: number;
+  komponenBangunan?: {
+    id: number;
+    komponen: string;
+  };
+}
+
+// Interface for stored ASB data
+interface StoredAsbData {
+  id: number;
+  namaAsb: string;
+  alamat: string;
+  shst: number | null;
+  nominalBps: string | null;
+  nominalBpns: string | null;
+  asbKlasifikasi: {
+    id: number;
+    klasifikasi: string;
+  } | null;
+  asbStatus: {
+    id: number;
+    status: string;
+  } | null;
+  asbBipekStandards: AsbBipekStandard[];
 }
 
 interface RowState {
@@ -23,7 +50,8 @@ export default function VerifyKomponenStandarPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerifyingBPS, setIsVerifyingBPS] = useState(false);
   const [jenisVerifikator, setJenisVerifikator] = useState<string | null>(null);
-  const [components, setComponents] = useState<StandardComponent[]>([]);
+  const [asbData, setAsbData] = useState<StoredAsbData | null>(null);
+  const [components, setComponents] = useState<AsbBipekStandard[]>([]);
   const [formState, setFormState] = useState<{ [key: string]: RowState }>({});
   const [verificationNotes, setVerificationNotes] = useState('');
   const [idAsbStatus, setIdAsbStatus] = useState<number | null>(null);
@@ -83,63 +111,48 @@ export default function VerifyKomponenStandarPage() {
     }
   }, [router, params.id]);
 
-  // Fetch standard components data
+  // Load data from localStorage (stored by parent verify page)
   useEffect(() => {
-    const fetchComponents = async () => {
+    const loadStoredData = () => {
       setIsLoading(true);
       try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) return;
-
-        // Fetch standard components
-        const response = await fetch('/api/usulan/bangunan-gedung/asb/komponen-standar', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const componentList = data.data?.data || data.data || [];
-          setComponents(componentList);
+        const storedData = localStorage.getItem('verify_asb_data');
+        
+        if (storedData) {
+          const parsed: StoredAsbData = JSON.parse(storedData);
+          console.log('Loaded ASB data from localStorage:', parsed);
+          setAsbData(parsed);
           
-          // Initialize form state with existing values
-          const initialState: { [key: string]: RowState } = {};
-          componentList.forEach((comp: StandardComponent) => {
-            initialState[`row_${comp.id}`] = {
-              percentage: comp.bobot || 0,
-              checked: (comp.bobot || 0) > 0,
-            };
-          });
-          setFormState(initialState);
-        }
-
-        // Fetch usulan data to get idAsbStatus
-        const usulanResponse = await fetch('/api/usulan/bangunan-gedung/asb', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (usulanResponse.ok) {
-          const usulanData = await usulanResponse.json();
-          const allData = usulanData.data?.data || usulanData.data || [];
-          const id = Array.isArray(params.id) ? params.id[0] : params.id;
-          const foundItem = allData.find((item: any) => item.id.toString() === id);
-          if (foundItem) {
-            setIdAsbStatus(foundItem.asbStatus?.id || foundItem.idAsbStatus);
+          // Get idAsbStatus
+          if (parsed.asbStatus?.id) {
+            setIdAsbStatus(parsed.asbStatus.id);
           }
+          
+          // Set components from asbBipekStandards
+          if (parsed.asbBipekStandards && parsed.asbBipekStandards.length > 0) {
+            setComponents(parsed.asbBipekStandards);
+            
+            // Initialize form state with existing values
+            const initialState: { [key: string]: RowState } = {};
+            parsed.asbBipekStandards.forEach((comp) => {
+              initialState[`row_${comp.id}`] = {
+                percentage: comp.bobotInput || 0,
+                checked: (comp.bobotInput || 0) > 0,
+              };
+            });
+            setFormState(initialState);
+          }
+        } else {
+          console.warn('No verify_asb_data found in localStorage');
         }
       } catch (error) {
-        console.error('Error fetching components:', error);
+        console.error('Error loading stored data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchComponents();
+    loadStoredData();
   }, [params.id]);
 
   if (jenisVerifikator !== 'ADPEM') {
@@ -188,6 +201,50 @@ export default function VerifyKomponenStandarPage() {
         </div>
       </div>
 
+      {/* Building Information Section */}
+      {asbData && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Building2 className="w-6 h-6 text-teal-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Informasi Bangunan</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm text-gray-600">Nama Bangunan</label>
+              <p className="text-gray-900 font-medium mt-1">{asbData.namaAsb || '-'}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Klasifikasi</label>
+              <div className="mt-1">
+                <span className="inline-flex px-3 py-1 bg-lime-100 text-lime-800 rounded-lg text-sm font-medium">
+                  {asbData.asbKlasifikasi?.klasifikasi || 'Belum Ditentukan'}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Nilai SHST</label>
+              <p className="text-gray-900 font-medium mt-1">
+                Rp {asbData.shst ? Number(asbData.shst).toLocaleString('id-ID') : '0'} / m²
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="text-sm text-gray-600">Nominal BPS</label>
+              <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                Rp {asbData.nominalBps ? Number(asbData.nominalBps).toLocaleString('id-ID') : '0'}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-gray-600">Nominal BPNS</label>
+              <div className="bg-orange-100 text-orange-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                Rp {asbData.nominalBpns ? Number(asbData.nominalBpns).toLocaleString('id-ID') : '0'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Components Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
@@ -199,8 +256,8 @@ export default function VerifyKomponenStandarPage() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">No</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Komponen</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Satuan</th>
                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Bobot (%)</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Rincian Harga</th>
                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
@@ -211,12 +268,14 @@ export default function VerifyKomponenStandarPage() {
                   return (
                     <tr key={comp.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{comp.komponen}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{comp.satuan}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{comp.komponenBangunan?.komponen || '-'}</td>
                       <td className="px-6 py-4 text-center">
                         <span className="inline-flex px-3 py-1 bg-gray-100 text-gray-800 rounded-lg text-sm font-medium">
                           {state.percentage}%
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-center text-sm text-gray-700">
+                        Rp {comp.rincianHarga ? Number(comp.rincianHarga).toLocaleString('id-ID') : '0'}
                       </td>
                       <td className="px-6 py-4 text-center">
                         {state.percentage > 0 ? (
