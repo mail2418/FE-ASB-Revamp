@@ -144,9 +144,31 @@ export default function LeftPanelForm() {
       const result = await response.json();
       console.log('Non-standard components updated:', result);
 
+      // Send PUT request to Update Status of ASB 
+      const responseUpdateStatus = await fetch('/api/usulan/bangunan-gedung/asb/store-bpns', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!responseUpdateStatus.ok) {
+        const errorData = await responseUpdateStatus.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Gagal menyimpan data komponen non-standar');
+      }
+
+      // Save state with selected components to localStorage
+      const saveData = {
+        formState,
+        selectedComponents: componentsToSave
+      };
+      localStorage.setItem('usulan_bangunan_nonstandar_components', JSON.stringify(saveData));
+
       // Navigate back to usulan list
       alert('Data berhasil disimpan!');
-      router.push('/usulan/bangunan-gedung');
+      router.push(`/usulan/bangunan-gedung/edit/${parseInt(asbId)}/summary`);
     } catch (error) {
       console.error('Error updating non-standard components:', error);
       alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
