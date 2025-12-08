@@ -612,8 +612,8 @@ export default function TambahUsulanBangunanGedung() {
                     name="jenis"
                     value={formData.jenis}
                     onChange={handleInputChange}
-                    disabled={loadingJenis}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50"
+                    disabled={true}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     <option value="">{loadingJenis ? 'Memuat...' : 'Pilih Jenis'}</option>
                     {jenisOptions.map((jenis) => (
@@ -637,8 +637,8 @@ export default function TambahUsulanBangunanGedung() {
                     name="tipeBangunan"
                     value={formData.tipeBangunan}
                     onChange={handleInputChange}
-                    disabled={loadingTipeBangunan}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-50"
+                    disabled={true}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     <option value="">{loadingTipeBangunan ? 'Memuat...' : 'Pilih tipe bangunan'}</option>
                     {tipeBangunanApiOptions.map((type) => (

@@ -18,7 +18,8 @@ export default function LeftPanelForm() {
   const asbId = params.id as string;
   
   const { formState, updateRowState } = useEditNonStandardBuildingContext();
-  
+  const [buildingData, setBuildingData] = useState<any>(null);
+
   // API data states
   const [allComponents, setAllComponents] = useState<NonStandardComponentAPI[]>([]);
   const [selectedComponents, setSelectedComponents] = useState<NonStandardComponentAPI[]>([]);
@@ -28,6 +29,19 @@ export default function LeftPanelForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   
+  // Load building data from localStorage first
+  useEffect(() => {
+    const savedData = localStorage.getItem('usulan_bangunan_new_entry');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setBuildingData(parsed);
+      } catch (e) {
+        console.error('Failed to load building data:', e);
+      }
+    }
+  }, []);
+    
   // Fetch non-standard components from API
   useEffect(() => {
     const fetchNonStandardComponents = async () => {
@@ -185,6 +199,35 @@ export default function LeftPanelForm() {
           <strong>Mode Edit:</strong> ASB ID #{asbId}
         </p>
       </div>
+
+      {/* Building Information Section */}
+      {buildingData && (
+        <div className="bg-gradient-to-r from-lime-50 to-green-50 rounded-lg border border-lime-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Informasi Bangunan</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
+              <p className="text-base font-semibold text-gray-900">
+                {buildingData.formData?.deskripsiBangunan || '-'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Klasifikasi Bangunan</p>
+              <p className="text-base font-semibold text-gray-900">
+                {buildingData.asb_shst_klasifikasi.klasifikasi?.klasifikasi ||'[Belum terklasifikasi]'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nilai SHST</p>
+              <p className="text-base font-semibold text-lime-600">
+                {buildingData.asb_shst_klasifikasi.shst?.shst 
+                  ? `Rp ${Number(buildingData.asb_shst_klasifikasi.shst.shst).toLocaleString('id-ID')} / m²`
+                  : '0'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Component Selection Dropdown (if more than 10 components) */}
       {needsDropdown && (

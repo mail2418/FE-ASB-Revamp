@@ -1,16 +1,60 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Edit3, Save, X } from 'lucide-react';
+import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Layers, CheckCircle2 } from 'lucide-react';
 import type { UsulanBangunanGedung } from '@/types/usulan-bangunan';
 
 // Interface for API response
+interface AsbDetail {
+  id: number;
+  idAsb: number;
+  files: string;
+  idAsbLantai: number;
+  idAsbFungsiRuang: number;
+  asbFungsiRuangKoef: number;
+  lantaiKoef: number;
+  luas: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+interface AsbBipekStandard {
+  id: number;
+  idAsb: number;
+  files: string;
+  idAsbKomponenBangunanStd: number;
+  bobotInput: number;
+  calculationMethod: string;
+  jumlahBobot: number;
+  rincianHarga: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+interface AsbBipekNonStd {
+  id: number;
+  idAsb: number;
+  files: string;
+  idAsbKomponenBangunanNonStd: number;
+  bobotInput: number;
+  calculationMethod: string;
+  jumlahBobot: number;
+  rincianHarga: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
 interface APIUsulanBangunan {
   id: number;
   idAsbJenis: number;
   idAsbStatus: number;
   idOpd: number;
   idAsbTipeBangunan: number;
+  idRekening: number | null;
+  idRekeningReview: number | null;
   idKabkota: number;
   idAsbKlasifikasi: number | null;
   idVerifikatorAdpem: number | null;
@@ -21,14 +65,29 @@ interface APIUsulanBangunan {
   alamat: string;
   jumlahKontraktor: number;
   totalLantai: number;
+  luasTanah: number | null;
   rejectReason: string | null;
   shst: number | null;
+  perencanaanKonstruksi: number | null;
+  pengawasanKonstruksi: number | null;
+  managementKonstruksi: number | null;
+  pengelolaanKegiatan: number | null;
   luasTotalBangunan: number | null;
+  koefisienLantaiTotal: number | null;
+  koefisienFungsiRuangTotal: number | null;
   totalBiayaPembangunan: number | null;
+  nominalBps: string | null;
+  nominalBpns: string | null;
+  bobotTotalBps: string | null;
+  bobotTotalBpns: string | null;
+  rekapitulasiBiayaKonstruksi: number | null;
+  rekapitulasiBiayaKonstruksiRounded: number | null;
   kabkota: {
     id: number;
     kode: string;
     nama: string;
+    provinceId?: number;
+    isActive?: boolean;
   };
   asbStatus: {
     id: number;
@@ -43,14 +102,58 @@ interface APIUsulanBangunan {
     id: number;
     opd: string;
     alias: string;
+    id_user?: number;
   };
   asbTipeBangunan: {
     id: number;
     tipe_bangunan: string;
   };
+  asbKlasifikasi: {
+    id: number;
+    id_asb_tipe_bangunan: number;
+    klasifikasi: string;
+  } | null;
+  verifikatorAdpem: any;
+  verifikatorBPKAD: any;
+  verifikatorBappeda: any;
+  asbDetails: AsbDetail[];
+  asbDetailReviews: any[];
+  asbBipekStandards: AsbBipekStandard[];
+  asbBipekStandardReviews: any[];
+  asbBipekNonStds: AsbBipekNonStd[];
+  asbBipekNonStdReviews: any[];
+  rekening: any;
+  rekeningReview: any;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
 }
+
+// Mapping for lantai names
+const LANTAI_MAP: { [key: number]: string } = {
+  1: 'Lantai 1',
+  2: 'Lantai 2',
+  3: 'Lantai 3',
+  4: 'Lantai 4',
+  5: 'Lantai 5',
+  6: 'Lantai 6',
+  7: 'Lantai 7',
+  8: 'Lantai 8',
+  9: 'Lantai 9',
+  10: 'Lantai 10',
+};
+
+// Mapping for fungsi ruang names
+const FUNGSI_RUANG_MAP: { [key: number]: string } = {
+  1: 'Ruang Kantor',
+  2: 'Ruang Rapat',
+  3: 'Ruang Arsip',
+  4: 'Gudang',
+  5: 'Toilet',
+  6: 'Lobby',
+  7: 'Parkir',
+  8: 'Ruang Lainnya',
+};
 
 const STATUS_ID_MAP: { [key: number]: string } = {
   1: 'General Documents',
@@ -75,12 +178,12 @@ const transformAPIData = (item: APIUsulanBangunan): UsulanBangunanGedung => {
     jenis: item.asbJenis?.jenis || 'Pembangunan',
     uraian: item.namaAsb,
     lokasi: item.alamat,
-    klasifikasi: item.idAsbKlasifikasi ? `Klasifikasi ${item.idAsbKlasifikasi}` : 'Belum Ditentukan',
+    klasifikasi: item.asbKlasifikasi?.klasifikasi || 'Belum Ditentukan',
     satuan: 'm2',
     verificationStatus: {
-      adpem: 'Menunggu',
-      bappeda: 'Belum',
-      bpkad: 'Belum',
+      adpem: item.idVerifikatorAdpem ? 'Disetujui' : 'Menunggu',
+      bappeda: item.idVerifikatorBappeda ? 'Disetujui' : 'Belum',
+      bpkad: item.idVerifikatorBpkad ? 'Disetujui' : 'Belum',
     },
     nilaiBkf: item.shst ? 'Sudah' : 'Belum',
     createdBy: item.opd?.opd || 'Unknown',
@@ -91,6 +194,7 @@ const transformAPIData = (item: APIUsulanBangunan): UsulanBangunanGedung => {
 export default function VerifyUsulanPage() {
   const router = useRouter();
   const params = useParams();
+
   const [userRole, setUserRole] = useState<string | null>(null);
   const [jenisVerifikator, setJenisVerifikator] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,12 +204,6 @@ export default function VerifyUsulanPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   
-  // Editing states
-  const [isEditingSummary, setIsEditingSummary] = useState(false);
-  const [editedUraian, setEditedUraian] = useState('');
-  const [editedLokasi, setEditedLokasi] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
   // Handler for Verifikasi Lantai API call
   const handleVerifikasiLantai = async () => {
     if (!apiData) return;
@@ -118,6 +216,9 @@ export default function VerifyUsulanPage() {
       }
       const requestBody = {
         id_asb: apiData.id,
+        verif_luas_lantai: [100.5, 95.3, 90.2],
+        verif_id_asb_lantai: [1, 2, 3],
+        verif_id_asb_fungsi_ruang: [1, 2, 3]
       };
       const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-lantai', {
         method: 'PUT',
@@ -331,8 +432,6 @@ export default function VerifyUsulanPage() {
             setApiData(allData);
             const transformed = transformAPIData(allData);
             setUsulanData(transformed);
-            setEditedUraian(transformed.uraian);
-            setEditedLokasi(transformed.lokasi);
           }
         } else {
           console.error('Failed to fetch data:', response.statusText);
@@ -346,46 +445,6 @@ export default function VerifyUsulanPage() {
 
     fetchUsulanData();
   }, [params.id]);
-
-  // Handle save summary
-  const handleSaveSummary = async () => {
-    if (!apiData || !usulanData) return;
-    
-    setIsSaving(true);
-    try {
-      // In production, this would call a PUT/PATCH API to update the data
-      // For now, we update the local state
-      setUsulanData(prev => prev ? {
-        ...prev,
-        uraian: editedUraian,
-        lokasi: editedLokasi,
-      } : null);
-      
-      setIsEditingSummary(false);
-      
-      // TODO: Call API to save changes
-      // const response = await fetch(`/api/usulan/bangunan-gedung/asb/${apiData.id}`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     namaAsb: editedUraian,
-      //     alamat: editedLokasi,
-      //   }),
-      // });
-      
-      console.log('Summary updated:', { uraian: editedUraian, lokasi: editedLokasi });
-    } catch (error) {
-      console.error('Error saving summary:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Check if user can edit (verifikator role)
-  const canEdit = userRole === 'verifikator'
 
   // Don't show anything until auth check is complete
   const allowedRoles = ['verifikator'];
@@ -444,79 +503,6 @@ export default function VerifyUsulanPage() {
 
       {/* Summary Card - Editable for verifikator */}
       <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-lg shadow-lg p-6 text-white relative">
-        {canEdit && !isEditingSummary && (
-          <button
-            onClick={() => setIsEditingSummary(true)}
-            className="absolute top-4 right-4 p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-            title="Edit Summary"
-          >
-            <Edit3 className="w-5 h-5" />
-          </button>
-        )}
-        
-        {isEditingSummary ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                usulanData.jenis === 'Pembangunan' 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-orange-500 text-white'
-              }`}>
-                {usulanData.jenis}
-              </span>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                usulanData.status === 'Sukses' ? 'bg-green-100 text-green-800' :
-                usulanData.status === 'Proses' ? 'bg-yellow-100 text-yellow-800' :
-                usulanData.status === 'Tolak' ? 'bg-red-100 text-red-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {usulanData.status}
-              </span>
-            </div>
-            
-            <div>
-              <label className="text-sm text-white/80 mb-1 block">Nama/Uraian Bangunan</label>
-              <input
-                type="text"
-                value={editedUraian}
-                onChange={(e) => setEditedUraian(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm text-white/80 mb-1 block">Lokasi/Alamat</label>
-              <input
-                type="text"
-                value={editedLokasi}
-                onChange={(e) => setEditedLokasi(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveSummary}
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-medium disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Menyimpan...' : 'Simpan'}
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditingSummary(false);
-                  setEditedUraian(usulanData.uraian);
-                  setEditedLokasi(usulanData.lokasi);
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium"
-              >
-                <X className="w-4 h-4" />
-                Batal
-              </button>
-            </div>
-          </div>
-        ) : (
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
@@ -544,100 +530,233 @@ export default function VerifyUsulanPage() {
             </div>
             <Building2 className="w-16 h-16 text-white/20" />
           </div>
-        )}
       </div>
 
-      {/* Extended Information from API */}
-      {apiData && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-teal-600" />
-            Detail Bangunan
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Tahun Anggaran</p>
-              <p className="text-lg font-semibold text-gray-900">{apiData.tahunAnggaran}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Total Lantai</p>
-              <p className="text-lg font-semibold text-gray-900">{apiData.totalLantai} Lantai</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Jumlah Kontraktor</p>
-              <p className="text-lg font-semibold text-gray-900">{apiData.jumlahKontraktor}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Kab/Kota</p>
-              <p className="text-lg font-semibold text-gray-900">{apiData.kabkota?.nama || '-'}</p>
-            </div>
-            {apiData.luasTotalBangunan && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500">Luas Total</p>
-                <p className="text-lg font-semibold text-gray-900">{apiData.luasTotalBangunan} m²</p>
-              </div>
-            )}
-            {apiData.totalBiayaPembangunan && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500">Total Biaya</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  Rp {apiData.totalBiayaPembangunan.toLocaleString('id-ID')}
-                </p>
-              </div>
-            )}
-            {apiData.shst && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500">SHST</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  Rp {apiData.shst.toLocaleString('id-ID')}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Details Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Basic Information */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-teal-600" />
-            Informasi Dasar
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Klasifikasi</label>
-              <p className="text-gray-900 mt-1">{usulanData.klasifikasi}</p>
+      {/* Grid Layout similar to summary page */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Classification & Financial Info */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Classification Card */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <Building2 className="w-6 h-6 text-teal-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Klasifikasi</h2>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Satuan</label>
-              <p className="text-gray-900 mt-1">{usulanData.satuan}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">OPD</label>
-              <p className="text-gray-900 mt-1">{apiData?.opd?.opd || '-'}</p>
+            <div className="space-y-3">
+              <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-medium">
+                {apiData?.asbKlasifikasi?.klasifikasi || '[Belum terklasifikasi]'}
+              </div>
+              <div className="text-sm text-gray-600 text-center">
+                Jenis Bangunan: <span className="font-medium">{apiData?.asbJenis?.jenis || '-'}</span>
+              </div>
+              <div className="text-sm text-gray-600 text-center">
+                Tipe Usulan: <span className="font-medium">{apiData?.asbTipeBangunan?.tipe_bangunan || '-'}</span>
+              </div>
             </div>
           </div>
+
+          {/* Financial Info Card */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-600">Nilai SHST per (m²)</label>
+                <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  Rp {apiData?.shst ? Number(apiData.shst).toLocaleString('id-ID') : '0'} / m²
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-600">Luas Total Bangunan</label>
+                <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  {apiData?.asbDetails?.reduce((sum, d) => sum + (d.luas || 0), 0).toFixed(0) || '0'} m²
+                </div>
+              </div>
+
+              {apiData?.luasTanah && (
+                <div>
+                  <label className="text-sm text-gray-600">Luas Tanah</label>
+                  <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                    {apiData.luasTanah} m²
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Location & Budget Card */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-600">Kabupaten/Kota</label>
+                <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  {apiData?.kabkota?.nama || '-'}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-600">Tahun Anggaran</label>
+                <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  {apiData?.tahunAnggaran || '-'}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-600">Jumlah Lantai</label>
+                <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  {apiData?.totalLantai || 0} Lantai
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-gray-600">OPD</label>
+                <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-center font-semibold mt-1">
+                  {apiData?.opd?.opd || '-'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-      {/* Creator Information */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="w-5 h-5 text-teal-600" />
-            Informasi Pembuat
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-500">Dibuat Oleh</label>
-              <p className="text-gray-900 mt-1">{usulanData.createdBy || '-'}</p>
+        {/* Right Column - Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Building Info Card */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <FileText className="w-6 h-6 text-teal-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Informasi Bangunan</h2>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">Tanggal Dibuat</label>
-              <div className="flex items-center gap-2 mt-1">
-                <Calendar className="w-4 h-4 text-gray-400" />
-                <p className="text-gray-900">{usulanData.createdDate || '-'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-gray-600">Deskripsi Bangunan</label>
+                <p className="text-gray-900 font-medium mt-1">{apiData?.namaAsb || '-'}</p>
               </div>
+              <div>
+                <label className="text-sm text-gray-600">Lokasi</label>
+                <p className="text-gray-900 font-medium mt-1">{apiData?.alamat || '-'}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600">Dibuat Oleh</label>
+                <p className="text-gray-900 font-medium mt-1">{apiData?.opd?.opd || '-'}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600">Tanggal Dibuat</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <p className="text-gray-900">{apiData ? new Date(apiData.createdAt).toLocaleDateString('id-ID') : '-'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Floors Table */}
+          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <Layers className="w-6 h-6 text-teal-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Detail Lantai ({apiData?.asbDetails?.length || 0} Lantai)</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Lantai</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Luas</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fungsi</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Koefisien</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {apiData?.asbDetails && apiData.asbDetails.length > 0 ? apiData.asbDetails.map((detail) => (
+                    <tr key={detail.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        {LANTAI_MAP[detail.idAsbLantai] || `Lantai ${detail.idAsbLantai}`}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{detail.luas} m²</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {FUNGSI_RUANG_MAP[detail.idAsbFungsiRuang] || `Fungsi ${detail.idAsbFungsiRuang}`}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{detail.lantaiKoef?.toFixed(4)}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                        Belum ada data lantai
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                {apiData?.asbDetails && apiData.asbDetails.length > 0 && (
+                  <tfoot className="bg-gray-50 border-t">
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-teal-600">
+                        {apiData.asbDetails.reduce((sum, d) => sum + (d.luas || 0), 0).toFixed(0)} m²
+                      </td>
+                      <td className="px-4 py-3"></td>
+                      <td className="px-4 py-3"></td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+
+          {/* Components Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Standard Components */}
+            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+              <h3 className="text-md font-semibold text-gray-900 mb-3">
+                Komponen Standar ({apiData?.asbBipekStandards?.filter(c => c.bobotInput > 0).length || 0})
+              </h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {apiData?.asbBipekStandards && apiData.asbBipekStandards.filter(c => c.bobotInput > 0).length > 0 ? 
+                  apiData.asbBipekStandards.filter(c => c.bobotInput > 0).map((comp) => (
+                    <div key={comp.id} className="flex justify-between items-center text-sm py-1 border-b border-gray-100 last:border-0">
+                      <span className="text-gray-600">Komponen #{comp.idAsbKomponenBangunanStd}</span>
+                      <span className="font-semibold text-teal-600">{comp.bobotInput}%</span>
+                    </div>
+                  )) : (
+                    <p className="text-sm text-gray-500 text-center py-4">Belum ada komponen standar</p>
+                  )}
+              </div>
+              {apiData?.asbBipekStandards && apiData.asbBipekStandards.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600 font-medium">Total Bobot</span>
+                    <span className="font-semibold text-teal-600">
+                      {apiData.asbBipekStandards.reduce((sum, c) => sum + (c.bobotInput || 0), 0)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Non-Standard Components */}
+            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+              <h3 className="text-md font-semibold text-gray-900 mb-3">
+                Komponen Non-Standar ({apiData?.asbBipekNonStds?.filter(c => c.bobotInput > 0).length || 0})
+              </h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {apiData?.asbBipekNonStds && apiData.asbBipekNonStds.filter(c => c.bobotInput > 0).length > 0 ? 
+                  apiData.asbBipekNonStds.filter(c => c.bobotInput > 0).map((comp) => (
+                    <div key={comp.id} className="flex justify-between items-center text-sm py-1 border-b border-gray-100 last:border-0">
+                      <span className="text-gray-600">Komponen #{comp.idAsbKomponenBangunanNonStd}</span>
+                      <span className="font-semibold text-orange-600">{comp.bobotInput}%</span>
+                    </div>
+                  )) : (
+                    <p className="text-sm text-gray-500 text-center py-4">Tidak ada komponen non-standar</p>
+                  )}
+              </div>
+              {apiData?.asbBipekNonStds && apiData.asbBipekNonStds.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600 font-medium">Total Bobot</span>
+                    <span className="font-semibold text-orange-600">
+                      {apiData.asbBipekNonStds.reduce((sum, c) => sum + (c.bobotInput || 0), 0)}%
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -724,14 +843,14 @@ export default function VerifyUsulanPage() {
               className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium shadow-sm cursor-pointer"
             >
               <CheckCircle className="w-5 h-5" />
-              Verifikasi Komponen Standar
+              Menuju Ke Komponen Standar
             </button>
             <button 
               onClick={() => router.push(`/usulan/bangunan-gedung/verify/${params.id}/input-komponen-standar-non-bangunan`)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm cursor-pointer"
             >
               <CheckCircle className="w-5 h-5" />
-              Verifikasi Komponen Non-Standar
+              Menuju Ke Komponen Non-Standar
             </button>
             
             {/* Verifikasi Rekening Belanja - only enabled when idAsbStatus is 11 */}
