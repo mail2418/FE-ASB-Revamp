@@ -144,9 +144,31 @@ export default function LeftPanelForm() {
         throw new Error(errorData.message || 'Gagal menyimpan data komponen standar');
       }
 
+      // Send PUT request to Update Status of ASB 
+        const responseUpdateStatus = await fetch('/api/usulan/bangunan-gedung/asb/store-bps', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!responseUpdateStatus.ok) {
+          const errorData = await responseUpdateStatus.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Gagal menyimpan data komponen standar');
+        }
+
       const result = await response.json();
       console.log('Standard components updated:', result);
 
+      // Save state with selected components to localStorage
+      const saveData = {
+        formState,
+        selectedComponents: componentsToSave
+      };
+
+      localStorage.setItem('usulan_bangunan_standar_components', JSON.stringify(saveData));
       // Navigate to non-standard edit page
       router.push(`/usulan/bangunan-gedung/edit/${asbId}/input-komponen-non-standar-bangunan`);
     } catch (error) {

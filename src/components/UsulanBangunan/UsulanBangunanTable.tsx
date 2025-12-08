@@ -10,7 +10,9 @@ import {
   Pencil,
   Check,
   X as CloseIcon,
-  AlertCircle
+  AlertCircle,
+  ClipboardCheck,
+  Clock
 } from 'lucide-react';
 import type { UsulanBangunanGedung, FilterUsulanBangunan, VerificationStatus } from '@/types/usulan-bangunan';
 import { cn } from '@/lib/utils';
@@ -133,7 +135,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
 
   // Handle edit button click (for OPD role)
   const handleEditClick = (itemId: string) => {
-    router.push(`/usulan/bangunan-gedung/edit/${itemId}/input-komponen-standar-bangunan`);
+    router.push(`/usulan/bangunan-gedung/edit/${itemId}`);
   };
 
   // Handle download Surat Permohonan
@@ -412,8 +414,8 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    {/* Edit button for OPD role - hidden when status is rejected (idAsbStatus === 7) */}
-                    {userRole && userRole === 'opd' && item.idAsbStatus !== 7 && (
+                    {/* Edit button for OPD role - hidden when status is rejected (idAsbStatus === 7) or status 6 */}
+                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus !== 7 && item.idAsbStatus !== 6 && (
                       <button 
                         onClick={() => handleEditClick(item.id)}
                         className="text-blue-500 hover:text-blue-700 transition-colors p-1 rounded hover:bg-blue-50"
@@ -422,6 +424,15 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                         <Pencil className="w-5 h-5" />
                       </button>
                     )}
+                    {/* Waiting icon for OPD/admin when idAsbStatus is 6 */}
+                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus === 6 && (
+                      <div 
+                        className="text-yellow-500 p-1 rounded bg-yellow-50"
+                        title="Menunggu verifikasi"
+                      >
+                        <Clock className="w-5 h-5" />
+                      </div>
+                    )}
                     {/* Verify button for verifikator roles - hidden when status is rejected (idAsbStatus === 7) */}
                     {userRole && ['verifikator', 'verifikator_adpem', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && item.idAsbStatus !== 7 && (
                       <button 
@@ -429,7 +440,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                         className="text-teal-500 hover:text-teal-700 transition-colors p-1 rounded hover:bg-teal-50"
                         title="Verify usulan"
                       >
-                        <Pencil className="w-5 h-5" />
+                        <ClipboardCheck className="w-5 h-5" />
                       </button>
                     )}
                     {/* Rejection reason icon - shown when status is rejected (idAsbStatus === 7) */}

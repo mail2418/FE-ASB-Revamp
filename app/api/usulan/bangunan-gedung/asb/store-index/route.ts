@@ -67,7 +67,7 @@ export async function POST(request: NextRequest){
     }else
     {
       response = await fetch(`${API_BASE_URL}/asb/store-index`, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -117,13 +117,71 @@ export async function PUT(request: NextRequest){
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/asb/store-index`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: request.body,
-    });
+    const requestData = await request.json();
+    const {
+        id,
+        tahunAnggaran,
+        namaAsb,
+        alamat,
+        totalLantai,
+        idAsbTipeBangunan,
+        idKabkota,
+        jumlahKontraktor,
+        idAsbJenis,
+        luasTanah
+    } = requestData;
+
+    console.log(tahunAnggaran)
+    console.log(namaAsb)
+    console.log(alamat)
+    console.log(totalLantai)
+    console.log(idAsbTipeBangunan)
+    console.log(idKabkota)
+    console.log(jumlahKontraktor)
+    console.log(idAsbJenis)
+
+    let response;
+    if(idAsbTipeBangunan == 2){
+        response = await fetch(`${API_BASE_URL}/asb/store-index`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          tahunAnggaran,
+          namaAsb,
+          alamat,
+          totalLantai,
+          idAsbTipeBangunan,
+          idKabkota,
+          jumlahKontraktor,
+          idAsbJenis,
+          luasTanah
+        }),
+      });
+    }else
+    {
+      response = await fetch(`${API_BASE_URL}/asb/store-index`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          tahunAnggaran,
+          namaAsb,
+          alamat,
+          totalLantai,
+          idAsbTipeBangunan,
+          idKabkota,
+          jumlahKontraktor,
+          idAsbJenis
+        }),
+      });
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
