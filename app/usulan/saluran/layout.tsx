@@ -71,12 +71,9 @@ export default function DashboardLayout({ children }: LayoutProps) {
     }
   }, []);
 
-  // Get current date
-  const currentDate = new Date().toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+  // Get current date and time in dd-MM-YYYY hh:mm format
+  const now = new Date();
+  const currentDate = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
   // Logout handler
   const handleLogout = async () => {
@@ -91,6 +88,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         localStorage.removeItem('rememberedUsername');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('verifikatorInfo');
+        localStorage.removeItem('selectedTahunAnggaran');
       }
       
       // Redirect to login page
@@ -104,6 +102,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         localStorage.removeItem('rememberedUsername');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('verifikatorInfo');
+        localStorage.removeItem('selectedTahunAnggaran');
       }
       
       // Still redirect on error
@@ -277,7 +276,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 {/* Date display */}
                 <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
                   <Calendar className="h-4 w-4" />
-                  <span>Data terakhir diperbarui: {currentDate}</span>
+                  <span>Tanggal Hari ini : {currentDate}</span>
                 </div>
 
                 {/* User menu */}

@@ -31,7 +31,7 @@ const mockData: UsulanBangunanGedung[] = [
     klasifikasi: 'Gedung Negara Tidak Sederhana',
     satuan: 'm2',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Disetujui',
       bpkad: 'Disetujui',
     },
@@ -50,7 +50,7 @@ const mockData: UsulanBangunanGedung[] = [
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Disetujui',
       bpkad: 'Menunggu',
     },
@@ -69,7 +69,7 @@ const mockData: UsulanBangunanGedung[] = [
     klasifikasi: 'Rumah Negara Tipe A',
     satuan: 'm2',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Ditolak',
       bpkad: 'Belum',
     },
@@ -87,7 +87,7 @@ const mockData: UsulanBangunanGedung[] = [
     klasifikasi: 'Gedung Negara Sederhana',
     satuan: 'm2',
     verificationStatus: {
-      adpem: 'Menunggu',
+      adbang: 'Menunggu',
       bappeda: 'Belum',
       bpkad: 'Belum',
     },

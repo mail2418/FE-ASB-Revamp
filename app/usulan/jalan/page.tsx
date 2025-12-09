@@ -7,7 +7,7 @@ import { Route, Search, Plus, Eye, Edit2, Download, ChevronDown, ChevronLeft, Ch
 type VerificationStatus = 'Belum' | 'Disetujui' | 'Ditolak' | 'Menunggu';
 
 interface VerificationStages {
-  adpem: VerificationStatus;
+  adbang: VerificationStatus;
   bappeda: VerificationStatus;
   bpkad: VerificationStatus;
 }
@@ -15,7 +15,7 @@ interface VerificationStages {
 // Interface for Jalan form data
 interface UsulanJalan {
   id: string;
-  jenisUsulan: 'Perawatan' | 'Pembuatan';
+  jenisUsulan: 'Pemeliharaan' | 'Pembuatan';
   lebarJalan: string;
   strukturPerkerasan: string;
   repetisiBeban: string;
@@ -72,7 +72,7 @@ const mockData: UsulanJalan[] = [
     ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Galian Tanah'],
     keteranganTambahan: 'Tebal galian 30 cm',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Disetujui',
       bpkad: 'Disetujui',
     },
@@ -81,7 +81,7 @@ const mockData: UsulanJalan[] = [
   },
   {
     id: 'mock-2',
-    jenisUsulan: 'Perawatan',
+    jenisUsulan: 'Pemeliharaan',
     lebarJalan: '7',
     strukturPerkerasan: 'kaku',
     repetisiBeban: '15',
@@ -91,7 +91,7 @@ const mockData: UsulanJalan[] = [
     ruangLingkup: ['Perkerasan Beton', 'Lapis Pondasi', 'Pemadatan Tanah', 'Marka dan Rambu Jalan'],
     keteranganTambahan: 'Tebal timbunan 50 cm',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Menunggu',
       bpkad: 'Belum',
     },
@@ -109,7 +109,7 @@ const mockData: UsulanJalan[] = [
     ruangLingkup: ['Perkerasan Aspal', 'Galian Tanah', 'Timbunan Tanah'],
     keteranganTambahan: 'Tebal urugan 20 cm',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Ditolak',
       bpkad: 'Belum',
     },
@@ -120,10 +120,10 @@ const mockData: UsulanJalan[] = [
 
 // Helper to get overall status
 const getOverallStatus = (v: VerificationStages): string => {
-  if (v.adpem === 'Disetujui' && v.bappeda === 'Disetujui' && v.bpkad === 'Disetujui') {
+  if (v.adbang === 'Disetujui' && v.bappeda === 'Disetujui' && v.bpkad === 'Disetujui') {
     return 'Sukses';
   }
-  if (v.adpem === 'Ditolak' || v.bappeda === 'Ditolak' || v.bpkad === 'Ditolak') {
+  if (v.adbang === 'Ditolak' || v.bappeda === 'Ditolak' || v.bpkad === 'Ditolak') {
     return 'Ditolak';
   }
   return 'Sedang Diproses';
@@ -339,7 +339,7 @@ export default function UsulanJalanPage() {
                       {/* Verification Sequence - similar to Usulan Bangunan */}
                       <div className="flex items-center justify-center gap-1">
                         {[
-                          { key: 'adpem', label: 'Adpem' },
+                          { key: 'adbang', label: 'Adbang' },
                           { key: 'bappeda', label: 'BAPPEDA' },
                           { key: 'bpkad', label: 'BPKAD' },
                         ].map((stage, idx) => {

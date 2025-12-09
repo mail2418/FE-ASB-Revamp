@@ -8,7 +8,7 @@ interface VerificationSequenceProps {
   verificationStatus: VerificationStages;
   userRole: string | null;
   usulanId: string;
-  onStatusChange?: (stage: 'adpem' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => void;
+  onStatusChange?: (stage: 'adbang' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => void;
 }
 
 const getStatusIcon = (status: VerificationStatus) => {
@@ -46,12 +46,12 @@ export default function VerificationSequence({
   onStatusChange,
 }: VerificationSequenceProps) {
   const stages = [
-    { key: 'adpem' as const, label: 'Adpem', role: 'verifikator_adpem' },
+    { key: 'adbang' as const, label: 'Adbang', role: 'verifikator_adbang' },
     { key: 'bappeda' as const, label: 'BAPPEDA', role: 'verifikator_bappeda' },
     { key: 'bpkad' as const, label: 'BPKAD', role: 'verifikator_bpkad' },
   ];
 
-  const handleStatusChange = (stage: 'adpem' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
+  const handleStatusChange = (stage: 'adbang' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
     if (onStatusChange) {
       onStatusChange(stage, newStatus);
     }

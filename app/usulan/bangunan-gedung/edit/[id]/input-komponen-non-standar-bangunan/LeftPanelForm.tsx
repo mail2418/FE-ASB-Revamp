@@ -133,13 +133,10 @@ export default function LeftPanelForm() {
   const handlePercentageChange = (componentId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
     val = Math.max(0, Math.min(100, val));
-    updateRowState(`row_${componentId}`, { percentage: val });
-  };
-
-  const handleCheckChange = (componentId: number, checked: boolean) => {
+    // Automatically set checked to true when percentage > 0
     updateRowState(`row_${componentId}`, { 
-      checked: checked,
-      percentage: checked ? (formState[`row_${componentId}`]?.percentage || 0) : 0
+      percentage: val,
+      checked: val > 0 
     });
   };
 
@@ -174,7 +171,7 @@ export default function LeftPanelForm() {
 
       componentsToSave.forEach((component) => {
         const state = formState[`row_${component.id}`];
-        if (state?.checked && state?.percentage > 0) {
+        if (state?.percentage > 0) {
           komponen_nonstd.push(component.id);
           bobot_nonstd.push(state.percentage);
         }
@@ -365,9 +362,6 @@ export default function LeftPanelForm() {
                 <th scope="col" className="py-5 px-8 text-left text-base font-semibold text-gray-700 uppercase tracking-wider">
                   Komponen Non Standar
                 </th>
-                <th scope="col" className="py-5 px-8 text-center text-base font-semibold text-gray-700 uppercase tracking-wider w-48">
-                  Check
-                </th>
                 <th scope="col" className="py-5 px-8 text-center text-base font-semibold text-gray-700 uppercase tracking-wider">
                   Bobot (%)
                 </th>
@@ -376,7 +370,7 @@ export default function LeftPanelForm() {
             <tbody className="divide-y divide-gray-200">
               {(needsDropdown ? selectedComponents : allComponents).length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-gray-500">
+                  <td colSpan={3} className="py-8 text-center text-gray-500">
                     {needsDropdown ? 'Pilih komponen untuk ditampilkan' : 'Tidak ada komponen tersedia'}
                   </td>
                 </tr>
@@ -391,23 +385,6 @@ export default function LeftPanelForm() {
                       <td className="px-8 py-5 text-lg font-medium text-gray-900">
                         {component.komponen}
                       </td>
-                      <td className="px-8 py-5 text-center">
-                        <div className="flex justify-center">
-                          <label className="cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="peer hidden"
-                              checked={currentState?.checked || false}
-                              onChange={(e) => handleCheckChange(component.id, e.target.checked)}
-                            />
-                            <div className="w-10 h-10 rounded-full border-2 peer-checked:border-lime-600 peer-checked:bg-lime-600 border-gray-300 flex items-center justify-center bg-white transition-all duration-200 hover:border-lime-400">
-                              <svg className="w-6 h-6 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          </label>
-                        </div>
-                      </td>
                       <td className="px-8 py-5">
                         <div className="flex items-center justify-center gap-6">
                           <div className="flex items-center w-40">
@@ -415,8 +392,7 @@ export default function LeftPanelForm() {
                               type="number"
                               min="0"
                               max="100"
-                              disabled={!currentState?.checked}
-                              className="w-full px-4 py-2.5 text-lg border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-lime-500 text-right pr-10 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+                              className="w-full px-4 py-2.5 text-lg border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-lime-500 text-right pr-10"
                               value={currentState?.percentage || 0}
                               onChange={(e) => handlePercentageChange(component.id, e)}
                             />
@@ -427,7 +403,7 @@ export default function LeftPanelForm() {
                         <div className="w-full bg-gray-200 rounded-full h-3 mt-3">
                           <div 
                             className="bg-lime-600 h-3 rounded-full transition-all duration-300" 
-                            style={{ width: `${currentState?.checked ? (currentState?.percentage || 0) : 0}%` }}
+                            style={{ width: `${currentState?.percentage || 0}%` }}
                           />
                         </div>
                       </td>

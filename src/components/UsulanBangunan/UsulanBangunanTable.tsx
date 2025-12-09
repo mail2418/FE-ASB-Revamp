@@ -111,7 +111,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
   };
 
   // Handle verification status change
-  const handleVerificationChange = (itemId: string, stage: 'adpem' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
+  const handleVerificationChange = (itemId: string, stage: 'adbang' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
     setEditingData(prev => 
       prev.map(item => 
         item.id === itemId 
@@ -424,7 +424,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                       </div>
                     )}
                     {/* Edit button for OPD/admin/superadmin role - hidden when status is rejected (7), pending verification (6), or approved (8) */}
-                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus !== 7 && item.idAsbStatus !== 6 && item.idAsbStatus !== 8 && (
+                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus !== undefined && item.idAsbStatus < 6 && (
                       <button 
                         onClick={() => handleEditClick(item.id)}
                         className="text-blue-500 hover:text-blue-700 transition-colors p-1 rounded hover:bg-blue-50"
@@ -434,7 +434,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                       </button>
                     )}
                     {/* Waiting icon for OPD/admin when idAsbStatus is 6 */}
-                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus === 6 && (
+                    {userRole && (userRole === 'opd' || userRole === 'admin' || userRole === 'superadmin') && item.idAsbStatus !== undefined && item.idAsbStatus >= 6 && item.idAsbStatus !== 7 && item.idAsbStatus !== 8 && (
                       <div 
                         className="text-yellow-500 p-1 rounded bg-yellow-50"
                         title="Menunggu verifikasi"
@@ -443,7 +443,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                       </div>
                     )}
                     {/* Verify button for verifikator roles - only shown when idAsbStatus >= 6 AND NOT 7 or 8 */}
-                    {userRole && ['verifikator', 'verifikator_adpem', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && 
+                    {userRole && ['verifikator', 'verifikator_adbang', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && 
                      item.idAsbStatus !== undefined && 
                      item.idAsbStatus >= 6 && 
                      item.idAsbStatus !== 7 && 
@@ -457,7 +457,7 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
                       </button>
                     )}
                     {/* Message for verifikator when status < 6 */}
-                    {userRole && ['verifikator', 'verifikator_adpem', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && 
+                    {userRole && ['verifikator', 'verifikator_adbang', 'verifikator_bappeda', 'verifikator_bpkad'].includes(userRole) && 
                      (item.idAsbStatus === undefined || item.idAsbStatus < 6) && (
                       <div 
                         className="text-gray-400 p-1 rounded bg-gray-50"

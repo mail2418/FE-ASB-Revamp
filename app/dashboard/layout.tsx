@@ -15,6 +15,8 @@ import {
   Calendar,
   Shield
 } from 'lucide-react';
+import TahunAnggaranModal from '@/components/TahunAnggaranModal';
+import WelcomeToast from '@/components/WelcomeToast';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,8 +56,13 @@ export default function DashboardLayout({ children }: LayoutProps) {
   const pathname = usePathname();
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [userData, setUserData] = React.useState<{id: string; name: string; username: string; role: string} | null>(null);
+  
+  // Tahun Anggaran states
+  const [showTahunModal, setShowTahunModal] = React.useState(false);
+  const [showWelcomeToast, setShowWelcomeToast] = React.useState(false);
+  const [selectedTahunAnggaran, setSelectedTahunAnggaran] = React.useState<number | null>(null);
 
-  // Get user data from cookie
+  // Get user data from cookie and check tahun anggaran
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
       const userDataCookie = document.cookie
@@ -67,16 +74,30 @@ export default function DashboardLayout({ children }: LayoutProps) {
         setUserRole(parsed.role);
         console.log(`${decodeURIComponent(userDataCookie.split('=')[1])}`);
         setUserData(parsed);
+        
+        // Check if tahun anggaran is set for OPD or verifikator
+        const storedYear = localStorage.getItem('selectedTahunAnggaran');
+        if (storedYear) {
+          setSelectedTahunAnggaran(parseInt(storedYear));
+        } else if (parsed.role === 'opd' || parsed.role === 'verifikator') {
+          setShowTahunModal(true);
+        }
       }
     }
   }, []);
 
-  // Get current date
-  const currentDate = new Date().toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+  // Handle tahun anggaran selection
+  const handleTahunAnggaranConfirm = (year: number) => {
+    setSelectedTahunAnggaran(year);
+    setShowTahunModal(false);
+    setShowWelcomeToast(true);
+    // Reload page to apply filter
+    window.location.reload();
+  };
+
+  // Get current date and time in dd-MM-YYYY hh:mm format
+  const now = new Date();
+  const currentDate = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
   // Logout handler
   const handleLogout = async () => {
@@ -91,6 +112,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         localStorage.removeItem('rememberedUsername');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('verifikatorInfo');
+        localStorage.removeItem('selectedTahunAnggaran');
       }
       
       // Redirect to login page
@@ -104,6 +126,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         localStorage.removeItem('rememberedUsername');
         localStorage.removeItem('userInfo');
         localStorage.removeItem('verifikatorInfo');
+        localStorage.removeItem('selectedTahunAnggaran');
       }
       
       // Still redirect on error
@@ -273,7 +296,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
                 {/* Date display */}
                 <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
                   <Calendar className="h-4 w-4" />
-                  <span>Data terakhir diperbarui: {currentDate}</span>
+                  <span>Tanggal Hari ini : {currentDate}</span>
                 </div>
 
                 {/* User menu */}
@@ -332,6 +355,20 @@ export default function DashboardLayout({ children }: LayoutProps) {
           {children}
         </main>
       </div>
+
+      {/* Tahun Anggaran Modal */}
+      <TahunAnggaranModal 
+        isOpen={showTahunModal} 
+        onConfirm={handleTahunAnggaranConfirm} 
+      />
+
+      {/* Welcome Toast */}
+      <WelcomeToast 
+        isVisible={showWelcomeToast}
+        userName={userData?.name || 'User'}
+        selectedYear={selectedTahunAnggaran || new Date().getFullYear()}
+        onClose={() => setShowWelcomeToast(false)}
+      />
     </div>
   );
 }

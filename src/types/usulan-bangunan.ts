@@ -3,7 +3,7 @@
 export type VerificationStatus = 'Belum' | 'Disetujui' | 'Ditolak' | 'Menunggu';
 
 export interface VerificationStages {
-  adpem: VerificationStatus;
+  adbang: VerificationStatus;
   bappeda: VerificationStatus;
   bpkad: VerificationStatus;
 }

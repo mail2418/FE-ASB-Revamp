@@ -21,7 +21,11 @@ interface ContactPerson {
   availableHours: string;
 }
 
-export default function ForgotPasswordForm() {
+interface ForgotPasswordFormProps {
+  onBackToSignIn?: () => void;
+}
+
+export default function ForgotPasswordForm({ onBackToSignIn }: ForgotPasswordFormProps = {}) {
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Contact persons information
@@ -50,22 +54,18 @@ export default function ForgotPasswordForm() {
       {/* Header Section */}
       <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-8 text-white">
         <div className="flex items-center justify-center mb-4">
-          <div className="bg-white p-4 rounded-2xl shadow-lg">
+          <div className="p-4 rounded-2xl">
             <Image 
               src="/favicon.ico" 
               alt="ASB Logo" 
-              width={64} 
+              width={128} 
               height={64}
-              className="h-16 w-16"
             />
           </div>
         </div>
         <h1 className="text-2xl font-bold text-center mb-2">
-          Password Assistance
+          Password Support
         </h1>
-        <p className="text-teal-100 text-center text-sm">
-          Get help resetting your password
-        </p>
       </div>
 
       {/* Content Section */}
@@ -73,20 +73,23 @@ export default function ForgotPasswordForm() {
         {!showSuccess ? (
           <>
             {/* Back to Sign In Link */}
-            <Link 
-              href="/"
-              className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6 transition-colors group"
-            >
-              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-medium">Kembali ke Login</span>
-            </Link>
-
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-              Lupa Password?
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Jangan khawatir! Hubungi tim dukungan IT untuk membantu Anda mengatur ulang password Anda.
-            </p>
+            {onBackToSignIn ? (
+              <button
+                onClick={onBackToSignIn}
+                className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6 transition-colors group"
+              >
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm font-medium">Kembali ke Login</span>
+              </button>
+            ) : (
+              <Link 
+                href="/"
+                className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6 transition-colors group"
+              >
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                <span className="text-sm font-medium">Kembali ke Login</span>
+              </Link>
+            )}
 
             {/* Information Box */}
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
@@ -206,13 +209,23 @@ export default function ForgotPasswordForm() {
             <p className="text-gray-600 mb-6">
               Our support team will assist you shortly. Please check your email or phone for updates.
             </p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-teal-500/30"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Return to Sign In
-            </Link>
+            {onBackToSignIn ? (
+              <button
+                onClick={onBackToSignIn}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-teal-500/30"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Return to Sign In
+              </button>
+            ) : (
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-medium hover:from-teal-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-teal-500/30"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Return to Sign In
+              </Link>
+            )}
           </div>
         )}
       </div>

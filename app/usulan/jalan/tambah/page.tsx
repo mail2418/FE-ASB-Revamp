@@ -6,7 +6,7 @@ import { Route, ChevronRight, Save, ArrowLeft, Info } from 'lucide-react';
 
 // Types for form data
 interface FormData {
-  jenisUsulan: 'Perawatan' | 'Pembuatan' | '';
+  jenisUsulan: 'Pemeliharaan' | 'Pembuatan' | '';
   lebarJalan: string;
   strukturPerkerasan: 'lentur' | 'kaku' | '';
   repetisiBeban: string;
@@ -156,7 +156,7 @@ export default function TambahUsulanJalanPage() {
         id: Date.now().toString(),
         createdBy,
         verificationStatus: {
-          adpem: 'Menunggu',
+          adbang: 'Menunggu',
           bappeda: 'Belum',
           bpkad: 'Belum',
         },
@@ -258,7 +258,7 @@ export default function TambahUsulanJalanPage() {
                   </label>
                   <label
                     className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.jenisUsulan === 'Perawatan'
+                      formData.jenisUsulan === 'Pemeliharaan'
                         ? 'border-teal-500 bg-teal-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -266,13 +266,13 @@ export default function TambahUsulanJalanPage() {
                     <input
                       type="radio"
                       name="jenisUsulan"
-                      value="Perawatan"
-                      checked={formData.jenisUsulan === 'Perawatan'}
+                      value="Pemeliharaan"
+                      checked={formData.jenisUsulan === 'Pemeliharaan'}
                       onChange={handleInputChange}
                       className="w-4 h-4 text-teal-600 focus:ring-teal-500"
                     />
                     <div className="ml-3">
-                      <span className="text-sm font-medium text-gray-900">Perawatan</span>
+                      <span className="text-sm font-medium text-gray-900">Pemeliharaan</span>
                       <p className="text-xs text-gray-500">Perbaikan/pemeliharaan jalan</p>
                     </div>
                   </label>

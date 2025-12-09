@@ -112,7 +112,7 @@ const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanData[] => {
     idVerifikatorAdpem: item.idVerifikatorAdpem,
     idVerifikatorBappeda: item.idVerifikatorBappeda,
     idVerifikatorBpkad: item.idVerifikatorBpkad,
-    suratPermohonan: 'download', // Flag to indicate download is available
+    suratPermohonan: 'download',
     suratRekomendasi: (item.idVerifikatorAdpem !== null && 
                        item.idVerifikatorBappeda !== null && 
                        item.idVerifikatorBpkad !== null) ? 'download' : undefined,
@@ -244,9 +244,17 @@ export default function DashboardPage() {
 
         if (response.ok) {
           const result = await response.json();
-          const apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
+          let apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
           
           console.log('Dashboard API Response:', apiData);
+          
+          // Filter by selected tahun anggaran if set
+          const storedYear = localStorage.getItem('selectedTahunAnggaran');
+          if (storedYear) {
+            const filterYear = parseInt(storedYear);
+            apiData = apiData.filter(d => d.tahunAnggaran === filterYear);
+            console.log(`Filtered by tahunAnggaran ${filterYear}:`, apiData.length, 'items');
+          }
           
           // Transform API data for table
           const transformedData = transformAPIData(apiData);
