@@ -47,7 +47,6 @@ export default function VerifyKomponenStandarPage() {
   const router = useRouter();
   const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isVerifyingBPS, setIsVerifyingBPS] = useState(false);
   const [jenisVerifikator, setJenisVerifikator] = useState<string | null>(null);
   const [asbData, setAsbData] = useState<StoredAsbData | null>(null);
@@ -67,14 +66,19 @@ export default function VerifyKomponenStandarPage() {
         alert('Sesi Anda telah berakhir. Silakan login kembali.');
         return;
       }
-
+      const requestBody = { 
+          id_asb: parseInt(id),
+          verif_komponen_std: components.map((comp) => comp.id),
+          verif_bobot_acuan_std: components.map((comp) => comp.bobotInput),
+      }
+      console.log(requestBody)
       const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-bps', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ id_asb: parseInt(id) }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -92,15 +96,15 @@ export default function VerifyKomponenStandarPage() {
     }
   };
 
-  // Check authorization - only ADPEM can access
+  // Check authorization - only ADBANG can access
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const verifikatorInfo = localStorage.getItem('verifikatorInfo');
       if (verifikatorInfo) {
         setJenisVerifikator(verifikatorInfo);
         
-        // Only ADPEM can access this page
-        if (verifikatorInfo !== 'ADPEM') {
+        // Only ADBANG can access this page
+        if (verifikatorInfo !== 'ADBANG') {
           router.push(`/usulan/bangunan-gedung/verify/${params.id}`);
           return;
         }
@@ -155,7 +159,7 @@ export default function VerifyKomponenStandarPage() {
     loadStoredData();
   }, [params.id]);
 
-  if (jenisVerifikator !== 'ADPEM') {
+  if (jenisVerifikator !== 'ADBANG') {
     return null;
   }
 
@@ -192,7 +196,7 @@ export default function VerifyKomponenStandarPage() {
         <div className="flex items-start gap-3">
           <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-blue-800">Mode Verifikasi (ADPEM)</p>
+            <p className="text-sm font-medium text-blue-800">Mode Verifikasi (ADBANG)</p>
             <p className="text-sm text-blue-700 mt-1">
               Anda sedang dalam mode verifikasi. Data komponen ditampilkan untuk review. 
               Klik tombol "Verifikasi" di bawah untuk menyetujui data komponen standar.

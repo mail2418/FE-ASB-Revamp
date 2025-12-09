@@ -18,7 +18,11 @@ interface FormErrors {
   general?: string;
 }
 
-export default function SignInForm() {
+interface SignInFormProps {
+  onForgotPassword?: () => void;
+}
+
+export default function SignInForm({ onForgotPassword }: SignInFormProps = {}) {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     username: '',
@@ -190,9 +194,8 @@ export default function SignInForm() {
             <Image 
               src="/favicon.ico" 
               alt="ASB Logo" 
-              width={64} 
+              width={128} 
               height={64}
-              className="h-64 w-64"
             />
           </div>
         </div>
@@ -327,13 +330,24 @@ export default function SignInForm() {
               </label>
             </div>
 
-            <Link 
-              href="/forgot-password"
-              className="text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
-              tabIndex={isLoading ? -1 : 0}
-            >
-              Lupa Password?
-            </Link>
+            {onForgotPassword ? (
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
+                tabIndex={isLoading ? -1 : 0}
+              >
+                Lupa Password?
+              </button>
+            ) : (
+              <Link 
+                href="/forgot-password"
+                className="text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
+                tabIndex={isLoading ? -1 : 0}
+              >
+                Lupa Password?
+              </Link>
+            )}
           </div>
 
           {/* Submit Button */}
@@ -377,12 +391,22 @@ export default function SignInForm() {
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>
             Butuh Bantuan? Hubungi{' '}
-            <Link 
-              href="/forgot-password"
-              className="text-teal-600 hover:text-teal-700 font-medium"
-            >
-              support
-            </Link>
+            {onForgotPassword ? (
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-teal-600 hover:text-teal-700 font-medium"
+              >
+                support
+              </button>
+            ) : (
+              <Link 
+                href="/forgot-password"
+                className="text-teal-600 hover:text-teal-700 font-medium"
+              >
+                support
+              </Link>
+            )}
           </p>
         </div>
       </div>

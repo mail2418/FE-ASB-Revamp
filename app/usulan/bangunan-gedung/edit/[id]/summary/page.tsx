@@ -348,7 +348,7 @@ export default function SummaryPage() {
                   {klasifikasiSHST?.klasifikasi ||'[Belum terklasifikasi]'}
                 </div>
                 <div className="text-sm text-gray-600 text-center">
-                  Jenis Bangunan: <span className="font-medium">{basicData?.jenis == "1" ? "Pembangunan" : "Perawatan"}</span>
+                  Jenis Bangunan: <span className="font-medium">{basicData?.jenis == "1" ? "Pembangunan" : "Pemeliharaan"}</span>
                 </div>
                 <div className="text-sm text-gray-600 text-center">
                   Tipe Usulan: <span className="font-medium">{basicData?.tipeBangunan == "1" ? "Gedung negara" : "Rumah Negara"}</span>

@@ -6,7 +6,7 @@ import { Route, ChevronRight, Save, ArrowLeft, Info, Loader2 } from 'lucide-reac
 
 // Types for form data
 interface FormData {
-  jenisUsulan: 'Perawatan' | 'Pembuatan' | '';
+  jenisUsulan: 'Pemeliharaan' | 'Pembuatan' | '';
   lebarJalan: string;
   strukturPerkerasan: 'lentur' | 'kaku' | '';
   repetisiBeban: string;
@@ -18,7 +18,7 @@ interface FormData {
 }
 
 interface VerificationStages {
-  adpem: string;
+  adbang: string;
   bappeda: string;
   bpkad: string;
 }
@@ -218,7 +218,7 @@ export default function EditUsulanJalanPage() {
         }
       }
 
-      alert('Usulan Jalan berhasil diperbarui!');
+      alert('Usulan Jalan berhasil !');
       router.push('/usulan/jalan');
     } catch (error) {
       console.error('Error updating form:', error);
@@ -320,7 +320,7 @@ export default function EditUsulanJalanPage() {
                   Jenis Usulan <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {['Pembuatan', 'Perawatan'].map((jenis) => (
+                  {['Pembuatan', 'Pemeliharaan'].map((jenis) => (
                     <label
                       key={jenis}
                       className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${

@@ -40,7 +40,7 @@ export default function RightPanel3D() {
       {/* Overlay Label */}
       <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-sm pointer-events-none">
         <h3 className="font-bold text-gray-800">Visualisasi Konstruksi 3D</h3>
-        <p className="text-xs text-gray-600">Model diperbarui secara real-time berdasarkan input Persentase.</p>
+        <p className="text-xs text-gray-600">Model  secara real-time berdasarkan input Persentase.</p>
       </div>
     </div>
   );

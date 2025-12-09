@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Layers, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Layers, CheckCircle2, Settings } from 'lucide-react';
 import type { UsulanBangunanGedung } from '@/types/usulan-bangunan';
 
 // Interface for API response
@@ -113,7 +113,7 @@ interface APIUsulanBangunan {
     id_asb_tipe_bangunan: number;
     klasifikasi: string;
   } | null;
-  verifikatorAdpem: any;
+  verifikatorAdbang: any;
   verifikatorBPKAD: any;
   verifikatorBappeda: any;
   asbDetails: AsbDetail[];
@@ -181,7 +181,7 @@ const transformAPIData = (item: APIUsulanBangunan): UsulanBangunanGedung => {
     klasifikasi: item.asbKlasifikasi?.klasifikasi || 'Belum Ditentukan',
     satuan: 'm2',
     verificationStatus: {
-      adpem: item.idVerifikatorAdpem ? 'Disetujui' : 'Menunggu',
+      adbang: item.idVerifikatorAdpem ? 'Disetujui' : 'Menunggu',
       bappeda: item.idVerifikatorBappeda ? 'Disetujui' : 'Belum',
       bpkad: item.idVerifikatorBpkad ? 'Disetujui' : 'Belum',
     },
@@ -216,9 +216,9 @@ export default function VerifyUsulanPage() {
       }
       const requestBody = {
         id_asb: apiData.id,
-        verif_luas_lantai: [100.5, 95.3, 90.2],
-        verif_id_asb_lantai: [1, 2, 3],
-        verif_id_asb_fungsi_ruang: [1, 2, 3]
+        verif_luas_lantai: (apiData.asbDetails?.map((detail) => detail.luas) || []),
+        verif_id_asb_lantai: (apiData.asbDetails?.map((detail) => detail.idAsbLantai) || []),
+        verif_id_asb_fungsi_ruang: (apiData.asbDetails?.map((detail) => detail.idAsbFungsiRuang) || []),
       };
       const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-lantai', {
         method: 'PUT',
@@ -261,7 +261,91 @@ export default function VerifyUsulanPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ id_asb: apiData.id }),
+        body: JSON.stringify(
+          { 
+            id_asb: apiData.id,
+            id_rekening_review: apiData.idRekening
+          }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal verifikasi rekening');
+      }
+
+      alert('Verifikasi Rekening Belanja berhasil!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error verifikasi rekening:', error);
+      alert(`Gagal verifikasi: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handler for Verifikasi Rekening API call
+  const handleVerifikasiPekerjaan = async () => {
+    if (!apiData) return;
+    setIsVerifying(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-pekerjaan', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(
+          { 
+            id_asb: apiData.id,
+            perencanaan_konstruksi: apiData?.perencanaanKonstruksi || 0,
+            pengawasan_konstruksi: apiData?.pengawasanKonstruksi || 0,
+            management_konstruksi: apiData?.managementKonstruksi || 0,
+            pengelolaan_kegiatan: apiData?.pengelolaanKegiatan || 0,
+          }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal verifikasi rekening');
+      }
+
+      alert('Verifikasi Rekening Belanja berhasil!');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error verifikasi rekening:', error);
+      alert(`Gagal verifikasi: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handler for All Verifikasi  API call
+  const handleVerifikasiAll = async () => {
+    if (!apiData) return;
+    setIsVerifying(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      const response = await fetch('/api/usulan/bangunan-gedung/asb/verif-verif', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(
+          { 
+            id_asb: apiData.id,
+          }),
       });
 
       if (!response.ok) {
@@ -572,13 +656,10 @@ export default function VerifyUsulanPage() {
             </div>
             <div className="space-y-3">
               <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-medium">
-                {apiData?.asbKlasifikasi?.klasifikasi || '[Belum terklasifikasi]'}
+                {apiData?.asbTipeBangunan?.tipe_bangunan || '-'} <span><b>{apiData?.asbKlasifikasi?.klasifikasi || '[Belum terklasifikasi]'}</b></span>
               </div>
               <div className="text-sm text-gray-600 text-center">
                 Jenis Bangunan: <span className="font-medium">{apiData?.asbJenis?.jenis || '-'}</span>
-              </div>
-              <div className="text-sm text-gray-600 text-center">
-                Tipe Usulan: <span className="font-medium">{apiData?.asbTipeBangunan?.tipe_bangunan || '-'}</span>
               </div>
             </div>
           </div>
@@ -724,7 +805,7 @@ export default function VerifyUsulanPage() {
                       <td className="px-4 py-3 text-sm text-gray-700">
                         {FUNGSI_RUANG_MAP[detail.idAsbFungsiRuang] || `Fungsi ${detail.idAsbFungsiRuang}`}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{detail.lantaiKoef?.toFixed(4)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{detail.lantaiKoef?.toFixed(2)}</td>
                     </tr>
                   )) : (
                     <tr>
@@ -808,6 +889,42 @@ export default function VerifyUsulanPage() {
               )}
             </div>
           </div>
+
+          {/* Navigation & Edit Buttons - Only for ADBANG verifikator */}
+          {jenisVerifikator === 'ADBANG' && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-md p-6 border border-blue-200">
+              <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                Aksi Verifikator ADBANG
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {/* Edit Button */}
+                <button 
+                  onClick={() => router.push(`/usulan/bangunan-gedung/edit/${params.id}`)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  Edit Usulan
+                </button>
+                {/* Menuju Komponen Standar */}
+                <button 
+                  onClick={() => router.push(`/usulan/bangunan-gedung/verify/${params.id}/input-komponen-standar-bangunan`)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium shadow-sm cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Komponen Standar
+                </button>
+                {/* Menuju Komponen Non-Standar */}
+                <button 
+                  onClick={() => router.push(`/usulan/bangunan-gedung/verify/${params.id}/input-komponen-standar-non-bangunan`)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Komponen Non-Standar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -856,8 +973,8 @@ export default function VerifyUsulanPage() {
         </div>
       </div>
 
-      {/* ADPEM Verification Navigation - Only for ADPEM verifikator */}
-      {jenisVerifikator === 'ADPEM' && (
+      {/* ADBANG Verification Navigation - Only for ADBANG verifikator */}
+      {jenisVerifikator === 'ADBANG' && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-blue-500 rounded-lg">
@@ -865,11 +982,11 @@ export default function VerifyUsulanPage() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Verifikasi Komponen Bangunan</h3>
-              <p className="text-sm text-blue-600">Khusus Verifikator ADPEM</p>
+              <p className="text-sm text-blue-600">Khusus Verifikator ADBANG</p>
             </div>
           </div>
           <p className="text-sm text-gray-600 mb-4">
-            Sebagai ADPEM, Anda dapat melakukan verifikasi pada komponen standar dan non-standar bangunan. Klik salah satu tombol di bawah untuk melihat dan memverifikasi data komponen.
+            Sebagai ADBANG, Anda dapat melakukan verifikasi pada komponen standar dan non-standar bangunan. Klik salah satu tombol di bawah untuk melihat dan memverifikasi data komponen.
           </p>
           <div className="flex flex-wrap gap-3">
             {/* Verifikasi Lantai - only enabled when idAsbStatus is 6 */}
@@ -886,22 +1003,22 @@ export default function VerifyUsulanPage() {
               )}
               Verifikasi Lantai
             </button>
-            
+
+            {/* Verifikasi Pekerjaan - only enabled when idAsbStatus is 6 */}
             <button 
-              onClick={() => router.push(`/usulan/bangunan-gedung/verify/${params.id}/input-komponen-standar-bangunan`)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium shadow-sm cursor-pointer"
+              onClick={handleVerifikasiPekerjaan}
+              disabled={!apiData || apiData.asbStatus?.id !== 12 || isVerifying}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title={apiData?.asbStatus?.id !== 6 ? 'Hanya dapat diakses saat status adalah Proses Verifikasi (6)' : ''}
             >
-              <CheckCircle className="w-5 h-5" />
-              Menuju Ke Komponen Standar
+              {isVerifying ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+              ) : (
+                <Settings className="w-5 h-5" />
+              )}
+              Verifikasi Pekerjaan
             </button>
-            <button 
-              onClick={() => router.push(`/usulan/bangunan-gedung/verify/${params.id}/input-komponen-standar-non-bangunan`)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm cursor-pointer"
-            >
-              <CheckCircle className="w-5 h-5" />
-              Menuju Ke Komponen Non-Standar
-            </button>
-            
+
             {/* Verifikasi Rekening Belanja - only enabled when idAsbStatus is 11 */}
             <button 
               onClick={handleVerifikasiRekening}
@@ -917,16 +1034,12 @@ export default function VerifyUsulanPage() {
               Verifikasi Rekening Belanja
             </button>
           </div>
-          <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded-lg">
-            <p className="text-xs text-blue-800">
-              <strong>Info:</strong> Tombol navigasi ini hanya tersedia untuk verifikator ADPEM. BAPPEDA dan BPKAD tidak memiliki akses ke halaman verifikasi komponen.
-            </p>
-          </div>
+          
           {apiData && (
-            <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
               <p className="text-xs text-gray-600">
                 <strong>Status ID Saat Ini:</strong> {apiData.asbStatus?.id || apiData.idAsbStatus} - 
-                Verifikasi Lantai aktif saat status 6, Rekening Belanja aktif saat status 11.
+                Verifikasi Lantai aktif saat status 6, Rekening Belanja aktif saat status 11, dan Verifikasi Pekerjaan aktif saat status 12.
               </p>
             </div>
           )}
@@ -954,12 +1067,12 @@ export default function VerifyUsulanPage() {
             <button 
               onClick={() => {
                 console.log('Setujui clicked');
-                // TODO: Call API to approve
+                handleVerifikasiAll();
               }}
               disabled={
                 !apiData ||
                 (apiData.asbStatus?.id !== 13 && apiData.asbStatus?.id !== 8) ||
-                (jenisVerifikator === 'ADPEM' && apiData.idVerifikatorAdpem !== null) ||
+                (jenisVerifikator === 'ADBANG' && apiData.idVerifikatorAdpem !== null) ||
                 (jenisVerifikator === 'BAPPEDA' && apiData.idVerifikatorBappeda !== null) ||
                 (jenisVerifikator === 'BPKAD' && apiData.idVerifikatorBpkad !== null)
               }
@@ -999,7 +1112,7 @@ export default function VerifyUsulanPage() {
                 <strong>Info:</strong> Tombol Setujui dan Tolak hanya aktif jika status adalah "Verifikasi Biaya Pekerjaan" (13) atau "Memenuhi Syarat" (8).
               </p>
             )}
-            {jenisVerifikator === 'ADPEM' && apiData?.idVerifikatorAdpem && (
+            {jenisVerifikator === 'ADBANG' && apiData?.idVerifikatorAdpem && (
               <p className="text-xs text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
                 <strong>Info:</strong> Anda sudah melakukan verifikasi pada usulan ini.
               </p>
@@ -1015,7 +1128,7 @@ export default function VerifyUsulanPage() {
               </p>
             )}
             <p className="text-xs text-gray-500">
-              {jenisVerifikator === 'ADPEM' 
+              {jenisVerifikator === 'ADBANG' 
                 ? 'Gunakan tombol di atas untuk verifikasi, atau navigasi ke halaman komponen untuk verifikasi detail.'
                 : 'Gunakan tombol di atas untuk approval/reject.'}
             </p>

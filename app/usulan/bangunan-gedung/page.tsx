@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Building2, TrendingUp, FileText, CheckCircle } from 'lucide-react';
 import type { UsulanBangunanGedung, FilterUsulanBangunan } from '@/types/usulan-bangunan';
+
 // Dynamic imports for better performance
 const BarChart = dynamic(() => import('@/components/Charts/BarChart'), {
   ssr: false,
@@ -110,6 +111,7 @@ const mapStatus = (asbStatus: { id: number; status: string }): string => {
   };
   return statusDisplayMap[asbStatus.status] || 'Proses';
 };
+
 // Helper function to determine verification status based on idAsbStatus and verifikator IDs
 const getVerificationStatus = (item: APIUsulanBangunan) => {
   const statusId = item.asbStatus?.id || item.idAsbStatus;
@@ -117,16 +119,16 @@ const getVerificationStatus = (item: APIUsulanBangunan) => {
   // If rejected (idAsbStatus = 7), all statuses are Ditolak
   if (statusId === 7) {
     return {
-      adpem: 'Ditolak' as const,
+      adbang: 'Ditolak' as const,
       bappeda: 'Ditolak' as const,
       bpkad: 'Ditolak' as const,
     };
   }
   
-  // If approved by ADPEM (idAsbStatus = 8 and idVerifikatorAdpem exists)
+  // If approved by ADBANG (idAsbStatus = 8 and idVerifikatorAdpem exists)
   if (statusId === 8 && item.idVerifikatorAdpem) {
     return {
-      adpem: 'Disetujui' as const,
+      adbang: 'Disetujui' as const,
       bappeda: item.idVerifikatorBappeda ? 'Disetujui' as const : 'Menunggu' as const,
       bpkad: item.idVerifikatorBpkad ? 'Disetujui' as const : 'Menunggu' as const,
     };
@@ -134,7 +136,7 @@ const getVerificationStatus = (item: APIUsulanBangunan) => {
   
   // Default status based on verifikator IDs
   return {
-    adpem: item.idVerifikatorAdpem ? 'Disetujui' as const : 'Menunggu' as const,
+    adbang: item.idVerifikatorAdpem ? 'Disetujui' as const : 'Menunggu' as const,
     bappeda: item.idVerifikatorBappeda ? 'Disetujui' as const : 'Belum' as const,
     bpkad: item.idVerifikatorBpkad ? 'Disetujui' as const : 'Belum' as const,
   };
@@ -144,7 +146,7 @@ const getVerificationStatus = (item: APIUsulanBangunan) => {
 const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanBangunanGedung[] => {
   return apiData.map((item) => ({
     id: item.id.toString(),
-    jenis:item.asbJenis?.jenis,
+    jenis: item.asbJenis?.jenis,
     uraian: item.namaAsb,
     lokasi: item.alamat,
     klasifikasi: item.idAsbKlasifikasi ? `Klasifikasi ${item.idAsbKlasifikasi}` : 'Belum Ditentukan',
@@ -173,12 +175,12 @@ export default function UsulanBangunanGedungPage() {
   // Chart data states
   const [barChartData, setBarChartData] = useState([
     { name: 'Pembangunan', value: 0, color: '#ef4444' },
-    { name: 'Perawatan', value: 0, color: '#f59e0b' },
+    { name: 'Pemeliharaan', value: 0, color: '#f59e0b' },
   ]);
   
   const [donutChartData1, setDonutChartData1] = useState([
     { name: 'Pembangunan', value: 0, color: '#ef4444' },
-    { name: 'Perawatan', value: 0, color: '#f59e0b' },
+    { name: 'Pemeliharaan', value: 0, color: '#f59e0b' },
   ]);
   
   const [donutChartData2, setDonutChartData2] = useState([
@@ -208,9 +210,17 @@ export default function UsulanBangunanGedungPage() {
 
         if (response.ok) {
           const result = await response.json();
-          const apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
+          let apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
           
           console.log('API Response:', apiData);
+          
+          // Filter by selected tahun anggaran if set
+          const storedYear = localStorage.getItem('selectedTahunAnggaran');
+          if (storedYear) {
+            const filterYear = parseInt(storedYear);
+            apiData = apiData.filter(d => d.tahunAnggaran === filterYear);
+            console.log(`Filtered by tahunAnggaran ${filterYear}:`, apiData.length, 'items');
+          }
           
           // Transform API data to display format
           const transformedData = transformAPIData(apiData);
@@ -221,7 +231,7 @@ export default function UsulanBangunanGedungPage() {
           
           // Calculate chart data based on fetched data
           const pembangunanCount = apiData.filter(d => d.asbJenis?.jenis === 'Pembangunan').length;
-          const pemeliharaanCount = apiData.filter(d => d.asbJenis?.jenis === 'Perawatan' || d.asbJenis?.jenis === 'Rehabilitasi').length;
+          const pemeliharaanCount = apiData.filter(d => d.asbJenis?.jenis === 'Pemeliharaan' || d.asbJenis?.jenis === 'Rehabilitasi').length;
 
           const percentagePembangunan = Math.floor(pembangunanCount / (pembangunanCount + pemeliharaanCount) * 100);
           const percentagePemeliharaan = Math.floor(pemeliharaanCount / (pembangunanCount + pemeliharaanCount) * 100);
@@ -229,13 +239,13 @@ export default function UsulanBangunanGedungPage() {
           // Update Bar Chart data
           setBarChartData([
             { name: 'Pembangunan', value: pembangunanCount, color: '#ef4444' },
-            { name: 'Perawatan', value: pemeliharaanCount, color: '#f59e0b' },
+            { name: 'Pemeliharaan', value: pemeliharaanCount, color: '#f59e0b' },
           ]);
           
           // Update Donut Chart 1 (Jenis distribution)
           setDonutChartData1([
             { name: 'Pembangunan', value: percentagePembangunan || 1, color: '#ef4444' },
-            { name: 'Perawatan', value: percentagePemeliharaan || 1, color: '#f59e0b' },
+            { name: 'Pemeliharaan', value: percentagePemeliharaan || 1, color: '#f59e0b' },
           ]);
           
           // Calculate status counts
@@ -302,7 +312,7 @@ export default function UsulanBangunanGedungPage() {
     proses: data.filter((d) => d.status === 'Proses').length,
     tolak: data.filter((d) => d.status === 'Tolak').length,
     pembangunan: data.filter((d) => d.jenis === 'Pembangunan').length,
-    pemeliharaan: data.filter((d) => d.jenis === 'Perawatan').length,
+    pemeliharaan: data.filter((d) => d.jenis === 'Pemeliharaan').length,
   };
 
   return (

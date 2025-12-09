@@ -29,6 +29,7 @@ interface requestBodyASB{
     idAsbJenis: number;
     luasTanah?: number;
 }
+
 export default function TambahUsulanBangunanGedung() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,6 +87,7 @@ export default function TambahUsulanBangunanGedung() {
     luas: '',
     notes: '',
   }]);
+
   // Fetch Jenis Lantai data
   React.useEffect(() => {
     const fetchJenisLantai = async () => {
@@ -115,6 +117,7 @@ export default function TambahUsulanBangunanGedung() {
 
     fetchJenisLantai();
   }, []);
+  
   // Fetch Fungsi Lantai data
   React.useEffect(() => {
     const fetchFungsiLantai = async () => {

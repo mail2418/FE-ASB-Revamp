@@ -21,7 +21,7 @@ import {
 type VerificationStatus = 'Belum' | 'Disetujui' | 'Ditolak' | 'Menunggu';
 
 interface VerificationStages {
-  adpem: VerificationStatus;
+  adbang: VerificationStatus;
   bappeda: VerificationStatus;
   bpkad: VerificationStatus;
 }
@@ -29,7 +29,7 @@ interface VerificationStages {
 // Interface for Jalan form data
 interface UsulanJalanDetail {
   id: string;
-  jenisUsulan: 'Perawatan' | 'Pembuatan';
+  jenisUsulan: 'Pemeliharaan' | 'Pembuatan';
   lebarJalan: string;
   strukturPerkerasan: string;
   repetisiBeban: string;
@@ -56,7 +56,7 @@ const mockDataMap: { [key: string]: UsulanJalanDetail } = {
     ruangLingkup: ['Perkerasan Aspal', 'Lapis Pondasi', 'Galian Tanah'],
     keteranganTambahan: 'Tebal galian 30 cm',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Disetujui',
       bpkad: 'Disetujui',
     },
@@ -65,7 +65,7 @@ const mockDataMap: { [key: string]: UsulanJalanDetail } = {
   },
   'mock-2': {
     id: 'mock-2',
-    jenisUsulan: 'Perawatan',
+    jenisUsulan: 'Pemeliharaan',
     lebarJalan: '7',
     strukturPerkerasan: 'kaku',
     repetisiBeban: '15',
@@ -75,7 +75,7 @@ const mockDataMap: { [key: string]: UsulanJalanDetail } = {
     ruangLingkup: ['Perkerasan Beton', 'Lapis Pondasi', 'Pemadatan Tanah', 'Marka dan Rambu Jalan'],
     keteranganTambahan: 'Tebal timbunan 50 cm',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Menunggu',
       bpkad: 'Belum',
     },
@@ -93,7 +93,7 @@ const mockDataMap: { [key: string]: UsulanJalanDetail } = {
     ruangLingkup: ['Perkerasan Aspal', 'Galian Tanah', 'Timbunan Tanah'],
     keteranganTambahan: 'Tebal urugan 20 cm',
     verificationStatus: {
-      adpem: 'Disetujui',
+      adbang: 'Disetujui',
       bappeda: 'Ditolak',
       bpkad: 'Belum',
     },
@@ -257,7 +257,7 @@ export default function DetailUsulanJalanPage() {
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Status Verifikasi</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <VerificationBadge status={data.verificationStatus.adpem} label="ADPEM" />
+              <VerificationBadge status={data.verificationStatus.adbang} label="ADBANG" />
               <VerificationBadge status={data.verificationStatus.bappeda} label="BAPPEDA" />
               <VerificationBadge status={data.verificationStatus.bpkad} label="BPKAD" />
             </div>

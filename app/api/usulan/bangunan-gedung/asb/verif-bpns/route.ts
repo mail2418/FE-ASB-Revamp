@@ -24,6 +24,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    const {
+      id_asb,
+      verif_komponen_nonstd,
+      verif_bobot_acuan_nonstd,
+    } = body;
 
     const response = await fetch(`${API_BASE_URL}/asb/verif-bpns`, {
       method: 'PUT',
@@ -31,7 +36,11 @@ export async function PUT(request: NextRequest) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        id_asb,
+        verif_komponen_nonstd,
+        verif_bobot_acuan_nonstd,
+      }),
     });
 
     if (!response.ok) {

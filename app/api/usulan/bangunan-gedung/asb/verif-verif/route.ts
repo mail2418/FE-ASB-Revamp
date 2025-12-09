@@ -11,7 +11,7 @@ function getAuthToken(request: NextRequest): string | null {
   return null;
 }
 
-// PUT - Update verif-bps
+// PUT - Update verif-rekening
 export async function PUT(request: NextRequest) {
   try {
     const token = getAuthToken(request);
@@ -26,12 +26,9 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const {
       id_asb,
-      verif_komponen_std,
-      verif_bobot_acuan_std,
     } = body;
-    console.log(body)
 
-    const response = await fetch(`${API_BASE_URL}/asb/verify-bps`, {
+    const response = await fetch(`${API_BASE_URL}/asb/verify`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -39,25 +36,23 @@ export async function PUT(request: NextRequest) {
       },
       body: JSON.stringify({
         id_asb,
-        verif_komponen_std,
-        verif_bobot_acuan_std,
       }),
-    }); 
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { success: false, error: errorData.message || 'Failed to update verif-bps' },
+        { success: false, error: errorData.message || 'Failed to update verif-rekening' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    console.log("PUT verif-bps success");
+    console.log("PUT verif-rekening success");
     return NextResponse.json(data, { status: 200 });
 
   } catch (error) {
-    console.error('Error updating verif-bps:', error);
+    console.error('Error updating verif-rekening:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
