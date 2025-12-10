@@ -80,7 +80,7 @@ export default function DashboardTable({
   const [currentPage, setCurrentPage] = React.useState(1);
   const [downloadingId, setDownloadingId] = React.useState<string | null>(null);
 
-  // Handle Surat Permohonan download (uses API without view param for direct download)
+  // Handle Surat Permohonan download (decode base64 PDF from API)
   const handleDownloadSuratPermohonan = async (id: string): Promise<void> => {
     try {
       setDownloadingId(`permohonan-${id}`);
@@ -93,16 +93,59 @@ export default function DashboardTable({
       });
       
       if (response.ok) {
-        const data = await response.json();
-        if (data.data?.url) {
-          // Open the download URL
-          window.open(data.data.url, '_blank');
+        const contentType = response.headers.get('content-type');
+        
+        // If response is PDF directly (blob)
+        if (contentType?.includes('application/pdf')) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `surat-permohonan-${id}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        } else {
+          // If response is JSON with base64 encoded PDF
+          const data = await response.json();
+          
+          // Check for base64 encoded PDF data
+          if (data.data?.pdf || data.data?.file || data.data?.content || data.pdf || data.file) {
+            const base64Data = data.data?.pdf || data.data?.file || data.data?.content || data.pdf || data.file;
+            
+            // Decode base64 to binary
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Create blob and download
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `surat-permohonan-${id}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          } else if (data.data?.url || data.url) {
+            // If it's a URL, open it
+            window.open(data.data?.url || data.url, '_blank');
+          } else {
+            console.error('Unknown PDF response format:', data);
+            alert('Format respons tidak dikenali');
+          }
         }
       } else {
         console.error('Failed to download surat permohonan');
+        alert('Gagal mengunduh surat permohonan');
       }
     } catch (error) {
       console.error('Error downloading surat permohonan:', error);
+      alert('Terjadi kesalahan saat mengunduh');
     } finally {
       setDownloadingId(null);
     }
