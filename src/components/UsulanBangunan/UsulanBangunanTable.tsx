@@ -165,18 +165,52 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
         throw new Error(`Gagal mengunduh dokumen: ${response.statusText}`);
       }
 
-      // Get the PDF as blob
-      const blob = await response.blob();
+      const contentType = response.headers.get('content-type');
       
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `surat-permohonan-${itemId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // If response is PDF directly (blob)
+      if (contentType?.includes('application/pdf')) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `surat-permohonan-${itemId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        // If response is JSON with base64 encoded PDF
+        const data = await response.json();
+        
+        // Check for base64 encoded PDF data
+        if (data.data?.pdf || data.data?.file || data.data?.content || data.pdf || data.file) {
+          const base64Data = data.data?.pdf || data.data?.file || data.data?.content || data.pdf || data.file;
+          
+          // Decode base64 to binary
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          
+          // Create blob and download
+          const blob = new Blob([bytes], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `surat-permohonan-${itemId}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        } else if (data.data?.url || data.url) {
+          // If it's a URL, open it
+          window.open(data.data?.url || data.url, '_blank');
+        } else {
+          console.error('Unknown PDF response format:', data);
+          alert('Format respons tidak dikenali');
+        }
+      }
       
     } catch (error) {
       console.error('Error downloading surat permohonan:', error);

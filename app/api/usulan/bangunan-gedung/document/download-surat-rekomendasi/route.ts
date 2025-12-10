@@ -33,18 +33,53 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      // Try to parse error as JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const errorData = await response.json().catch(() => ({}));
+        return NextResponse.json(
+          { error: 'Failed to fetch surat rekomendasi', details: errorData },
+          { status: response.status }
+        );
+      }
       return NextResponse.json(
-        { error: 'Failed to fetch surat rekomendasi', details: errorData },
+        { error: 'Failed to fetch surat rekomendasi' },
         { status: response.status }
       );
     }
 
+    const contentType = response.headers.get('content-type');
+    console.log("fetching surat rekomendasi success, content-type:", contentType);
+
+    // If response is PDF directly, pass it through as PDF
+    if (contentType?.includes('application/pdf')) {
+      const pdfBuffer = await response.arrayBuffer();
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="surat-rekomendasi-${idAsb}.pdf"`,
+        },
+      });
+    }
+
+    // If response is octet-stream (binary), treat as PDF
+    if (contentType?.includes('application/octet-stream')) {
+      const pdfBuffer = await response.arrayBuffer();
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="surat-rekomendasi-${idAsb}.pdf"`,
+        },
+      });
+    }
+
+    // Otherwise, pass through JSON response (may contain base64 or URL)
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {

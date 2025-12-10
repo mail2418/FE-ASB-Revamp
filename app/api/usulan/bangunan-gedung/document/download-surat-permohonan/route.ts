@@ -47,16 +47,50 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      // Try to parse error as JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const errorData = await response.json().catch(() => ({}));
+        return NextResponse.json(
+          { success: false, error: errorData.message || 'Failed to fetch surat permohonan data' },
+          { status: response.status }
+        );
+      }
       return NextResponse.json(
-        { success: false, error: errorData.message || 'Failed to fetch surat permohonan data' },
+        { success: false, error: 'Failed to fetch surat permohonan data' },
         { status: response.status }
       );
     }
 
-    const data = await response.json();
+    const contentType = response.headers.get('content-type');
+    console.log("fetching surat permohonan success, content-type:", contentType);
 
-    console.log("fetching surat permohonan success")
+    // If response is PDF directly, pass it through as PDF
+    if (contentType?.includes('application/pdf')) {
+      const pdfBuffer = await response.arrayBuffer();
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="surat-permohonan-${idAsb}.pdf"`,
+        },
+      });
+    }
+
+    // If response is octet-stream (binary), treat as PDF
+    if (contentType?.includes('application/octet-stream')) {
+      const pdfBuffer = await response.arrayBuffer();
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="surat-permohonan-${idAsb}.pdf"`,
+        },
+      });
+    }
+
+    // Otherwise, pass through JSON response (may contain base64 or URL)
+    const data = await response.json();
     return NextResponse.json(data, { status: 200 });
 
   } catch (error) {

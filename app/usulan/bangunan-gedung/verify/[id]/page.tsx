@@ -433,12 +433,39 @@ export default function VerifyUsulanPage() {
         throw new Error(errorData.error || 'Gagal memuat dokumen');
       }
 
-      const data = await response.json();
-      // Open the document URL in a new tab
-      if (data.data?.url || data.url) {
-        window.open(data.data?.url || data.url, '_blank');
+      const contentType = response.headers.get('content-type');
+      
+      // If response is PDF directly (blob)
+      if (contentType?.includes('application/pdf')) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
       } else {
-        alert('URL dokumen tidak ditemukan');
+        // If response is JSON
+        const data = await response.json();
+        
+        // Check for base64 encoded PDF data
+        if (data.data?.pdf || data.data?.file || data.data?.content || data.pdf || data.file) {
+          const base64Data = data.data?.pdf || data.data?.file || data.data?.content || data.pdf || data.file;
+          
+          // Decode base64 to binary
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          
+          // Create blob and open in new tab
+          const blob = new Blob([bytes], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          window.open(url, '_blank');
+        } else if (data.data?.url || data.url) {
+          // If it's a URL, open it
+          window.open(data.data?.url || data.url, '_blank');
+        } else {
+          console.error('Unknown PDF response format:', data);
+          alert('Format respons tidak dikenali');
+        }
       }
     } catch (error) {
       console.error('Error viewing surat permohonan:', error);
