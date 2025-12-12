@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { ChevronDown } from 'lucide-react';
 import type { UsulanData } from '@/types';
 import { cn } from '@/lib/utils';
+import WelcomeToast from '@/components/WelcomeToast';
 
 // Dynamic imports for charts to avoid SSR issues
 const LineChart = dynamic(() => import('@/components/Charts/LineChart'), {
@@ -91,14 +92,39 @@ const STATUS_ID_MAP: { [key: number]: string } = {
   13: 'Verifikasi Biaya Pekerjaan',
 };
 
-// Map API status to display status based on idAsbStatus
-const mapStatus = (idAsbStatus: number): string => {
-  // Sukses when idAsbStatus is 8
-  if (idAsbStatus === 8) return 'Sukses';
+// Map API status to display status based on idAsbStatus and verifikator IDs
+const mapStatus = (
+  idAsbStatus: number,
+  idVerifikatorAdpem: number | null,
+  idVerifikatorBpkad: number | null,
+  idVerifikatorBappeda: number | null
+): string => {
+  // Sukses when idAsbStatus is 8 AND all verifikator IDs are not null
+  if (
+    idAsbStatus === 8 &&
+    idVerifikatorAdpem !== null &&
+    idVerifikatorBpkad !== null &&
+    idVerifikatorBappeda !== null
+  ) {
+    return 'Sukses';
+  }
+  
   // Ditolak when idAsbStatus is 7
   if (idAsbStatus === 7) return 'Ditolak';
-  // Sedang Diproses for all other statuses
-  return 'Sedang Diproses';
+  
+  // Sedang diproses BPKAD when idAsbStatus is 13
+  if (idAsbStatus === 13) return 'Sedang diproses BPKAD';
+  
+  // Sedang diproses BAPPEDA when idAsbStatus is 12
+  if (idAsbStatus === 12) return 'Sedang diproses BAPPEDA';
+  
+  // Sedang diproses Adbang when idAsbStatus is > 5 and < 12, excluding 7 and 8
+  if (idAsbStatus !== 7 && idAsbStatus !== 8) {
+    return 'Sedang diproses Adbang';
+  }
+  
+  // Default: Sedang Diproses for all other statuses
+  return 'Sedang diproses Adbang';
 };
 
 // Transform API data to table format
@@ -107,7 +133,12 @@ const transformAPIData = (apiData: APIUsulanBangunan[]): UsulanData[] => {
     id: item.id.toString(),
     jenis: 'Bangunan',
     namaAsb: item.namaAsb,
-    status: mapStatus(item.asbStatus?.id || item.idAsbStatus),
+    status: mapStatus(
+      item.asbStatus?.id || item.idAsbStatus,
+      item.idVerifikatorAdpem,
+      item.idVerifikatorBpkad,
+      item.idVerifikatorBappeda
+    ),
     idAsbStatus: item.asbStatus?.id || item.idAsbStatus,
     idVerifikatorAdpem: item.idVerifikatorAdpem,
     idVerifikatorBappeda: item.idVerifikatorBappeda,
@@ -129,20 +160,20 @@ export default function DashboardPage() {
   // Get current month/year for initial values
   const currentDate = new Date();
   const currentMonthIndex = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear().toString();
+  const currentYear = typeof window !== 'undefined' 
+    ? (localStorage.getItem('selectedTahunAnggaran') || currentDate.getFullYear().toString())
+    : currentDate.getFullYear().toString();
   
   // Available months and years
   const months = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
-  const years = ['2025', '2024', '2023', '2022', '2021'];
-  
+
   const [selectedMonth, setSelectedMonth] = useState(months[currentMonthIndex]);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
-  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
-  
+
   // Chart data states
   const [lineChartData, setLineChartData] = useState<any[]>([]);
 
@@ -151,7 +182,6 @@ export default function DashboardPage() {
     { name: 'Sedang diproses', value: 1, color: '#f59e0b' },
     { name: 'Ditolak', value: 1, color: '#ef4444' },
   ]);
-
   const [donutChartDataJalan, setDonutChartDataJalan] = useState([
     { name: 'Sukses', value: 1, color: '#22c55e' },
     { name: 'Sedang diproses', value: 1, color: '#f59e0b' },
@@ -162,7 +192,6 @@ export default function DashboardPage() {
     { name: 'Sedang diproses', value: 1, color: '#f59e0b' },
     { name: 'Ditolak', value: 1, color: '#ef4444' },
   ]);
-
   // Statistics
   const [stats, setStats] = useState({
     total: 0,
@@ -170,6 +199,15 @@ export default function DashboardPage() {
     sedangDiproses: 0,
     ditolak: 0,
   });
+
+  // Pagination state for API fetch
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPage, setTotalPage] = useState(1);
+  // Welcome toast state
+  const [showWelcomeToast, setShowWelcomeToast] = useState(false);
+  const [userName, setUserName] = useState('User');
+  const [welcomeYear, setWelcomeYear] = useState(currentDate.getFullYear());
+  const itemsPerPage = 10; // Fetch more items for dashboard statistics
 
   // Function to update line chart data based on selected month/year
   const updateLineChartData = (apiData: APIUsulanBangunan[], month: string, year: string) => {
@@ -235,15 +273,20 @@ export default function DashboardPage() {
           return;
         }
 
-        const response = await fetch('/api/usulan/bangunan-gedung/asb', {
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb?page=${currentPage}&amount=${itemsPerPage}&tahunAnggaran=${selectedYear}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
 
+        // Feth Data Usulan Jalan
+        // Fetch Data Usulan Saluran
+
         if (response.ok) {
           const result = await response.json();
+          console.log(result)
+          setTotalPage(result.data?.totalPages || 1);
           let apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
           
           console.log('Dashboard API Response:', apiData);
@@ -300,8 +343,35 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
-
     fetchData();
+  }, [selectedYear, currentPage]);
+
+  // Check for welcome toast flag after page load (set by TahunAnggaranModal)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const shouldShowToast = localStorage.getItem('showWelcomeToast');
+      if (shouldShowToast === 'true') {
+        // Get user data from cookie for the welcome message
+        const userDataCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('userData='));
+        
+        if (userDataCookie) {
+          const parsed = JSON.parse(decodeURIComponent(userDataCookie.split('=')[1]));
+          setUserName(parsed.name || 'User');
+        }
+        
+        // Get selected year
+        const storedYear = localStorage.getItem('selectedTahunAnggaran');
+        if (storedYear) {
+          setWelcomeYear(parseInt(storedYear));
+        }
+        
+        // Show toast and clear the flag
+        setShowWelcomeToast(true);
+        localStorage.removeItem('showWelcomeToast');
+      }
+    }
   }, []);
 
   const handleFilterChange = (filters: { search?: string; status?: string; jenis?: string }) => {
@@ -328,6 +398,49 @@ export default function DashboardPage() {
     setFilteredData(filtered);
   };
 
+  // Handle page change for pagination
+  const handlePageChange = (page: number): void => {
+    if (page >= 1 && page <= totalPage) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Generate page numbers array for pagination
+  const getPageNumbers = (): (number | string)[] => {
+    const pages: (number | string)[] = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPage <= maxVisiblePages) {
+      for (let i = 1; i <= totalPage; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPage);
+      } else if (currentPage >= totalPage - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPage - 3; i <= totalPage; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPage);
+      }
+    }
+    
+    return pages;
+  };
+
   return (
     <div className="space-y-6">
       {/* Loading State */}
@@ -338,6 +451,65 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total Usulan</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+            </div>
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Sukses</p>
+              <p className="text-2xl font-bold text-green-600">{stats.sukses}</p>
+            </div>
+            <div className="p-3 bg-green-100 rounded-lg">
+              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Sedang Diproses</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.sedangDiproses}</p>
+            </div>
+            <div className="p-3 bg-yellow-100 rounded-lg">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Ditolak</p>
+              <p className="text-2xl font-bold text-red-600">{stats.ditolak}</p>
+            </div>
+            <div className="p-3 bg-red-100 rounded-lg">
+              <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Charts Grid - Responsive Layout */}
       <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-6">
         {/* Line Chart Card - Trend Analysis */}
@@ -345,7 +517,6 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
             <div>
               <h3 className="text-base sm:text-lg font-semibold text-gray-900">Trend Analisis Usulan</h3>
-              <p className="text-xs text-gray-500 mt-1">Data bulanan</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Month Dropdown */}
@@ -372,36 +543,6 @@ export default function DashboardPage() {
                         )}
                       >
                         {month}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              {/* Year Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
-                  className="bg-teal-50 text-teal-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors flex items-center gap-2"
-                >
-                  {selectedYear}
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                {yearDropdownOpen && (
-                  <div className="absolute top-full mt-2 right-0 w-28 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    {years.map((year) => (
-                      <button
-                        key={year}
-                        onClick={() => {
-                          setSelectedYear(year);
-                          setYearDropdownOpen(false);
-                        }}
-                        className={cn(
-                          'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
-                          selectedYear === year && 'bg-teal-50 text-teal-700 font-medium'
-                        )}
-                      >
-                        {year}
                       </button>
                     ))}
                   </div>
@@ -491,71 +632,24 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
+      
       {/* Data Table */}
       <DashboardTable
         data={filteredData}
         onFilterChange={handleFilterChange}
+        currentPage={currentPage}
+        totalPages={totalPage}
+        totalItems={stats.total}
+        onPageChange={handlePageChange}
       />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Usulan</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Sukses</p>
-              <p className="text-2xl font-bold text-green-600">{stats.sukses}</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Sedang Diproses</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.sedangDiproses}</p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Ditolak</p>
-              <p className="text-2xl font-bold text-red-600">{stats.ditolak}</p>
-            </div>
-            <div className="p-3 bg-red-100 rounded-lg">
-              <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Welcome Toast */}
+      <WelcomeToast 
+        isVisible={showWelcomeToast}
+        userName={userName}
+        selectedYear={welcomeYear}
+        onClose={() => setShowWelcomeToast(false)}
+      />
     </div>
   );
 }

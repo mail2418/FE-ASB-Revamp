@@ -39,7 +39,7 @@ export default function WelcomeToast({ isVisible, userName, selectedYear, onClos
             <CheckCircle className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <p className="text-white font-semibold text-sm">Selamat Datang!</p>
+            <p className="text-white font-semibold text-sm">Tahun Anggaran Telah Ditetapkan</p>
           </div>
           <button 
             onClick={() => {

@@ -54,6 +54,7 @@ export async function PUT(request: NextRequest) {
 
     const data = await response.json();
     console.log("PUT verif-bps success");
+    console.log(data)
     return NextResponse.json(data, { status: 200 });
 
   } catch (error) {
