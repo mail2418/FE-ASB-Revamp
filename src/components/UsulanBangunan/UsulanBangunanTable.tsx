@@ -22,6 +22,11 @@ interface UsulanBangunanTableProps {
   data: UsulanBangunanGedung[];
   onFilterChange?: (filters: FilterUsulanBangunan) => void;
   onAddNew?: () => void;
+  onPageChange?: (page: number) => void;
+  currentPage?: number;
+  totalPages?: number;
+  totalItems?: number;
+  isLoading?: boolean;
 }
 
 const JenisBadge = ({ jenis }: { jenis: string }) => {
@@ -53,30 +58,47 @@ const JenisBadge = ({ jenis }: { jenis: string }) => {
   );
 };
 
-export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: UsulanBangunanTableProps) {
+export default function UsulanBangunanTable({ 
+  data, 
+  onFilterChange, 
+  onAddNew,
+  onPageChange,
+  currentPage: externalCurrentPage,
+  totalPages: externalTotalPages,
+  totalItems: externalTotalItems,
+}: UsulanBangunanTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [jenisFilter, setJenisFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [editingData, setEditingData] = useState<UsulanBangunanGedung[]>(data);
-  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
-  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
-  const [selectedYear, setSelectedYear] = useState('2025');
   const [userRole, setUserRole] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [internalCurrentPage, setInternalCurrentPage] = useState(1);
   const [showRejectReasonModal, setShowRejectReasonModal] = useState(false);
   const [selectedRejectReason, setSelectedRejectReason] = useState<string | null>(null);
   const itemsPerPage = 10;
 
-  // Calculate pagination
-  const totalPages = Math.ceil(editingData.length / itemsPerPage);
+  // Use external pagination if provided (server-side), otherwise use internal (client-side)
+  const isServerPagination = !!onPageChange;
+  const currentPage = isServerPagination ? (externalCurrentPage || 1) : internalCurrentPage;
+  const setCurrentPage = isServerPagination 
+    ? (page: number | ((prev: number) => number)) => {
+        const newPage = typeof page === 'function' ? page(currentPage) : page;
+        onPageChange?.(newPage);
+      }
+    : setInternalCurrentPage;
+
+  // Calculate pagination - use server values if provided, otherwise calculate client-side
+  const totalPages = isServerPagination 
+    ? (externalTotalPages || 1) 
+    : Math.ceil(editingData.length / itemsPerPage);
+  const totalItems = isServerPagination 
+    ? (externalTotalItems || 0) 
+    : editingData.length;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedData = editingData.slice(startIndex, endIndex);
-
-  // Available years
-  const years = ['2025', '2024', '2023', '2022', '2021'];
+  
+  // For server-side pagination, use all data (already paginated); for client-side, slice
+  const paginatedData = isServerPagination ? editingData : editingData.slice(startIndex, endIndex);
 
   // Get user role from cookie
   React.useEffect(() => {
@@ -95,7 +117,6 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
   // Update local data when props change
   React.useEffect(() => {
     setEditingData(data);
-    setCurrentPage(1); // Reset to first page when data changes
   }, [data]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,8 +125,6 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
     if (onFilterChange) {
       onFilterChange({ 
         search: value,
-        jenis: jenisFilter as any,
-        status: statusFilter as any,
       });
     }
   };
@@ -273,49 +292,16 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
       {/* Header with Project Info and Search - Similar to DashboardTable */}
       <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-
-            {/* Year Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
-                className="bg-white/90 text-teal-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white transition-colors flex items-center gap-2"
-              >
-                Tahun: {selectedYear}
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              {yearDropdownOpen && (
-                <div className="absolute top-full mt-2 left-0 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  {years.map((year) => (
-                    <button
-                      key={year}
-                      onClick={() => {
-                        setSelectedYear(year);
-                        setYearDropdownOpen(false);
-                      }}
-                      className={cn(
-                        'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
-                        selectedYear === year && 'bg-teal-50 text-teal-700 font-medium'
-                      )}
-                    >
-                      {year}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
           {/* Search Bar and Add Button */}
           <div className="flex gap-2 flex-1 max-w-md">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={handleSearch}
-                placeholder="Cari usulan..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                placeholder="Cari Uraian..."
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
               />
             </div>
             {userRole === 'admin' || userRole === 'opd' && onAddNew && (
@@ -525,8 +511,8 @@ export default function UsulanBangunanTable({ data, onFilterChange, onAddNew }: 
       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-700">
-            Menampilkan <span className="font-medium">{editingData.length > 0 ? startIndex + 1 : 0}</span> - <span className="font-medium">{Math.min(endIndex, editingData.length)}</span> dari{' '}
-            <span className="font-medium">{editingData.length}</span> hasil
+            Menampilkan <span className="font-medium">{totalItems > 0 ? startIndex + 1 : 0}</span> - <span className="font-medium">{Math.min(endIndex, totalItems)}</span> dari{' '}
+            <span className="font-medium">{totalItems}</span> hasil
           </p>
           
           {/* Pagination Controls */}

@@ -23,7 +23,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/asb?page=1&amount=100`, {
+    // Get pagination parameters from query
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get('page') || '1';
+    const amount = searchParams.get('amount') || '100';
+
+    const response = await fetch(`${API_BASE_URL}/asb?page=${page}&amount=${amount}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

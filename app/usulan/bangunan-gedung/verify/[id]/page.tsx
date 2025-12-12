@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Layers, CheckCircle2, Settings } from 'lucide-react';
+import { ArrowLeft, Building2, MapPin, FileText, Calendar, User, CheckCircle, XCircle, Layers, CheckCircle2, Settings, Edit2, Search } from 'lucide-react';
 import type { UsulanBangunanGedung } from '@/types/usulan-bangunan';
 
 // Interface for API response
@@ -203,6 +203,13 @@ export default function VerifyUsulanPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
+  
+  // Kode Rekening Edit States (for BPKAD)
+  const [showRekeningModal, setShowRekeningModal] = useState(false);
+  const [rekeningOptions, setRekeningOptions] = useState<Array<{ id: number; rekening_kode: string; rekening_uraian: string }>>([]);
+  const [selectedRekening, setSelectedRekening] = useState<{ id: number; kodeRekeningBelanja: string; namaRekeningBelanja: string } | null>(null);
+  const [searchRekening, setSearchRekening] = useState('');
+  const [isUpdatingRekening, setIsUpdatingRekening] = useState(false);
   
   // Handler for Verifikasi Lantai API call
   const handleVerifikasiLantai = async () => {
@@ -407,6 +414,53 @@ export default function VerifyUsulanPage() {
     }
   };
 
+  // Handler for Update Kode Rekening (BPKAD only)
+  const handleUpdateKodeRekening = async () => {
+    if (!apiData || !selectedRekening) return;
+    setIsUpdatingRekening(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        alert('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      // Prepare request body for backend API
+      const requestBodyRekening = {
+        id_asb: apiData.id,
+        id_rekening: selectedRekening.id
+      };
+
+      console.log(`requestBodyRekening: ${JSON.stringify(requestBodyRekening)}`);
+
+      // Send UPDATE Store Rekening
+      const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBodyRekening),
+      });
+
+      if (!responseRekening.ok) {
+        const errorData = await responseRekening.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Gagal update Kode Rekening');
+      }
+
+      alert('Kode Rekening berhasil diperbarui!');
+      setShowRekeningModal(false);
+      setSelectedRekening(null);
+      setSearchRekening('');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating Kode Rekening:', error);
+      alert(`Gagal update: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);
+    } finally {
+      setIsUpdatingRekening(false);
+    }
+  };
+
   // State for document viewing
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
 
@@ -584,6 +638,34 @@ export default function VerifyUsulanPage() {
 
     fetchUsulanData();
   }, [params.id]);
+
+  // Fetch Rekening data for BPKAD
+  useEffect(() => {
+    const fetchRekening = async () => {
+      if (jenisVerifikator !== 'BPKAD') return;
+      
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await fetch('/api/superadmin/rekening', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Rekening data:', data);
+          setRekeningOptions(data.data?.data || data.data || data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching Rekening:', error);
+      }
+    };
+
+    fetchRekening();
+  }, [jenisVerifikator]);
 
   // Don't show anything until auth check is complete
   const allowedRoles = ['verifikator'];
@@ -1073,6 +1155,59 @@ export default function VerifyUsulanPage() {
         </div>
       )}
 
+      {/* BPKAD Kode Rekening Section - Only for BPKAD verifikator */}
+      {jenisVerifikator === 'BPKAD' && (
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg shadow-sm border border-emerald-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-emerald-500 rounded-lg">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Kode Rekening Belanja</h3>
+              <p className="text-sm text-emerald-600">Khusus Verifikator BPKAD</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Sebagai BPKAD, Anda dapat melihat dan mengubah Kode Rekening untuk usulan ini.
+          </p>
+          
+          {/* Current Kode Rekening Display */}
+          <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500 block mb-1">Kode Rekening Saat Ini</label>
+                <p className="text-lg font-semibold text-gray-900">
+                  {apiData?.rekening?.rekening_kode || '-'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500 block mb-1">Uraian Rekening</label>
+                <p className="text-gray-700">
+                  {apiData?.rekening?.rekening_uraian || '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Edit Button */}
+          <button
+            onClick={() => setShowRekeningModal(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm cursor-pointer"
+          >
+            <Edit2 className="w-4 h-4" />
+            Edit Kode Rekening
+          </button>
+
+          {apiData && (
+            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-xs text-gray-600">
+                <strong>Info:</strong> Perubahan Kode Rekening akan langsung disimpan ke sistem setelah Anda mengonfirmasi.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Action Buttons - Only for verificators */}
       {(userRole === 'verifikator') && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -1196,6 +1331,110 @@ export default function VerifyUsulanPage() {
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isVerifying ? 'Memproses...' : 'Tolak Usulan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Kode Rekening Edit Modal - BPKAD Only */}
+      {showRekeningModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-emerald-600" />
+              Edit Kode Rekening
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Pilih Kode Rekening yang baru untuk usulan ini:
+            </p>
+            
+            {/* Current Rekening Info */}
+            <div className="bg-gray-50 rounded-lg p-3 mb-4 border border-gray-200">
+              <p className="text-xs text-gray-500">Kode Rekening Saat Ini:</p>
+              <p className="text-sm font-medium text-gray-900">
+                {apiData?.rekening?.rekening_kode || '-'} - {apiData?.rekening?.rekening_uraian || '-'}
+              </p>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative mb-4">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchRekening}
+                onChange={(e) => setSearchRekening(e.target.value)}
+                placeholder="Cari kode atau uraian rekening..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Rekening Options List */}
+            <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg mb-4">
+              {rekeningOptions
+                .filter(rekening => 
+                  rekening.rekening_kode.toLowerCase().includes(searchRekening.toLowerCase()) ||
+                  rekening.rekening_uraian.toLowerCase().includes(searchRekening.toLowerCase())
+                )
+                .slice(0, 20)
+                .map((rekening) => (
+                  <div
+                    key={rekening.id}
+                    onClick={() => {
+                      setSelectedRekening({
+                        id: rekening.id,
+                        kodeRekeningBelanja: rekening.rekening_kode,
+                        namaRekeningBelanja: rekening.rekening_uraian
+                      });
+                    }}
+                    className={`p-3 cursor-pointer hover:bg-emerald-50 border-b border-gray-100 last:border-0 transition-colors ${
+                      selectedRekening?.id === rekening.id ? 'bg-emerald-100' : ''
+                    }`}
+                  >
+                    <div className="font-medium text-gray-900">{rekening.rekening_kode}</div>
+                    <div className="text-sm text-gray-600">{rekening.rekening_uraian}</div>
+                  </div>
+                ))
+              }
+              {rekeningOptions.filter(rekening => 
+                rekening.rekening_kode.toLowerCase().includes(searchRekening.toLowerCase()) ||
+                rekening.rekening_uraian.toLowerCase().includes(searchRekening.toLowerCase())
+              ).length === 0 && (
+                <div className="p-4 text-center text-gray-500">
+                  Tidak ada data rekening yang sesuai
+                </div>
+              )}
+            </div>
+
+            {/* Selected Rekening Indicator */}
+            {selectedRekening && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-emerald-600 font-medium">Rekening Terpilih:</p>
+                <p className="text-sm font-semibold text-emerald-800">
+                  {selectedRekening.kodeRekeningBelanja} - {selectedRekening.namaRekeningBelanja}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowRekeningModal(false);
+                  setSelectedRekening(null);
+                  setSearchRekening('');
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleUpdateKodeRekening}
+                disabled={isUpdatingRekening || !selectedRekening}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdatingRekening ? 'Menyimpan...' : 'Simpan Perubahan'}
               </button>
             </div>
           </div>

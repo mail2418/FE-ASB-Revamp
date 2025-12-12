@@ -29,10 +29,19 @@ export async function GET(request: NextRequest) {
 
     console.log(idAsb)
 
-    let apiUrl = `${API_BASE_URL}/asb?page=1&amount=100`;
+    // Get pagination parameters from query
+    const page = searchParams.get('page') || '1';
+    const amount = searchParams.get('amount') || '100';
+    const tahunAnggaran = searchParams.get('tahunAnggaran') || '2025';
+
+    console.log(tahunAnggaran)
+
+    let apiUrl = `${API_BASE_URL}/asb?page=${page}&amount=${amount}&tahunAnggaran=${tahunAnggaran}`;
     if (idAsb) {
       apiUrl = `${API_BASE_URL}/asb/id?id=${idAsb}`;
     }
+
+    console.log(apiUrl)
 
     const response = await fetch(apiUrl, {
       method: 'GET',

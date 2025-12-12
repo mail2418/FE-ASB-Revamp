@@ -189,7 +189,20 @@ export default function UsulanBangunanGedungPage() {
     { name: 'Tolak', value: 0, color: '#ef4444' },
   ]);
 
-  // Fetch data from API
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
+
+  // Handle page change from table - just update state, useEffect will handle fetch
+  const handlePageChange = (page: number): void => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  // Fetch data from API - inside useEffect with currentPage dependency
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -201,7 +214,11 @@ export default function UsulanBangunanGedungPage() {
           return;
         }
 
-        const response = await fetch('/api/usulan/bangunan-gedung/asb', {
+        // Get stored year for API call
+        const storedYear = localStorage.getItem('selectedTahunAnggaran');
+        const yearParam = storedYear ? `&tahunAnggaran=${storedYear}` : '';
+
+        const response = await fetch(`/api/usulan/bangunan-gedung/asb?page=${currentPage}&amount=${itemsPerPage}${yearParam}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -212,15 +229,15 @@ export default function UsulanBangunanGedungPage() {
           const result = await response.json();
           let apiData: APIUsulanBangunan[] = result.data?.data || result.data || [];
           
-          console.log('API Response:', apiData);
+          // Get pagination metadata from response
+          const total = result.data?.total || result.total || apiData.length;
+          const lastPage = result.data?.totalPages || result.data?.lastPage || result.lastPage || Math.ceil(total / itemsPerPage);
           
-          // Filter by selected tahun anggaran if set
-          const storedYear = localStorage.getItem('selectedTahunAnggaran');
-          if (storedYear) {
-            const filterYear = parseInt(storedYear);
-            apiData = apiData.filter(d => d.tahunAnggaran === filterYear);
-            console.log(`Filtered by tahunAnggaran ${filterYear}:`, apiData.length, 'items');
-          }
+          console.log('API Response:', apiData, 'Total:', total, 'LastPage:', lastPage);
+          
+          // Update pagination state
+          setTotalItems(total);
+          setTotalPages(lastPage);
           
           // Transform API data to display format
           const transformedData = transformAPIData(apiData);
@@ -274,7 +291,7 @@ export default function UsulanBangunanGedungPage() {
     };
 
     fetchData();
-  }, []);
+  }, [currentPage]);
 
   // Handle filter changes
   const handleFilterChange = (filters: FilterUsulanBangunan) => {
@@ -417,6 +434,11 @@ export default function UsulanBangunanGedungPage() {
         data={filteredData}
         onFilterChange={handleFilterChange}
         onAddNew={handleAddNew}
+        onPageChange={handlePageChange}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        isLoading={loading}
       />
     </div>
   );

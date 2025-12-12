@@ -730,7 +730,6 @@ export default function TambahUsulanBangunanGedung() {
                     name="tipeBangunan"
                     value={formData.tipeBangunan}
                     onChange={handleInputChange}
-                    // disabled={true}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:opacity-70 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -767,98 +766,6 @@ export default function TambahUsulanBangunanGedung() {
                   placeholder="Masukkan lokasi"
                 />
               </div>
-
-              {/* Luas Tanah */}
-              {formData.tipeBangunan == "2" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Luas Tanah (m²)* :
-                </label>
-                <input
-                  required
-                  type="number"
-                  name="luasTanah"
-                  value={formData.luasTanah}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="Masukkan luas tanah dalam m²"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              )}
-
-              {/* Jumlah Lantai */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jumlah Lantai* :
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    name="jumlahLantai"
-                    value={formData.jumlahLantai}
-                    onChange={handleJumlahLantaiChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  >
-                    <option value="">Pilih jumlah lantai</option>
-                    {[...Array(20)].map((_, index) => (
-                      <option key={index + 1} value={index + 1}>
-                        Lantai {index + 1}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">*generating Jenis Table Lantai</p>
-              </div>
-
-              {/* Kode Rekening Belanja */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Kode Rekening Belanja* :
-                </label>
-                <div className="relative">
-                  <input
-                    required
-                    type="text"
-                    placeholder="Ketik untuk mencari kode rekening..."
-                    value={searchRekening}
-                    onChange={(e) => setSearchRekening(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  />
-                  {searchRekening && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {rekeningOptions
-                        .filter(rekening => 
-                          rekening.rekening_kode.toLowerCase().includes(searchRekening.toLowerCase()) ||
-                          rekening.rekening_uraian.toLowerCase().includes(searchRekening.toLowerCase())
-                        )
-                        .map((rekening) => (
-                          <div
-                            key={rekening.id}
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, RekeningBelanja: {
-                                id: rekening.id,
-                                kodeRekeningBelanja: rekening.rekening_kode,
-                                namaRekeningBelanja: rekening.rekening_uraian,
-                              } }));
-                              setSearchRekening(`${rekening.rekening_kode} - ${rekening.rekening_uraian}`);
-                            }}
-                            className="px-4 py-2 hover:bg-orange-50 cursor-pointer text-sm"
-                          >
-                            <div className="font-medium text-gray-900">{rekening.rekening_kode}</div>
-                            <div className="text-gray-600 text-xs">{rekening.rekening_uraian}</div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
 
               {/* Kab / Kota */}
               <div>
@@ -946,7 +853,31 @@ export default function TambahUsulanBangunanGedung() {
                   </div>
                 </div>
               </div>
-              {/*Number of Approximate Contractors */}
+
+              {/* Luas Tanah */}
+              {formData.tipeBangunan == "2" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Luas Tanah (m²)* :
+                </label>
+                <input
+                  required
+                  type="number"
+                  name="luasTanah"
+                  value={formData.luasTanah}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Masukkan luas tanah dalam m²"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              )}
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Jumlah Perkiraan Kontraktor */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Jumlah Perkiraan Kontraktor* :
@@ -963,6 +894,75 @@ export default function TambahUsulanBangunanGedung() {
                   step="1"
                 />
               </div>
+
+              {/* Kode Rekening Belanja */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  Kode Rekening Belanja* :
+                </label>
+                <div className="relative">
+                  <input
+                    required
+                    type="text"
+                    placeholder="Ketik untuk mencari kode rekening..."
+                    value={searchRekening}
+                    onChange={(e) => setSearchRekening(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                  {searchRekening && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {rekeningOptions
+                        .filter(rekening => 
+                          rekening.rekening_kode.toLowerCase().includes(searchRekening.toLowerCase()) ||
+                          rekening.rekening_uraian.toLowerCase().includes(searchRekening.toLowerCase())
+                        )
+                        .map((rekening) => (
+                          <div
+                            key={rekening.id}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, RekeningBelanja: {
+                                id: rekening.id,
+                                kodeRekeningBelanja: rekening.rekening_kode,
+                                namaRekeningBelanja: rekening.rekening_uraian,
+                              } }));
+                              setSearchRekening(`${rekening.rekening_kode} - ${rekening.rekening_uraian}`);
+                            }}
+                            className="px-4 py-2 hover:bg-orange-50 cursor-pointer text-sm"
+                          >
+                            <div className="font-medium text-gray-900">{rekening.rekening_kode}</div>
+                            <div className="text-gray-600 text-xs">{rekening.rekening_uraian}</div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Jumlah Lantai */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Jumlah Lantai* :
+                </label>
+                <div className="relative">
+                  <select
+                    required
+                    name="jumlahLantai"
+                    value={formData.jumlahLantai}
+                    onChange={handleJumlahLantaiChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="">Pilih jumlah lantai</option>
+                    {[...Array(20)].map((_, index) => (
+                      <option key={index + 1} value={index + 1}>
+                        Lantai {index + 1}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">*generating Jenis Table Lantai</p>
+              </div>
+
               {/* Floors Table */}
               <div className="bg-linear-to-r from-lime-500 to-lime-600 rounded-lg p-4">
                 <h3 className="text-white font-semibold mb-3">

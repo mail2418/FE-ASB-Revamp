@@ -12,6 +12,36 @@ interface NonStandardComponentAPI {
   idAsbTipeBangunan: number;
 }
 
+// Sorting order for Uraian Pekerjaan
+const KOMPONEN_ORDER = [
+  'Pondasi',
+  'Struktur',
+  'Lantai',
+  'Dinding',
+  'Utilitas',
+  'Plafon',
+  'Atap',
+  'Finishing'
+];
+
+// Function to sort components by the defined order
+const sortComponents = (components: NonStandardComponentAPI[]): NonStandardComponentAPI[] => {
+  return [...components].sort((a, b) => {
+    const indexA = KOMPONEN_ORDER.findIndex(k => 
+      a.komponen.toLowerCase().includes(k.toLowerCase())
+    );
+    const indexB = KOMPONEN_ORDER.findIndex(k => 
+      b.komponen.toLowerCase().includes(k.toLowerCase())
+    );
+    
+    // If not found in order, put at the end
+    const orderA = indexA === -1 ? KOMPONEN_ORDER.length : indexA;
+    const orderB = indexB === -1 ? KOMPONEN_ORDER.length : indexB;
+    
+    return orderA - orderB;
+  });
+};
+
 export default function LeftPanelForm() {
   const router = useRouter();
   const { formState, updateRowState } = useNonStandardBuildingContext();
@@ -62,11 +92,13 @@ export default function LeftPanelForm() {
           const data = await response.json();
           const components = data.data?.komponenBangunanNonstds || data.data || [];
           
-          setAllComponents(components);
+          // Sort components by defined order
+          const sortedComponents = sortComponents(components);
+          setAllComponents(sortedComponents);
           
           // If 10 or less, auto-select all
-          if (components.length <= 10) {
-            setSelectedComponents(components);
+          if (sortedComponents.length <= 10) {
+            setSelectedComponents(sortedComponents);
           }
         }
       } catch (error) {

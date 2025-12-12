@@ -12,6 +12,36 @@ interface StandardComponentAPI {
   idAsbTipeBangunan: number;
 }
 
+// Sorting order for Uraian Pekerjaan
+const KOMPONEN_ORDER = [
+  'Pondasi',
+  'Struktur',
+  'Lantai',
+  'Dinding',
+  'Utilitas',
+  'Plafon',
+  'Atap',
+  'Finishing'
+];
+
+// Function to sort components by the defined order
+const sortComponents = (components: StandardComponentAPI[]): StandardComponentAPI[] => {
+  return [...components].sort((a, b) => {
+    const indexA = KOMPONEN_ORDER.findIndex(k => 
+      a.komponen.toLowerCase().includes(k.toLowerCase())
+    );
+    const indexB = KOMPONEN_ORDER.findIndex(k => 
+      b.komponen.toLowerCase().includes(k.toLowerCase())
+    );
+    
+    // If not found in order, put at the end
+    const orderA = indexA === -1 ? KOMPONEN_ORDER.length : indexA;
+    const orderB = indexB === -1 ? KOMPONEN_ORDER.length : indexB;
+    
+    return orderA - orderB;
+  });
+};
+
 export default function LeftPanelForm() {
   const router = useRouter();
   const { formState, updateRowState } = useBuildingContext();
@@ -70,11 +100,13 @@ export default function LeftPanelForm() {
           console.log('Filtered Components:', filteredComponents);
           console.log('Filter criteria - jenis:', buildingData.formData?.jenis, 'tipeBangunan:', buildingData.formData?.tipeBangunan);
           
-          setAllComponents(filteredComponents);
+          // Sort components by defined order
+          const sortedComponents = sortComponents(filteredComponents);
+          setAllComponents(sortedComponents);
           
           // Initialize component states for 3D visualization
-          if (filteredComponents.length <= 10) {
-            setSelectedComponents(filteredComponents);
+          if (sortedComponents.length <= 10) {
+            setSelectedComponents(sortedComponents);
           }
         }
       } catch (error) {

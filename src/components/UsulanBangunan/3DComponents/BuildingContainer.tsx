@@ -44,18 +44,69 @@ const getComponentType = (komponenName: string): string => {
 };
 
 // --- SUB-COMPONENTS FOR SPECIFIC BUILDING PARTS ---
+// All components now render at 100% size, visibility determined by percentage > 0
 
-// 1. Pondasi (Foundation)
+// 1. Pondasi (Foundation) - Trapezium Prism Shape
 const PondasiPart = ({ percentage, variant }: { percentage: number, variant?: string }) => {
   if (percentage <= 0) return null;
-  const targetHeight = 1;
-  const currentHeight = (percentage / 100) * targetHeight;
   
-  const color = variant?.includes('batu_kali') ? '#5c4033' : '#808080'; 
+  const bottomWidth = 7;  // Wider at the bottom
+  const topWidth = 6.2;   // Narrower at the top
+  const depth = 7;        // Bottom depth
+  const topDepth = 6.2;   // Top depth
+  const height = 1;
+  
+  const color = variant?.includes('batu_kali') ? '#9ddec0ff' : '#de8282ff'; 
+
+  // Create trapezium prism geometry using useMemo
+  const geometry = React.useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    
+    // Define vertices for trapezium prism
+    const vertices = new Float32Array([
+      // Bottom face (wider) - y = -0.5
+      -bottomWidth/2, -0.5, -depth/2,      // 0
+      bottomWidth/2, -0.5, -depth/2,       // 1
+      bottomWidth/2, -0.5, depth/2,        // 2
+      -bottomWidth/2, -0.5, depth/2,       // 3
+      
+      // Top face (narrower) - y = 0.5
+      -topWidth/2, 0.5, -topDepth/2,       // 4
+      topWidth/2, 0.5, -topDepth/2,        // 5
+      topWidth/2, 0.5, topDepth/2,         // 6
+      -topWidth/2, 0.5, topDepth/2,        // 7
+    ]);
+
+    const indices = [
+      // Bottom face
+      0, 2, 1,
+      0, 3, 2,
+      // Top face
+      4, 5, 6,
+      4, 6, 7,
+      // Front face
+      3, 7, 6,
+      3, 6, 2,
+      // Back face
+      0, 1, 5,
+      0, 5, 4,
+      // Left face
+      0, 4, 7,
+      0, 7, 3,
+      // Right face
+      1, 2, 6,
+      1, 6, 5,
+    ];
+
+    geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    
+    return geo;
+  }, []);
 
   return (
-    <mesh position={[0, currentHeight / 2 - 0.5, 0]} castShadow receiveShadow>
-      <boxGeometry args={[6.2, currentHeight, 6.2]} />
+    <mesh geometry={geometry} position={[0, 0, 0]} castShadow receiveShadow>
       <meshStandardMaterial color={color} roughness={0.9} />
     </mesh>
   );
@@ -67,7 +118,8 @@ const StrukturPart = ({ percentage, levelIndex, variant }: { percentage: number,
   
   const floorHeight = 3; 
   const startY = 0.5 + (levelIndex * floorHeight);
-  const currentHeight = (percentage / 100) * floorHeight;
+  // Always render at full height regardless of percentage
+  const currentHeight = floorHeight;
   
   const color = variant?.includes('beton') ? '#a0a0a0' : '#2f4f4f';
 
@@ -97,14 +149,14 @@ const LantaiPart = ({ percentage, levelIndex, variant }: { percentage: number, l
   const floorHeight = 3;
   const startY = 0.5 + (levelIndex * floorHeight);
   
+  // Always render at full scale regardless of percentage
   const fullScale = 6;
-  const currentScale = (percentage / 100) * fullScale;
   
   const color = variant?.includes('keramik') ? '#f5f5dc' : '#d3d3d3';
 
   return (
     <mesh position={[0, startY + 0.1, 0]} receiveShadow>
-      <boxGeometry args={[currentScale, 0.2, currentScale]} />
+      <boxGeometry args={[fullScale, 0.2, fullScale]} />
       <meshStandardMaterial color={color} roughness={0.2} />
     </mesh>
   );
@@ -116,7 +168,8 @@ const DindingPart = ({ percentage, levelIndex, variant }: { percentage: number, 
 
   const floorHeight = 3;
   const startY = 0.5 + (levelIndex * floorHeight);
-  const currentHeight = (percentage / 100) * floorHeight;
+  // Always render at full height regardless of percentage
+  const currentHeight = floorHeight;
   
   const color = variant?.includes('bata') ? '#e8e8e8' : '#ffffff';
 
@@ -148,7 +201,8 @@ const DindingKacaPart = ({ percentage, levelIndex }: { percentage: number, level
 
   const floorHeight = 3;
   const startY = 0.5 + (levelIndex * floorHeight);
-  const currentHeight = (percentage / 100) * floorHeight * 0.6;
+  // Always render at full height regardless of percentage
+  const currentHeight = floorHeight * 0.6;
   
   return (
     <group position={[0, startY + 1 + currentHeight / 2, 0]}>
@@ -166,7 +220,8 @@ const PintuPart = ({ percentage, levelIndex }: { percentage: number, levelIndex:
 
   const floorHeight = 3;
   const startY = 0.5 + (levelIndex * floorHeight);
-  const doorHeight = (percentage / 100) * 2.5;
+  // Always render at full height regardless of percentage
+  const doorHeight = 2.5;
   
   return (
     <group position={[0, startY, 0]}>
@@ -184,11 +239,11 @@ const AtapPart = ({ percentage, levelOffset, variant }: { percentage: number, le
   if (percentage <= 0) return null;
 
   const startY = 0.5 + (levelOffset * 3);
-  const scale = percentage / 100;
+  // Always render at full scale regardless of percentage
   const color = variant?.includes('genteng') ? '#8b0000' : '#2f4f4f';
 
   return (
-    <group position={[0, startY, 0]} scale={[scale, scale, scale]}>
+    <group position={[0, startY, 0]}>
       <mesh position={[0, 1.5, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
         <coneGeometry args={[5, 3, 4]} />
         <meshStandardMaterial color={color} roughness={0.6} />
@@ -203,37 +258,82 @@ const PlafonPart = ({ percentage, levelIndex }: { percentage: number, levelIndex
 
   const floorHeight = 3;
   const startY = 0.5 + (levelIndex * floorHeight) + floorHeight - 0.3;
+  // Always render at full scale regardless of percentage
   const fullScale = 5.6;
-  const currentScale = (percentage / 100) * fullScale;
   
   return (
     <mesh position={[0, startY, 0]} receiveShadow>
-      <boxGeometry args={[currentScale, 0.15, currentScale]} />
+      <boxGeometry args={[fullScale, 0.15, fullScale]} />
       <meshStandardMaterial color="#F5F5F5" />
     </mesh>
   );
 };
 
-// 8. Utilitas (Utilities - Electrical/Plumbing)
+// 8. Utilitas (Utilities - Electrical/Plumbing/Lamp)
 const UtilitasPart = ({ percentage, levelIndex }: { percentage: number, levelIndex: number }) => {
   if (percentage <= 0) return null;
 
   const floorHeight = 3;
   const startY = 0.5 + (levelIndex * floorHeight);
-  const scale = percentage / 100;
   
   return (
-    <group position={[0, startY, 0]} scale={[scale, 1, scale]}>
-      {/* Electrical conduits (along ceiling) */}
-      <mesh position={[-2.5, 2.5, 0]}>
-        <cylinderGeometry args={[0.05, 0.05, 5.5, 8]} />
-        <meshStandardMaterial color="#FFD700" />
-      </mesh>
-      {/* Water pipes */}
-      <mesh position={[2.5, 0.5, 0]}>
-        <cylinderGeometry args={[0.08, 0.08, 5.5, 8]} />
-        <meshStandardMaterial color="#4169E1" />
-      </mesh>
+    <group position={[0, startY, 0]}>
+      {/* Ceiling Lamp 1 */}
+      <group position={[0, 2.6, 0]}>
+        {/* Lamp cord */}
+        <mesh position={[0, 0.15, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.3, 8]} />
+          <meshStandardMaterial color="#333333" />
+        </mesh>
+        {/* Lamp base */}
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.15, 0.08, 0.1, 16]} />
+          <meshStandardMaterial color="#F5F5F5" />
+        </mesh>
+        {/* Lamp bulb */}
+        <mesh position={[0, -0.1, 0]}>
+          <sphereGeometry args={[0.12, 16, 16]} />
+          <meshStandardMaterial color="#FFFACD" emissive="#FFFF00" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+      
+      {/* Ceiling Lamp 2 */}
+      <group position={[-1.5, 2.6, -1.5]}>
+        {/* Lamp cord */}
+        <mesh position={[0, 0.15, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.3, 8]} />
+          <meshStandardMaterial color="#333333" />
+        </mesh>
+        {/* Lamp base */}
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.15, 0.08, 0.1, 16]} />
+          <meshStandardMaterial color="#F5F5F5" />
+        </mesh>
+        {/* Lamp bulb */}
+        <mesh position={[0, -0.1, 0]}>
+          <sphereGeometry args={[0.12, 16, 16]} />
+          <meshStandardMaterial color="#FFFACD" emissive="#FFFF00" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+      
+      {/* Ceiling Lamp 3 */}
+      <group position={[1.5, 2.6, -1.5]}>
+        {/* Lamp cord */}
+        <mesh position={[0, 0.15, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.3, 8]} />
+          <meshStandardMaterial color="#333333" />
+        </mesh>
+        {/* Lamp base */}
+        <mesh position={[0, 0, 0]}>
+          <cylinderGeometry args={[0.15, 0.08, 0.1, 16]} />
+          <meshStandardMaterial color="#F5F5F5" />
+        </mesh>
+        {/* Lamp bulb */}
+        <mesh position={[0, -0.1, 0]}>
+          <sphereGeometry args={[0.12, 16, 16]} />
+          <meshStandardMaterial color="#FFFACD" emissive="#FFFF00" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
     </group>
   );
 };
@@ -244,7 +344,8 @@ const FinishingPart = ({ percentage, levelIndex }: { percentage: number, levelIn
 
   const floorHeight = 3;
   const startY = 0.5 + (levelIndex * floorHeight);
-  const opacity = (percentage / 100) * 0.3;
+  // Always render at full opacity for visibility
+  const opacity = 0.3;
   
   return (
     <group position={[0, startY + 1.5, 0]}>
@@ -342,7 +443,7 @@ export default function BuildingContainer({ formState }: BuildingContainerProps)
         percentage={formState['row_plafon']?.percentage || getAverageForType('plafon')} 
       />
 
-      {/* 7. Utilitas (Utilities) - Level 0 */}
+      {/* 7. Utilitas (Utilities with Lamps) - Level 0 */}
       <UtilitasPart 
         levelIndex={0} 
         percentage={formState['row_utilitas']?.percentage || getAverageForType('utilitas')} 

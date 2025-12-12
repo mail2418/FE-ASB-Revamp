@@ -9,6 +9,11 @@ interface DashboardTableProps {
   data: UsulanData[];
   onFilterChange?: (filters: any) => void;
   className?: string;
+  // External pagination props
+  currentPage?: number;
+  totalPages?: number;
+  totalItems?: number;
+  onPageChange?: (page: number) => void;
 }
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -69,16 +74,26 @@ export default function DashboardTable({
   data,
   onFilterChange,
   className,
+  currentPage: externalCurrentPage,
+  totalPages: externalTotalPages,
+  totalItems: externalTotalItems,
+  onPageChange,
 }: DashboardTableProps) {
-  const [jenisFilterOpen, setJenisFilterOpen] = React.useState(false);
-  const [statusFilterOpen, setStatusFilterOpen] = React.useState(false);
-  const [yearDropdownOpen, setYearDropdownOpen] = React.useState(false);
   const [selectedJenisFilter, setSelectedJenisFilter] = React.useState('all');
   const [selectedStatusFilter, setSelectedStatusFilter] = React.useState('all');
-  const [selectedYear, setSelectedYear] = React.useState('2025');
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [internalCurrentPage, setInternalCurrentPage] = React.useState(1);
   const [downloadingId, setDownloadingId] = React.useState<string | null>(null);
+
+  // Use external pagination if provided (server-side), otherwise use internal (client-side)
+  const isServerPagination = !!onPageChange;
+  const currentPage = isServerPagination ? (externalCurrentPage || 1) : internalCurrentPage;
+  const setCurrentPage = isServerPagination 
+    ? (page: number | ((prev: number) => number)) => {
+        const newPage = typeof page === 'function' ? page(currentPage) : page;
+        onPageChange?.(newPage);
+      }
+    : setInternalCurrentPage;
 
   // Handle Surat Permohonan download (decode base64 PDF from API)
   const handleDownloadSuratPermohonan = async (id: string): Promise<void> => {
@@ -179,16 +194,25 @@ export default function DashboardTable({
   };
   const itemsPerPage = 10;
 
-  // Calculate pagination
-  const totalPages = Math.ceil(data.length / itemsPerPage);
+  // Calculate pagination - use server values if provided, otherwise calculate client-side
+  const totalPages = isServerPagination 
+    ? (externalTotalPages || 1) 
+    : Math.ceil(data.length / itemsPerPage);
+  const totalItems = isServerPagination 
+    ? (externalTotalItems || 0) 
+    : data.length;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedData = data.slice(startIndex, endIndex);
+  
+  // For server-side pagination, use all data (already paginated); for client-side, slice
+  const paginatedData = isServerPagination ? data : data.slice(startIndex, endIndex);
 
-  // Reset page when data changes
+  // Reset page when data changes (only for internal pagination)
   React.useEffect(() => {
-    setCurrentPage(1);
-  }, [data]);
+    if (!isServerPagination) {
+      setInternalCurrentPage(1);
+    }
+  }, [data, isServerPagination]);
 
   const years = ['2025', '2024', '2023', '2022', '2021'];
 
@@ -203,77 +227,20 @@ export default function DashboardTable({
       });
     }
   };
-
-  const handleJenisFilterSelect = (filter: string) => {
-    setSelectedJenisFilter(filter);
-    if (onFilterChange) {
-      onFilterChange({ 
-        search: searchTerm, 
-        jenis: filter,
-        status: selectedStatusFilter 
-      });
-    }
-    setJenisFilterOpen(false);
-  };
-
-  const handleStatusFilterSelect = (filter: string) => {
-    setSelectedStatusFilter(filter);
-    if (onFilterChange) {
-      onFilterChange({ 
-        search: searchTerm, 
-        jenis: selectedJenisFilter,
-        status: filter 
-      });
-    }
-    setStatusFilterOpen(false);
-  };
-
   return (
     <div className={cn('bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden', className)}>
       {/* Header with Project Info and Search */}
       <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            {/* Year Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
-                className="bg-white/90 text-teal-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white transition-colors flex items-center gap-2"
-              >
-                Tahun: {selectedYear}
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              {yearDropdownOpen && (
-                <div className="absolute top-full mt-2 left-0 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  {years.map((year) => (
-                    <button
-                      key={year}
-                      onClick={() => {
-                        setSelectedYear(year);
-                        setYearDropdownOpen(false);
-                      }}
-                      className={cn(
-                        'w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors',
-                        selectedYear === year && 'bg-teal-50 text-teal-700 font-medium'
-                      )}
-                    >
-                      {year}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          
           {/* Search Bar */}
           <div className="relative max-w-md flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
             <input
               type="text"
               value={searchTerm}
               onChange={handleSearch}
-              placeholder="Cari usulan..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+              placeholder="Cari Nama Usulan...."
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
             />
           </div>
         </div>
@@ -287,33 +254,6 @@ export default function DashboardTable({
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <span>Jenis</span>
-                  <div className="relative">
-                    <button
-                      onClick={() => setJenisFilterOpen(!jenisFilterOpen)}
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors normal-case font-normal text-gray-700"
-                    >
-                      <Filter className="h-3 w-3" />
-                      {selectedJenisFilter === 'all' ? 'Semua' : selectedJenisFilter}
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
-                    
-                    {jenisFilterOpen && (
-                      <div className="absolute top-full mt-1 left-0 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                        {['all', 'Umum', 'Bangunan', 'Jalan'].map((filter) => (
-                          <button
-                            key={filter}
-                            onClick={() => handleJenisFilterSelect(filter)}
-                            className={cn(
-                              'w-full text-left px-3 py-2 text-xs hover:bg-gray-100 transition-colors text-gray-700',
-                              selectedJenisFilter === filter && 'bg-gray-50 font-medium'
-                            )}
-                          >
-                            {filter === 'all' ? 'Semua' : filter}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </th>
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -328,33 +268,6 @@ export default function DashboardTable({
               <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center gap-2">
                   <span>Status</span>
-                  <div className="relative">
-                    <button
-                      onClick={() => setStatusFilterOpen(!statusFilterOpen)}
-                      className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors normal-case font-normal text-gray-700"
-                    >
-                      <Filter className="h-3 w-3" />
-                      {selectedStatusFilter === 'all' ? 'Semua' : selectedStatusFilter}
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
-                    
-                    {statusFilterOpen && (
-                      <div className="absolute top-full mt-1 left-0 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                        {['all', 'Sukses', 'Sedang Diproses', 'Ditolak', 'Menunggu'].map((filter) => (
-                          <button
-                            key={filter}
-                            onClick={() => handleStatusFilterSelect(filter)}
-                            className={cn(
-                              'w-full text-left px-3 py-2 text-xs hover:bg-gray-100 transition-colors text-gray-700',
-                              selectedStatusFilter === filter && 'bg-gray-50 font-medium'
-                            )}
-                          >
-                            {filter === 'all' ? 'Semua' : filter}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </th>
             </tr>
@@ -420,8 +333,8 @@ export default function DashboardTable({
       <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-700">
-            Menampilkan <span className="font-medium">{data.length > 0 ? startIndex + 1 : 0}</span> - <span className="font-medium">{Math.min(endIndex, data.length)}</span> dari{' '}
-            <span className="font-medium">{data.length}</span> hasil
+            Menampilkan <span className="font-medium">{totalItems > 0 ? startIndex + 1 : 0}</span> - <span className="font-medium">{Math.min(endIndex, totalItems)}</span> dari{' '}
+            <span className="font-medium">{totalItems}</span> hasil
           </p>
           
           {/* Pagination Controls */}
