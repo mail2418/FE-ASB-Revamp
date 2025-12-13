@@ -3,7 +3,6 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Search, 
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -341,9 +340,6 @@ export default function UsulanBangunanTable({
                 Tanggal Dibuat
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Tanggal Tenggat
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                 Surat Permohonan
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -383,9 +379,6 @@ export default function UsulanBangunanTable({
                 <td className="px-6 py-4 text-sm text-gray-500">
                   {item.createdDate || '-'}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {item.tenggatDate || '-'}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     onClick={() => handleDownloadSuratPermohonan(item.id)}
@@ -410,6 +403,7 @@ export default function UsulanBangunanTable({
                     verificationStatus={item.verificationStatus}
                     userRole={userRole}
                     usulanId={item.id}
+                    idAsbStatus={item.idAsbStatus}
                     onStatusChange={(stage, newStatus) => handleVerificationChange(item.id, stage, newStatus)}
                   />
                 </td>

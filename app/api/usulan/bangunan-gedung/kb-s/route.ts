@@ -26,20 +26,22 @@ export async function GET(request: NextRequest) {
     // Get idAsb from query parameters
     const { searchParams } = new URL(request.url);
     const idAsb = searchParams.get('idAsb');
-
-    let response;
-    if(idAsb){
-      response = await fetch(`${API_BASE_URL}/asb-komponen-bangunans?idAsb=${idAsb}`, {
+    const idAsbJenis = searchParams.get('id_asb_jenis');
+    const idAsbTipeBangunan = searchParams.get('id_asb_tipe_bangunan');
+    const page = searchParams.get('page');
+    const amount = searchParams.get('amount');
+    
+    const routeidAsbJenis = idAsbJenis ? `&id_asb_jenis=${idAsbJenis}` : '';
+    const routeidAsbTipeBangunan = idAsbTipeBangunan ? `&id_asb_tipe_bangunan=${idAsbTipeBangunan}` : '';
+    const routeidAsb = idAsb ? `&idAsb=${idAsb}` : '';
+    const routePage = page ? `&page=${page}` : '';
+    const routeAmount = amount ? `&amount=${amount}` : '';
+    
+    const route = `${routeidAsb}${routeidAsbJenis}${routeidAsbTipeBangunan}${routePage}${routeAmount}`;
+    const response = await fetch(`${API_BASE_URL}/asb-komponen-bangunans?${route}`, {
         method: 'GET',
         headers: request.headers,
       });
-    }else{
-      response = await fetch(`${API_BASE_URL}/asb-komponen-bangunans?page=1&amount=100`, {
-        method: 'GET',
-        headers: request.headers,
-      });
-    }
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
@@ -76,13 +78,11 @@ export async function PUT(request: NextRequest){
     const body = await request.json();
     const {
       id_asb,
-      id_asb_bipek_standard,
       komponen_std,
       bobot_std
     } = body;
     
     console.log("id_asb", id_asb);
-    console.log("id_asb_bipek_standard", id_asb_bipek_standard);
     console.log("komponen_std", komponen_std);
     console.log("bobot_std", bobot_std);
     
@@ -91,7 +91,6 @@ export async function PUT(request: NextRequest){
       headers: request.headers,
       body: JSON.stringify({
         id_asb,
-        id_asb_bipek_standard,
         komponen_std,
         bobot_std
       })

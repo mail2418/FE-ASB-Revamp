@@ -26,10 +26,11 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const {
       id_asb,
-      id_verif_rekening,
+      id_rekening_review,
     } = body;
+    console.log("PUT verif-rekening body", body);
 
-    const response = await fetch(`${API_BASE_URL}/asb/verif-rekening`, {
+    const response = await fetch(`${API_BASE_URL}/asb/verify-rekening`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -37,10 +38,10 @@ export async function PUT(request: NextRequest) {
       },
       body: JSON.stringify({
         id_asb,
-        id_verif_rekening,
+        id_rekening_review,
       }),
     });
-
+    console.log("PUT verif-rekening response", response);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(

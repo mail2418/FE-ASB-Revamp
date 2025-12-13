@@ -13,30 +13,34 @@ interface StandardComponentAPI {
 }
 
 // Sorting order for Uraian Pekerjaan
-const KOMPONEN_ORDER = [
-  'Pondasi',
-  'Struktur',
-  'Lantai',
-  'Dinding',
-  'Utilitas',
-  'Plafon',
-  'Atap',
-  'Finishing'
+// Each entry can have multiple regex patterns to match (first pattern that matches determines the order)
+const KOMPONEN_ORDER: { category: string; patterns: RegExp[] }[] = [
+  { category: 'Pondasi', patterns: [/^pondasi/i] },
+  { category: 'Struktur', patterns: [/^struktur/i] },
+  { category: 'Lantai', patterns: [/^lantai/i] },
+  { category: 'Dinding', patterns: [/^dinding/i] },
+  { category: 'Plafon', patterns: [/^plafon/i, /^langit\s*-?\s*langit/i] }, // "Langit - Langit" maps to Plafon
+  { category: 'Atap', patterns: [/^atap/i] },
+  { category: 'Utilitas', patterns: [/^utilitas/i] },
+  { category: 'Finishing', patterns: [/^finishing/i] },
 ];
+
+// Function to get the order index for a component name
+const getOrderIndex = (komponen: string): number => {
+  for (let i = 0; i < KOMPONEN_ORDER.length; i++) {
+    const { patterns } = KOMPONEN_ORDER[i];
+    if (patterns.some(pattern => pattern.test(komponen))) {
+      return i;
+    }
+  }
+  return KOMPONEN_ORDER.length; // Not found, put at the end
+};
 
 // Function to sort components by the defined order
 const sortComponents = (components: StandardComponentAPI[]): StandardComponentAPI[] => {
   return [...components].sort((a, b) => {
-    const indexA = KOMPONEN_ORDER.findIndex(k => 
-      a.komponen.toLowerCase().includes(k.toLowerCase())
-    );
-    const indexB = KOMPONEN_ORDER.findIndex(k => 
-      b.komponen.toLowerCase().includes(k.toLowerCase())
-    );
-    
-    // If not found in order, put at the end
-    const orderA = indexA === -1 ? KOMPONEN_ORDER.length : indexA;
-    const orderB = indexB === -1 ? KOMPONEN_ORDER.length : indexB;
+    const orderA = getOrderIndex(a.komponen);
+    const orderB = getOrderIndex(b.komponen);
     
     return orderA - orderB;
   });
@@ -80,7 +84,7 @@ export default function LeftPanelForm() {
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
-        const response = await fetch('/api/usulan/bangunan-gedung/kb-s', {
+        const response = await fetch(`/api/usulan/bangunan-gedung/kb-s?id_asb_jenis=${buildingData.formData?.jenis}&id_asb_tipe_bangunan=${buildingData.formData?.tipeBangunan}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -91,17 +95,11 @@ export default function LeftPanelForm() {
           const data = await response.json();
           const components = data.data?.komponenBangunans || data.data || [];
           
-          // Filter components by jenis AND tipeBangunan from saved form data
-          const filteredComponents = components.filter((c: any) =>
-            c.idAsbJenis.toString() === buildingData.formData?.jenis &&
-            c.idAsbTipeBangunan.toString() === buildingData.formData?.tipeBangunan
-          );
-          
-          console.log('Filtered Components:', filteredComponents);
+          console.log('Filtered Components:', components);
           console.log('Filter criteria - jenis:', buildingData.formData?.jenis, 'tipeBangunan:', buildingData.formData?.tipeBangunan);
           
           // Sort components by defined order
-          const sortedComponents = sortComponents(filteredComponents);
+          const sortedComponents = sortComponents(components);
           setAllComponents(sortedComponents);
           
           // Initialize component states for 3D visualization
@@ -229,7 +227,6 @@ export default function LeftPanelForm() {
         // Prepare request body
         const requestBody = {
           id_asb: idAsb,
-          id_asb_bipek_standard: null,
           komponen_std: komponen_std,
           bobot_std: bobot_std
         };
@@ -291,7 +288,7 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.deskripsiBangunan || '-'}
+                {`${buildingData.formData?.jenis == 1 ? 'Pembangunan' : 'Pemeliharaan'} ${buildingData.formData?.tipeBangunan == 1?'Gedung Negara':'Rumah Negara'} - ${buildingData.formData?.deskripsiBangunan}` || '-'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">

@@ -5,18 +5,15 @@ import { ChevronDown } from 'lucide-react';
 import type { UsulanData } from '@/types';
 import { cn } from '@/lib/utils';
 import WelcomeToast from '@/components/WelcomeToast';
-
 // Dynamic imports for charts to avoid SSR issues
 const LineChart = dynamic(() => import('@/components/Charts/LineChart'), {
   ssr: false,
   loading: () => <div className="h-[300px] bg-gray-100 animate-pulse rounded-lg" />,
 });
-
 const DonutChart = dynamic(() => import('@/components/Charts/DonutChart'), {
   ssr: false,
   loading: () => <div className="h-[250px] bg-gray-100 animate-pulse rounded-lg" />,
 });
-
 const DashboardTable = dynamic(() => import('@/components/Dashboard/DashboardTable'), {
   ssr: false,
   loading: () => <div className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />,
@@ -75,22 +72,15 @@ interface APIUsulanBangunan {
   updatedAt: string;
 }
 
-// Status ID to name mapping based on idAsbStatus
-const STATUS_ID_MAP: { [key: number]: string } = {
-  1: 'General Documents',
-  2: 'Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
-  3: 'Kebutuhan Biaya Pekerjaan Standar (BPS)',
-  4: 'Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
-  5: 'Setup Rekening',
-  6: 'Proses Verifikasi',
-  7: 'Tidak Memenuhi Syarat',
-  8: 'Memenuhi Syarat',
-  9: 'Verifikasi Luas Total Bangunan (LTB), Koefesien Luas Bangunan (KLB) dan Koefesien Fungsi Bangunan (KFB)',
-  10: 'Verifikasi Kebutuhan Biaya Pekerjaan Standart (BPS)',
-  11: 'Verifikasi Kebutuhan Biaya Pekerjaan Non Standar (BPNS)',
-  12: 'Verifikasi Rekening Belanja',
-  13: 'Verifikasi Biaya Pekerjaan',
-};
+interface ASBAnalytic {
+  totalSuksesBangunan: number,
+  totalTolakBangunan: number,
+  totalProsesBangunan: number,
+  totalUsulan: number,
+  persentaseSukses: number,
+  persentaseTolak: number,
+  persentaseProses: number
+}
 
 // Map API status to display status based on idAsbStatus and verifikator IDs
 const mapStatus = (
@@ -113,18 +103,18 @@ const mapStatus = (
   if (idAsbStatus === 7) return 'Ditolak';
   
   // Sedang diproses BPKAD when idAsbStatus is 13
-  if (idAsbStatus === 13) return 'Sedang diproses BPKAD';
+  if (idAsbStatus === 12) return 'Sedang diproses BPKAD';
   
   // Sedang diproses BAPPEDA when idAsbStatus is 12
-  if (idAsbStatus === 12) return 'Sedang diproses BAPPEDA';
+  if (idAsbStatus === 13) return 'Sedang diproses BAPPEDA';
   
   // Sedang diproses Adbang when idAsbStatus is > 5 and < 12, excluding 7 and 8
   if (idAsbStatus !== 7 && idAsbStatus !== 8) {
-    return 'Sedang diproses Adbang';
+    return 'Sedang diproses ADBANG';
   }
   
   // Default: Sedang Diproses for all other statuses
-  return 'Sedang diproses Adbang';
+  return 'Sedang diproses ADBANG';
 };
 
 // Transform API data to table format
@@ -156,6 +146,7 @@ export default function DashboardPage() {
   const [tableData, setTableData] = useState<UsulanData[]>([]);
   const [filteredData, setFilteredData] = useState<UsulanData[]>([]);
   const [rawApiData, setRawApiData] = useState<APIUsulanBangunan[]>([]);
+  const [asbAnalytic, setAsbAnalytic] = useState<ASBAnalytic | null>(null);
   
   // Get current month/year for initial values
   const currentDate = new Date();
@@ -272,17 +263,13 @@ export default function DashboardPage() {
           setLoading(false);
           return;
         }
-
+        // Fetch Data Usulan Bangunan
         const response = await fetch(`/api/usulan/bangunan-gedung/asb?page=${currentPage}&amount=${itemsPerPage}&tahunAnggaran=${selectedYear}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         });
-
-        // Feth Data Usulan Jalan
-        // Fetch Data Usulan Saluran
-
         if (response.ok) {
           const result = await response.json();
           console.log(result)
@@ -318,25 +305,41 @@ export default function DashboardPage() {
             sedangDiproses: prosesCount,
             ditolak: tolakCount,
           });
-          
+          // Store raw API data for line chart filtering
+          setRawApiData(apiData);
+        } else {
+          console.error('Failed to fetch data:', response.statusText);
+        }
+
+        const responseAnalyticBangunanGedung = await fetch(`/api/usulan/bangunan-gedung/asb/get-asb-analytic?tahun=${selectedYear}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (responseAnalyticBangunanGedung.ok) {
+          const result = await responseAnalyticBangunanGedung.json();
           // Calculate donut chart data for Bangunan Gedung
-          const totalBangunan = apiData.length;
+          const totalBangunan = result?.data?.totalUsulan || 0;
           if (totalBangunan > 0) {
-            const suksesPercentage = Number(((suksesCount / totalBangunan) * 100).toFixed(2));
-            const prosesPercentage = Number(((prosesCount / totalBangunan) * 100).toFixed(2));
-            const tolakPercentage = Number(((tolakCount / totalBangunan) * 100).toFixed(2));
+            const suksesPercentage = result?.data?.totalSuksesBangunan;
+            const prosesPercentage = result?.data?.totalProsesBangunan;
+            const tolakPercentage = result?.data?.totalTolakBangunan;
+            console.log("donut chart data for Bangunan Gedung",suksesPercentage,prosesPercentage,tolakPercentage)
             setDonutChartDataBangunanGedung([
               { name: 'Sukses', value: suksesPercentage || 1, color: '#22c55e' },
               { name: 'Sedang diproses', value: prosesPercentage || 1, color: '#f59e0b' },
               { name: 'Ditolak', value: tolakPercentage || 1, color: '#ef4444' },
             ]);
           }
-          
-          // Store raw API data for line chart filtering
-          setRawApiData(apiData);
+          console.log(result)
+          setAsbAnalytic(result.data);
         } else {
-          console.error('Failed to fetch data:', response.statusText);
+          console.error('Failed to fetch data:', responseAnalyticBangunanGedung.statusText);
         }
+        // Feth Data Usulan Jalan
+        // Fetch Data Usulan Saluran
+
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -405,42 +408,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Generate page numbers array for pagination
-  const getPageNumbers = (): (number | string)[] => {
-    const pages: (number | string)[] = [];
-    const maxVisiblePages = 5;
-    
-    if (totalPage <= maxVisiblePages) {
-      for (let i = 1; i <= totalPage; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
-        }
-        pages.push('...');
-        pages.push(totalPage);
-      } else if (currentPage >= totalPage - 2) {
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPage - 3; i <= totalPage; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(1);
-        pages.push('...');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i);
-        }
-        pages.push('...');
-        pages.push(totalPage);
-      }
-    }
-    
-    return pages;
-  };
-
   return (
     <div className="space-y-6">
       {/* Loading State */}
@@ -457,7 +424,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Total Usulan</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-2xl font-bold text-gray-900">{asbAnalytic?.totalUsulan}</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -471,7 +438,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Sukses</p>
-              <p className="text-2xl font-bold text-green-600">{stats.sukses}</p>
+              <p className="text-2xl font-bold text-green-600">{asbAnalytic?.totalSuksesBangunan}</p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
               <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -485,7 +452,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Sedang Diproses</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.sedangDiproses}</p>
+              <p className="text-2xl font-bold text-yellow-600">{asbAnalytic?.totalProsesBangunan}</p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-lg">
               <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -499,7 +466,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Ditolak</p>
-              <p className="text-2xl font-bold text-red-600">{stats.ditolak}</p>
+              <p className="text-2xl font-bold text-red-600">{asbAnalytic?.totalTolakBangunan}</p>
             </div>
             <div className="p-3 bg-red-100 rounded-lg">
               <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

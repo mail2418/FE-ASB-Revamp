@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
 
     // Build the API URL with optional view parameter
     const apiUrl = view === 'true' 
-      ? `${process.env.NEXT_PUBLIC_API_URL}/documents/surat-rekomendasi/${idAsb}?view=true`
-      : `${process.env.NEXT_PUBLIC_API_URL}/documents/surat-rekomendasi/${idAsb}`;
+      ? `${process.env.NEXT_PUBLIC_API_URL}/asb-document/download-kertas-kerja?idAsb=${idAsb}&view=true`
+      : `${process.env.NEXT_PUBLIC_API_URL}/asb-document/download-kertas-kerja?idAsb=${idAsb}`;
 
     // Fetch from external API
     const response = await fetch(apiUrl, {
@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
         'Authorization': `Bearer ${token}`,
       },
     });
-
+    console.log("fetching surat rekomendasi, response:", response);
+    
     if (!response.ok) {
       // Try to parse error as JSON
       const contentType = response.headers.get('content-type');

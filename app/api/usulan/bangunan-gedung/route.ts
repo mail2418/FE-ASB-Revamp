@@ -25,7 +25,6 @@ export async function PUT(request: NextRequest){
     const body = await request.json();
     const {
       id_asb,
-      id_asb_bipek_nonstandard,
       komponen_nonstd,
       bobot_nonstd
     } = body;
@@ -35,7 +34,6 @@ export async function PUT(request: NextRequest){
       headers: request.headers,
       body: JSON.stringify({
         id_asb,
-        id_asb_bipek_nonstandard,
         komponen_nonstd,
         bobot_nonstd
       }),

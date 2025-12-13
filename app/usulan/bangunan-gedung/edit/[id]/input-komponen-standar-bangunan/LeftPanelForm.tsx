@@ -31,7 +31,43 @@ interface ASBData {
     klasifikasi: string;
   } | null;
   asbBipekStandards: ExistingComponent[];
+  idAsbJenis: number;
+  idAsbTipeBangunan: number;
 }
+
+// Sorting order for components
+const KOMPONEN_ORDER: { category: string; patterns: RegExp[] }[] = [
+  { category: 'Pondasi', patterns: [/^pondasi/i] },
+  { category: 'Struktur', patterns: [/^struktur/i] },
+  { category: 'Lantai', patterns: [/^lantai/i] },
+  { category: 'Dinding', patterns: [/^dinding/i] },
+  { category: 'Plafon', patterns: [/^plafon/i, /^langit\s*-?\s*langit/i] }, // "Langit - Langit" maps to Plafon
+  { category: 'Atap', patterns: [/^atap/i] },
+  { category: 'Utilitas', patterns: [/^utilitas/i] },
+  { category: 'Finishing', patterns: [/^finishing/i] },
+];
+
+// Function to get the order index for a component name
+const getOrderIndex = (komponen: string): number => {
+  for (let i = 0; i < KOMPONEN_ORDER.length; i++) {
+    const { patterns } = KOMPONEN_ORDER[i];
+    if (patterns.some(pattern => pattern.test(komponen))) {
+      return i;
+    }
+  }
+  return KOMPONEN_ORDER.length; // Not found, put at the end
+};
+
+// Function to sort components by the defined order
+const sortComponents = (components: StandardComponentAPI[]): StandardComponentAPI[] => {
+  return [...components].sort((a, b) => {
+    const orderA = getOrderIndex(a.komponen);
+    const orderB = getOrderIndex(b.komponen);
+    
+    return orderA - orderB;
+  });
+};
+
 
 export default function LeftPanelForm() {
   const router = useRouter();
@@ -91,16 +127,20 @@ export default function LeftPanelForm() {
     fetchASBById();
   }, [asbId]);
 
-  // Fetch all standard components from API
+  // Fetch all standard components from API - only after asbData is loaded
   useEffect(() => {
     const fetchData = async () => {
+      // Wait until asbData is loaded with required fields
+      if (!asbData?.idAsbJenis || !asbData?.idAsbTipeBangunan) {
+        return;
+      }
       setLoading(true);
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
 
         // Fetch all standard components
-        const componentsResponse = await fetch('/api/usulan/bangunan-gedung/kb-s', {
+        const componentsResponse = await fetch(`/api/usulan/bangunan-gedung/kb-s?id_asb_jenis=${asbData.idAsbJenis}&id_asb_tipe_bangunan=${asbData.idAsbTipeBangunan}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -110,11 +150,13 @@ export default function LeftPanelForm() {
         if (componentsResponse.ok) {
           const data = await componentsResponse.json();
           const components = data.data?.komponenBangunans || data.data || [];
-          setAllComponents(components);
+          // Sort components by the defined order
+          const sortedComponents = sortComponents(components);
+          setAllComponents(sortedComponents);
           
           // If 10 or less, auto-select all
-          if (components.length <= 10) {
-            setSelectedComponents(components);
+          if (sortedComponents.length <= 10) {
+            setSelectedComponents(sortedComponents);
           }
         }
       } catch (error) {
@@ -125,7 +167,7 @@ export default function LeftPanelForm() {
     };
     
     fetchData();
-  }, [asbId]);
+  }, [asbData]);
 
   const handlePercentageChange = (componentId: number, componentKomponen: string, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
@@ -150,7 +192,7 @@ export default function LeftPanelForm() {
   const filteredComponents = allComponents.filter(c => 
     c.komponen.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
+  
   const needsDropdown = allComponents.length > 10;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -180,7 +222,6 @@ export default function LeftPanelForm() {
       // Prepare request body
       const requestBody = {
         id_asb: parseInt(asbId),
-        id_asb_bipek_standard: null,
         komponen_std: komponen_std,
         bobot_std: bobot_std
       };
@@ -254,7 +295,7 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {asbData.namaAsb || '-'}
+                {`${asbData.namaAsb}` || '-'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">

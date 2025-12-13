@@ -31,6 +31,8 @@ interface ASBData {
     klasifikasi: string;
   } | null;
   asbBipekNonStds: ExistingNonStdComponent[];
+  idAsbJenis: number;
+  idAsbTipeBangunan: number;
 }
 
 export default function LeftPanelForm() {
@@ -100,7 +102,7 @@ export default function LeftPanelForm() {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
         
-        const response = await fetch('/api/usulan/bangunan-gedung/kb-ns', {
+        const response = await fetch(`/api/usulan/bangunan-gedung/kb-ns?id_asb_jenis=${asbData?.idAsbJenis}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -128,7 +130,7 @@ export default function LeftPanelForm() {
     };
     
     fetchNonStandardComponents();
-  }, [asbId]);
+  }, [asbData]);
 
   const handlePercentageChange = (componentId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     let val = parseInt(e.target.value) || 0;
@@ -180,30 +182,9 @@ export default function LeftPanelForm() {
       // Prepare request body
       const requestBody = {
         id_asb: parseInt(asbId),
-        id_asb_bipek_nonstd: null,
         komponen_nonstd: komponen_nonstd,
         bobot_nonstd: bobot_nonstd
       };
-
-      console.log('Updating non-standard components:', requestBody);
-
-      // Send PUT request to API
-      const response = await fetch('/api/superadmin/kb-ns', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Gagal menyimpan data komponen non-standar');
-      }
-
-      const result = await response.json();
-      console.log('Non-standard components updated:', result);
 
       // Send PUT request to Update Status of ASB 
       const responseUpdateStatus = await fetch('/api/usulan/bangunan-gedung/asb/store-bpns', {
@@ -227,9 +208,7 @@ export default function LeftPanelForm() {
       };
       localStorage.setItem('usulan_bangunan_nonstandar_components', JSON.stringify(saveData));
 
-      // Navigate back to usulan list
-      alert('Data berhasil disimpan!');
-      router.push(`/usulan/bangunan-gedung/edit/${parseInt(asbId)}/summary`);
+      router.push(`/usulan/bangunan-gedung/edit/${asbId}/summary`);
     } catch (error) {
       console.error('Error updating non-standard components:', error);
       alert(`Gagal menyimpan data: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`);

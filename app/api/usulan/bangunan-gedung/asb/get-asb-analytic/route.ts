@@ -11,8 +11,7 @@ function getAuthToken(request: NextRequest): string | null {
   return null;
 }
 
-// PUT - Update non-standard components (store-bpns)
-export async function PUT(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const token = getAuthToken(request);
 
@@ -22,41 +21,31 @@ export async function PUT(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    const body = await request.json();
-    const {
-      id_asb,
-  komponen_nonstd,
-      bobot_nonstd
-    } = body;
-    const response = await fetch(`${API_BASE_URL}/asb/store-bpns`, {
-      method: 'PUT',
+    const tahun = request.nextUrl.searchParams.get('tahun');
+    const routeTahun = tahun ? `tahun=${tahun}` : '';
+    const response = await fetch(`${API_BASE_URL}/asb/get-asb-analytic?${routeTahun}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        id_asb,
-        komponen_nonstd,
-        bobot_nonstd
-      }),
     });
+    console.log("fetching asb by id",response)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { success: false, error: errorData.message || 'Failed to update non-standard components' },
+        { success: false, error: errorData.message || 'Failed to fetch ASB data' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
 
-    console.log("PUT store-bpns success");
+    console.log("fetching asb by id success",data)
     return NextResponse.json(data, { status: 200 });
 
   } catch (error) {
-    console.error('Error updating store-bpns:', error);
+    console.error('Error fetching ASB by ID:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

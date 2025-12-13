@@ -45,6 +45,7 @@ interface FloorData {
   luas: string;
   fungsiLantai: string;
   namaFungsiLantai: string;
+  namaJenisLantai: string;
   fungsiRuangId?: string;
 }
 
@@ -314,13 +315,10 @@ export default function SummaryPage() {
               </div>
               <div className="space-y-3">
                 <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-medium">
-                  {klasifikasiSHST?.klasifikasi ||'[Belum terklasifikasi]'}
+                  {basicData?.tipeBangunan == "1" ? "Gedung negara" : "Rumah Negara"} <span><b>{klasifikasiSHST?.klasifikasi ||'[Belum terklasifikasi]'}</b></span>
                 </div>
                 <div className="text-sm text-gray-600 text-center">
                   Jenis Bangunan: <span className="font-medium">{basicData?.jenis == "1" ? "Pembangunan" : "Pemeliharaan"}</span>
-                </div>
-                <div className="text-sm text-gray-600 text-center">
-                  Tipe Usulan: <span className="font-medium">{basicData?.tipeBangunan == "1" ? "Gedung negara" : "Rumah Negara"}</span>
                 </div>
               </div>
             </div>
@@ -454,7 +452,7 @@ export default function SummaryPage() {
                   <tbody className="divide-y divide-gray-200">
                     {floors.length > 0 ? floors.map((floor, index) => (
                       <tr key={floor.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{floor.jenisLantai}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{floor.namaJenisLantai}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{floor.luas} m²</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{floor.namaFungsiLantai}</td>
                       </tr>

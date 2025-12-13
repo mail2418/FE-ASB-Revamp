@@ -31,9 +31,16 @@ interface AsbBipekStandard {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  asbKomponenBangunanStd?: {
+    id: number;
+    komponen: string;
+    files?: string;
+    idAsbJenis?: number;
+    idAsbTipeBangunan?: number;
+  };
 }
 
-interface AsbBipekNonStd {
+interface AsbBipekNonStdReview {
   id: number;
   idAsb: number;
   files: string;
@@ -45,6 +52,13 @@ interface AsbBipekNonStd {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  asbKomponenBangunanNonstd?: {
+    id: number;
+    komponen: string;
+    files?: string;
+    idAsbJenis?: number;
+    idAsbTipeBangunan?: number;
+  };
 }
 
 interface APIUsulanBangunan {
@@ -120,8 +134,8 @@ interface APIUsulanBangunan {
   asbDetailReviews: any[];
   asbBipekStandards: AsbBipekStandard[];
   asbBipekStandardReviews: any[];
-  asbBipekNonStds: AsbBipekNonStd[];
-  asbBipekNonStdReviews: any[];
+  // asbBipekNonStds: AsbBipekNonStd[];
+  asbBipekNonStdReviews: AsbBipekNonStdReview[];
   rekening: any;
   rekeningReview: any;
   createdAt: string;
@@ -428,13 +442,13 @@ export default function VerifyUsulanPage() {
       // Prepare request body for backend API
       const requestBodyRekening = {
         id_asb: apiData.id,
-        id_rekening: selectedRekening.id
+        id_rekening_review: selectedRekening.id
       };
 
       console.log(`requestBodyRekening: ${JSON.stringify(requestBodyRekening)}`);
 
       // Send UPDATE Store Rekening
-      const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/store-rekening', {
+      const responseRekening = await fetch('/api/usulan/bangunan-gedung/asb/verif-rekening', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -622,7 +636,7 @@ export default function VerifyUsulanPage() {
               asbStatus: allData.asbStatus,
               asbDetails: allData.asbDetails,
               asbBipekStandards: allData.asbBipekStandards,
-              asbBipekNonStds: allData.asbBipekNonStds,
+              asbBipekNonStds: allData.asbBipekNonStdReviews,
             };
             localStorage.setItem('verify_asb_data', JSON.stringify(dataToStore));
           }
@@ -765,7 +779,7 @@ export default function VerifyUsulanPage() {
             </div>
             <div className="space-y-3">
               <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-medium">
-                {apiData?.asbTipeBangunan?.tipe_bangunan || '-'} <span><b>{apiData?.asbKlasifikasi?.klasifikasi || '[Belum terklasifikasi]'}</b></span>
+                {apiData?.asbTipeBangunan?.tipe_bangunan || '-'} <span> <b>{apiData?.asbKlasifikasi?.klasifikasi || '[Belum terklasifikasi]'}</b></span>
               </div>
               <div className="text-sm text-gray-600 text-center">
                 Jenis Bangunan: <span className="font-medium">{apiData?.asbJenis?.jenis || '-'}</span>
@@ -951,51 +965,31 @@ export default function VerifyUsulanPage() {
                 {apiData?.asbBipekStandards && apiData.asbBipekStandards.filter(c => c.bobotInput > 0).length > 0 ? 
                   apiData.asbBipekStandards.filter(c => c.bobotInput > 0).map((comp) => (
                     <div key={comp.id} className="flex justify-between items-center text-sm py-1 border-b border-gray-100 last:border-0">
-                      <span className="text-gray-600">Komponen #{comp.idAsbKomponenBangunanStd}</span>
+                      <span className="text-gray-600">{comp.asbKomponenBangunanStd?.komponen || `Komponen #${comp.idAsbKomponenBangunanStd}`}</span>
                       <span className="font-semibold text-teal-600">{comp.bobotInput}%</span>
                     </div>
                   )) : (
                     <p className="text-sm text-gray-500 text-center py-4">Belum ada komponen standar</p>
                   )}
               </div>
-              {apiData?.asbBipekStandards && apiData.asbBipekStandards.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 font-medium">Total Bobot</span>
-                    <span className="font-semibold text-teal-600">
-                      {apiData.asbBipekStandards.reduce((sum, c) => sum + (c.bobotInput || 0), 0)}%
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Non-Standard Components */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
               <h3 className="text-md font-semibold text-gray-900 mb-3">
-                Komponen Non-Standar ({apiData?.asbBipekNonStds?.filter(c => c.bobotInput > 0).length || 0})
+                Komponen Non-Standar ({apiData?.asbBipekNonStdReviews?.filter(c => c.bobotInput > 0).length || 0})
               </h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {apiData?.asbBipekNonStds && apiData.asbBipekNonStds.filter(c => c.bobotInput > 0).length > 0 ? 
-                  apiData.asbBipekNonStds.filter(c => c.bobotInput > 0).map((comp) => (
+                {apiData?.asbBipekNonStdReviews && apiData.asbBipekNonStdReviews.filter(c => c.bobotInput > 0).length > 0 ? 
+                  apiData.asbBipekNonStdReviews.filter(c => c.bobotInput > 0).map((comp) => (
                     <div key={comp.id} className="flex justify-between items-center text-sm py-1 border-b border-gray-100 last:border-0">
-                      <span className="text-gray-600">Komponen #{comp.idAsbKomponenBangunanNonStd}</span>
+                      <span className="text-gray-600">{comp.asbKomponenBangunanNonstd?.komponen || `Komponen #${comp.idAsbKomponenBangunanNonStd}`}</span>
                       <span className="font-semibold text-orange-600">{comp.bobotInput}%</span>
                     </div>
                   )) : (
                     <p className="text-sm text-gray-500 text-center py-4">Tidak ada komponen non-standar</p>
                   )}
               </div>
-              {apiData?.asbBipekNonStds && apiData.asbBipekNonStds.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600 font-medium">Total Bobot</span>
-                    <span className="font-semibold text-orange-600">
-                      {apiData.asbBipekNonStds.reduce((sum, c) => sum + (c.bobotInput || 0), 0)}%
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1128,20 +1122,7 @@ export default function VerifyUsulanPage() {
               Verifikasi Pekerjaan
             </button>
 
-            {/* Verifikasi Rekening Belanja - only enabled when idAsbStatus is 11 */}
-            <button 
-              onClick={handleVerifikasiRekening}
-              disabled={!apiData || apiData.asbStatus?.id !== 11 || isVerifying}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              title={apiData?.asbStatus?.id !== 11 ? 'Hanya dapat diakses saat status adalah Verifikasi BPNS (11)' : ''}
-            >
-              {isVerifying ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-              ) : (
-                <FileText className="w-5 h-5" />
-              )}
-              Verifikasi Rekening Belanja
-            </button>
+
           </div>
           
           {apiData && (
@@ -1196,6 +1177,21 @@ export default function VerifyUsulanPage() {
           >
             <Edit2 className="w-4 h-4" />
             Edit Kode Rekening
+          </button>
+
+          {/* Verifikasi Rekening Belanja - only enabled when idAsbStatus is 11 */}
+          <button 
+            onClick={handleVerifikasiRekening}
+            disabled={!apiData || apiData.asbStatus?.id !== 11 || isVerifying}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ml-3"
+            title={apiData?.asbStatus?.id !== 11 ? 'Hanya dapat diakses saat status adalah Verifikasi BPNS (11)' : ''}
+          >
+            {isVerifying ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+            ) : (
+              <FileText className="w-4 h-4" />
+            )}
+            Verifikasi Rekening
           </button>
 
           {apiData && (
