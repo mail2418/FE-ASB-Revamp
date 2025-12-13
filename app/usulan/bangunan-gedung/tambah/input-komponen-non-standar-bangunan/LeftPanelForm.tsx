@@ -18,9 +18,9 @@ const KOMPONEN_ORDER = [
   'Struktur',
   'Lantai',
   'Dinding',
-  'Utilitas',
   'Plafon',
   'Atap',
+  'Utilitas',
   'Finishing'
 ];
 
@@ -81,7 +81,7 @@ export default function LeftPanelForm() {
         const token = localStorage.getItem('accessToken');
         if (!token) return;
         
-        const response = await fetch('/api/usulan/bangunan-gedung/kb-ns', {
+        const response = await fetch(`/api/usulan/bangunan-gedung/kb-ns?id_asb_jenis=${buildingData?.formData?.jenis}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -213,7 +213,6 @@ export default function LeftPanelForm() {
       // Prepare request body
       const requestBody = {
         id_asb: idAsb,
-        id_asb_bipek_nonstd: null,
         komponen_nonstd: komponen_nonstd,
         bobot_nonstd: bobot_nonstd
       };
@@ -279,7 +278,7 @@ export default function LeftPanelForm() {
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nama Bangunan</p>
               <p className="text-base font-semibold text-gray-900">
-                {buildingData.formData?.deskripsiBangunan || '-'}
+                {`${buildingData.formData?.jenis == 1 ? 'Pembangunan' : 'Pemeliharaan'} ${buildingData.formData?.tipeBangunan == 1?'Gedung Negara':'Rumah Negara'} - ${buildingData.formData?.deskripsiBangunan}` || '-'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">

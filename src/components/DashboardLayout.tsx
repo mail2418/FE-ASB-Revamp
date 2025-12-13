@@ -42,7 +42,7 @@ const navigation = [
   },
   {
     name: 'Usulan Saluran',
-    href: '/404',
+    href: '/usulan/saluran',
     icon: Droplets,
     current: false,
   },
@@ -111,8 +111,12 @@ export default function DashboardLayoutComponent({ children, pageTitle = 'Dashbo
         localStorage.removeItem('userInfo');
         localStorage.removeItem('verifikatorInfo');
         localStorage.removeItem('selectedTahunAnggaran');
+        localStorage.removeItem('usulan_bangunan_new_entry');
+        localStorage.removeItem('usulan_bangunan_nonstandar_components');
+        localStorage.removeItem('usulan_bangunan_standar_components');
+        localStorage.removeItem('usulan_bangunan_jalan_submissions');
+        localStorage.removeItem('verify_asb_data');
       }
-      
       // Redirect to login page
       window.location.href = '/';
     } catch (error) {
@@ -125,6 +129,11 @@ export default function DashboardLayoutComponent({ children, pageTitle = 'Dashbo
         localStorage.removeItem('userInfo');
         localStorage.removeItem('verifikatorInfo');
         localStorage.removeItem('selectedTahunAnggaran');
+        localStorage.removeItem('usulan_bangunan_new_entry');
+        localStorage.removeItem('usulan_bangunan_nonstandar_components');
+        localStorage.removeItem('usulan_bangunan_standar_components');
+        localStorage.removeItem('usulan_bangunan_jalan_submissions');
+        localStorage.removeItem('verify_asb_data');
       }
       
       // Still redirect on error

@@ -27,7 +27,7 @@ export async function PUT(request: NextRequest) {
     const {
       id_asb,
     } = body;
-
+    console.log("PUT verif-rekening", body);
     const response = await fetch(`${API_BASE_URL}/asb/verify`, {
       method: 'PUT',
       headers: {
@@ -38,7 +38,8 @@ export async function PUT(request: NextRequest) {
         id_asb,
       }),
     });
-
+    console.log("PUT verif-rekening response", response);
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(

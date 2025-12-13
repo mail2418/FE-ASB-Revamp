@@ -42,6 +42,7 @@ interface BasicFormData {
 interface FloorData {
   id: string;
   jenisLantai: string;
+  namaJenisLantai: string;
   luas: string;
   fungsiLantai: string;
   namaFungsiLantai: string;
@@ -159,16 +160,17 @@ export default function SummaryPage() {
             });
           }
 
-          // Set floors from asbDetails
-          if (data.asbDetails && data.asbDetails.length > 0) {
-            const mappedFloors = data.asbDetails.map((detail: any, index: number) => ({
-              id: detail.id?.toString() || `${index + 1}`,
-              jenisLantai: `Lantai ${index + 1}`,
-              luas: detail.luas?.toString() || '0',
-              fungsiLantai: detail.idAsbFungsiRuang?.toString() || '',
-              namaFungsiLantai: detail.asbFungsiRuang?.nama_fungsi_ruang || 'N/A',
-            }));
-            setFloors(mappedFloors);
+          // Set floors from localStorage (usulan_bangunan_new_entry.floors)
+          const savedEntry = localStorage.getItem('usulan_bangunan_new_entry');
+          if (savedEntry) {
+            try {
+              const parsed = JSON.parse(savedEntry);
+              if (parsed.floors && parsed.floors.length > 0) {
+                setFloors(parsed.floors);
+              }
+            } catch (e) {
+              console.error('Error parsing localStorage floors:', e);
+            }
           }
         }
       } catch (error) {
@@ -345,13 +347,10 @@ export default function SummaryPage() {
               </div>
               <div className="space-y-3">
                 <div className="bg-lime-100 text-lime-800 px-4 py-2 rounded-lg text-center font-medium">
-                  {klasifikasiSHST?.klasifikasi ||'[Belum terklasifikasi]'}
+                  {basicData?.tipeBangunan == "1" ? "Gedung negara" : "Rumah Negara"} <span><b>{klasifikasiSHST?.klasifikasi ||'[Belum terklasifikasi]'}</b></span>
                 </div>
                 <div className="text-sm text-gray-600 text-center">
                   Jenis Bangunan: <span className="font-medium">{basicData?.jenis == "1" ? "Pembangunan" : "Pemeliharaan"}</span>
-                </div>
-                <div className="text-sm text-gray-600 text-center">
-                  Tipe Usulan: <span className="font-medium">{basicData?.tipeBangunan == "1" ? "Gedung negara" : "Rumah Negara"}</span>
                 </div>
               </div>
             </div>
@@ -485,7 +484,7 @@ export default function SummaryPage() {
                   <tbody className="divide-y divide-gray-200">
                     {floors.length > 0 ? floors.map((floor, index) => (
                       <tr key={floor.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{floor.jenisLantai}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{floor.namaJenisLantai}</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{floor.luas} m²</td>
                         <td className="px-4 py-3 text-sm text-gray-700">{floor.namaFungsiLantai}</td>
                       </tr>
@@ -551,7 +550,7 @@ export default function SummaryPage() {
             <div className="flex justify-between items-center gap-4">
                 {/* Previous Button */}
                 <button
-                  onClick={() => router.push('/usulan/bangunan-gedung/tambah/input-komponen-non-standar-bangunan')}
+                  onClick={() => router.push(`/usulan/bangunan-gedung/edit/${asbId}/input-komponen-non-standar-bangunan`)}
                   className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-all font-semibold cursor-pointer"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">

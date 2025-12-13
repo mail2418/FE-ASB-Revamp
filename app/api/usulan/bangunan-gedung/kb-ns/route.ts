@@ -26,19 +26,23 @@ export async function GET(request: NextRequest) {
     // Get idAsb from query parameters
     const { searchParams } = new URL(request.url);
     const idAsb = searchParams.get('idAsb');
-
-    let response;
-    if(idAsb){
-      response = await fetch(`${API_BASE_URL}/asb-komponen-bangunan-nonstds?idAsb=${idAsb}`, {
-        method: 'GET',
-        headers: request.headers,
-      });
-    }else{
-      response = await fetch(`${API_BASE_URL}/asb-komponen-bangunan-nonstds?page=1&amount=100`, {
-        method: 'GET',
-        headers: request.headers,
-      });
-    }
+    const page = searchParams.get('page');
+    const amount = searchParams.get('amount');
+    const idAsbJenis = searchParams.get('id_asb_jenis');
+    const idAsbTipeBangunan = searchParams.get('id_asb_tipe_bangunan');
+    
+    const routeidAsbJenis = idAsbJenis ? `&id_asb_jenis=${idAsbJenis}` : '';
+    const routeidAsbTipeBangunan = idAsbTipeBangunan ? `&id_asb_tipe_bangunan=${idAsbTipeBangunan}` : '';
+    const routeidAsb = idAsb ? `&idAsb=${idAsb}` : '';
+    const routePage = page ? `&page=${page}` : '';
+    const routeAmount = amount ? `&amount=${amount}` : '';
+    
+    const route = `${routeidAsb}${routeidAsbJenis}${routeidAsbTipeBangunan}${routePage}${routeAmount}`;
+    
+    const response = await fetch(`${API_BASE_URL}/asb-komponen-bangunan-nonstds?${route}`, {
+      method: 'GET',
+      headers: request.headers,
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -76,13 +80,11 @@ export async function PUT(request: NextRequest){
     const body = await request.json();
     const {
       id_asb,
-      id_asb_bipek_nonstandard,
       komponen_nonstd,
       bobot_nonstd
     } = body;
 
     console.log("id_asb", id_asb);
-    console.log("id_asb_bipek_nonstandard", id_asb_bipek_nonstandard);
     console.log("komponen_nonstd", komponen_nonstd);
     console.log("bobot_nonstd", bobot_nonstd);
     
@@ -91,7 +93,6 @@ export async function PUT(request: NextRequest){
       headers: request.headers,
       body: JSON.stringify({
         id_asb,
-        id_asb_bipek_nonstandard,
         komponen_nonstd,
         bobot_nonstd
       }),

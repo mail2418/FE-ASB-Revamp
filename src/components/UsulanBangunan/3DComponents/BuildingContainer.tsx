@@ -56,7 +56,7 @@ const PondasiPart = ({ percentage, variant }: { percentage: number, variant?: st
   const topDepth = 6.2;   // Top depth
   const height = 1;
   
-  const color = variant?.includes('batu_kali') ? '#9ddec0ff' : '#de8282ff'; 
+  const color = variant?.includes('batu_kali') ? '#9ddec0' : '#5b0d0d'; 
 
   // Create trapezium prism geometry using useMemo
   const geometry = React.useMemo(() => {
@@ -121,7 +121,7 @@ const StrukturPart = ({ percentage, levelIndex, variant }: { percentage: number,
   // Always render at full height regardless of percentage
   const currentHeight = floorHeight;
   
-  const color = variant?.includes('beton') ? '#a0a0a0' : '#2f4f4f';
+  const color = variant?.includes('beton') ? '#e6a6a6' : '#87e4e4';
 
   const positions = [
     [-2.8, startY + currentHeight / 2, -2.8],
@@ -269,70 +269,110 @@ const PlafonPart = ({ percentage, levelIndex }: { percentage: number, levelIndex
   );
 };
 
-// 8. Utilitas (Utilities - Electrical/Plumbing/Lamp)
+// 8. Utilitas (Utilities - Pedestrian Street Lamps)
 const UtilitasPart = ({ percentage, levelIndex }: { percentage: number, levelIndex: number }) => {
   if (percentage <= 0) return null;
 
-  const floorHeight = 3;
-  const startY = 0.5 + (levelIndex * floorHeight);
+  const lampHeight = 4;
   
   return (
-    <group position={[0, startY, 0]}>
-      {/* Ceiling Lamp 1 */}
-      <group position={[0, 2.6, 0]}>
-        {/* Lamp cord */}
-        <mesh position={[0, 0.15, 0]}>
-          <cylinderGeometry args={[0.02, 0.02, 0.3, 8]} />
-          <meshStandardMaterial color="#333333" />
+    <group position={[0, 0, 0]}>
+      {/* Pedestrian Lamp 1 - Left side of building */}
+      <group position={[-5, 0, 2]}>
+        {/* Lamp base/foundation */}
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.25, 0.3, 0.2, 16]} />
+          <meshStandardMaterial color="#4A4A4A" metalness={0.6} roughness={0.4} />
         </mesh>
-        {/* Lamp base */}
-        <mesh position={[0, 0, 0]}>
-          <cylinderGeometry args={[0.15, 0.08, 0.1, 16]} />
-          <meshStandardMaterial color="#F5F5F5" />
+        {/* Lamp pole */}
+        <mesh position={[0, lampHeight / 2, 0]}>
+          <cylinderGeometry args={[0.08, 0.12, lampHeight, 16]} />
+          <meshStandardMaterial color="#2C2C2C" metalness={0.7} roughness={0.3} />
         </mesh>
-        {/* Lamp bulb */}
-        <mesh position={[0, -0.1, 0]}>
-          <sphereGeometry args={[0.12, 16, 16]} />
-          <meshStandardMaterial color="#FFFACD" emissive="#FFFF00" emissiveIntensity={0.5} />
+        {/* Decorative ring on pole */}
+        <mesh position={[0, lampHeight * 0.7, 0]}>
+          <torusGeometry args={[0.12, 0.03, 8, 16]} />
+          <meshStandardMaterial color="#3A3A3A" metalness={0.6} roughness={0.4} />
         </mesh>
+        {/* Lamp arm */}
+        <mesh position={[0.2, lampHeight - 0.1, 0]} rotation={[0, 0, Math.PI / 4]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.5, 8]} />
+          <meshStandardMaterial color="#2C2C2C" metalness={0.7} roughness={0.3} />
+        </mesh>
+        {/* Lamp housing */}
+        <group position={[0.35, lampHeight + 0.1, 0]}>
+          {/* Top cap */}
+          <mesh position={[0, 0.15, 0]}>
+            <coneGeometry args={[0.25, 0.15, 16]} />
+            <meshStandardMaterial color="#1A1A1A" metalness={0.8} roughness={0.2} />
+          </mesh>
+          {/* Lamp shade */}
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.2, 0.25, 0.25, 16, 1, true]} />
+            <meshStandardMaterial color="#2C2C2C" metalness={0.6} roughness={0.3} side={2} />
+          </mesh>
+          {/* Glass housing */}
+          <mesh position={[0, -0.1, 0]}>
+            <cylinderGeometry args={[0.18, 0.18, 0.3, 16]} />
+            <meshStandardMaterial color="#FFFFFF" transparent opacity={0.4} />
+          </mesh>
+          {/* Light bulb */}
+          <mesh position={[0, -0.1, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
+            <meshStandardMaterial color="#FFFACD" emissive="#FFD700" emissiveIntensity={0.8} />
+          </mesh>
+        </group>
+        {/* Point light for glow effect */}
+        <pointLight position={[0.35, lampHeight, 0]} intensity={0.5} distance={5} color="#FFE4B5" />
       </group>
-      
-      {/* Ceiling Lamp 2 */}
-      <group position={[-1.5, 2.6, -1.5]}>
-        {/* Lamp cord */}
-        <mesh position={[0, 0.15, 0]}>
-          <cylinderGeometry args={[0.02, 0.02, 0.3, 8]} />
-          <meshStandardMaterial color="#333333" />
+
+      {/* Pedestrian Lamp 2 - Right side of building */}
+      <group position={[5, 0, 2]}>
+        {/* Lamp base/foundation */}
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.25, 0.3, 0.2, 16]} />
+          <meshStandardMaterial color="#4A4A4A" metalness={0.6} roughness={0.4} />
         </mesh>
-        {/* Lamp base */}
-        <mesh position={[0, 0, 0]}>
-          <cylinderGeometry args={[0.15, 0.08, 0.1, 16]} />
-          <meshStandardMaterial color="#F5F5F5" />
+        {/* Lamp pole */}
+        <mesh position={[0, lampHeight / 2, 0]}>
+          <cylinderGeometry args={[0.08, 0.12, lampHeight, 16]} />
+          <meshStandardMaterial color="#2C2C2C" metalness={0.7} roughness={0.3} />
         </mesh>
-        {/* Lamp bulb */}
-        <mesh position={[0, -0.1, 0]}>
-          <sphereGeometry args={[0.12, 16, 16]} />
-          <meshStandardMaterial color="#FFFACD" emissive="#FFFF00" emissiveIntensity={0.5} />
+        {/* Decorative ring on pole */}
+        <mesh position={[0, lampHeight * 0.7, 0]}>
+          <torusGeometry args={[0.12, 0.03, 8, 16]} />
+          <meshStandardMaterial color="#3A3A3A" metalness={0.6} roughness={0.4} />
         </mesh>
-      </group>
-      
-      {/* Ceiling Lamp 3 */}
-      <group position={[1.5, 2.6, -1.5]}>
-        {/* Lamp cord */}
-        <mesh position={[0, 0.15, 0]}>
-          <cylinderGeometry args={[0.02, 0.02, 0.3, 8]} />
-          <meshStandardMaterial color="#333333" />
+        {/* Lamp arm */}
+        <mesh position={[-0.2, lampHeight - 0.1, 0]} rotation={[0, 0, -Math.PI / 4]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.5, 8]} />
+          <meshStandardMaterial color="#2C2C2C" metalness={0.7} roughness={0.3} />
         </mesh>
-        {/* Lamp base */}
-        <mesh position={[0, 0, 0]}>
-          <cylinderGeometry args={[0.15, 0.08, 0.1, 16]} />
-          <meshStandardMaterial color="#F5F5F5" />
-        </mesh>
-        {/* Lamp bulb */}
-        <mesh position={[0, -0.1, 0]}>
-          <sphereGeometry args={[0.12, 16, 16]} />
-          <meshStandardMaterial color="#FFFACD" emissive="#FFFF00" emissiveIntensity={0.5} />
-        </mesh>
+        {/* Lamp housing */}
+        <group position={[-0.35, lampHeight + 0.1, 0]}>
+          {/* Top cap */}
+          <mesh position={[0, 0.15, 0]}>
+            <coneGeometry args={[0.25, 0.15, 16]} />
+            <meshStandardMaterial color="#1A1A1A" metalness={0.8} roughness={0.2} />
+          </mesh>
+          {/* Lamp shade */}
+          <mesh position={[0, 0, 0]}>
+            <cylinderGeometry args={[0.2, 0.25, 0.25, 16, 1, true]} />
+            <meshStandardMaterial color="#2C2C2C" metalness={0.6} roughness={0.3} side={2} />
+          </mesh>
+          {/* Glass housing */}
+          <mesh position={[0, -0.1, 0]}>
+            <cylinderGeometry args={[0.18, 0.18, 0.3, 16]} />
+            <meshStandardMaterial color="#FFFFFF" transparent opacity={0.4} />
+          </mesh>
+          {/* Light bulb */}
+          <mesh position={[0, -0.1, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
+            <meshStandardMaterial color="#FFFACD" emissive="#FFD700" emissiveIntensity={0.8} />
+          </mesh>
+        </group>
+        {/* Point light for glow effect */}
+        <pointLight position={[-0.35, lampHeight, 0]} intensity={0.5} distance={5} color="#FFE4B5" />
       </group>
     </group>
   );

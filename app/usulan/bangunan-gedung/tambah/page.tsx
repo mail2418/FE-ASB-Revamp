@@ -13,6 +13,7 @@ import {
 interface Floor {
   id: string;
   jenisLantai: string;
+  namaJenisLantai: string;
   fungsiLantai: string;
   namaFungsiLantai: string;
   luas: string;
@@ -82,6 +83,7 @@ export default function TambahUsulanBangunanGedung() {
     {
     id: '1',
     jenisLantai: '',
+    namaJenisLantai: '',
     fungsiLantai: '',
     namaFungsiLantai: '',
     luas: '',
@@ -105,7 +107,6 @@ export default function TambahUsulanBangunanGedung() {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('Jenis Lantai data:', data);
           setJenisLantaiOptions(data.data?.data || data.data || []);
         }
       } catch (error) {
@@ -117,6 +118,7 @@ export default function TambahUsulanBangunanGedung() {
 
     fetchJenisLantai();
   }, []);
+  console.log('Jenis Lantai data:', jenisLantaiOptions);
   // Fetch Fungsi Lantai data
   React.useEffect(() => {
     const fetchFungsiLantai = async () => {
@@ -137,7 +139,6 @@ export default function TambahUsulanBangunanGedung() {
           console.log('Fungsi Ruang data:', data);
           setFungsiLantaiOptions(data.data?.data || []);
         }
-        console.log(fungsiLantaiOptions)
       } catch (error) {
         console.error('Error fetching Fungsi Ruang:', error);
       } finally {
@@ -147,6 +148,7 @@ export default function TambahUsulanBangunanGedung() {
 
     fetchFungsiLantai();
   }, []);
+  console.log(`fungsiLantaiOptions`,fungsiLantaiOptions)
   // Fetch Rekening data
   React.useEffect(() => {
     const fetchRekening = async () => {
@@ -397,10 +399,21 @@ export default function TambahUsulanBangunanGedung() {
       if (field === 'fungsiLantai') {
         // Find the selected option to get the name
         const selectedOption = fungsiLantaiOptions.find(opt => opt.id.toString() === value);
+        console.log(`fungsiLantai selectedOption`, selectedOption)
         return {
           ...floor,
           fungsiLantai: value,
           namaFungsiLantai: selectedOption?.nama_fungsi_ruang || ''
+        };
+      }
+
+      if (field === 'jenisLantai') {
+        const selectedOption = jenisLantaiOptions.find(opt => opt.id.toString() === value);
+        console.log(`jenisLantai selectedOption`, selectedOption)
+        return {
+          ...floor,
+          jenisLantai: value,
+          namaJenisLantai: selectedOption?.lantai || ''
         };
       }
 
@@ -417,6 +430,7 @@ export default function TambahUsulanBangunanGedung() {
     const newFloors: Floor[] = Array.from({ length: numFloors }, (_, i) => ({
       id: `${i + 1}`,
       jenisLantai: `lantai-${i + 1}`,
+      namaJenisLantai: '',
       fungsiLantai: '',
       namaFungsiLantai: '',
       luas: '',
@@ -863,7 +877,7 @@ export default function TambahUsulanBangunanGedung() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   >
                     <option value="">Pilih jumlah lantai</option>
-                    {[...Array(20)].map((_, index) => (
+                    {[...Array(10)].map((_, index) => (
                       <option key={index + 1} value={index + 1}>
                         Lantai {index + 1}
                       </option>
@@ -964,7 +978,7 @@ export default function TambahUsulanBangunanGedung() {
         <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => router.push('/usulan/bangunan-gedung')}
             className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
           >
             Batal

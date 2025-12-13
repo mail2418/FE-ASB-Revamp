@@ -8,7 +8,8 @@ interface VerificationSequenceProps {
   verificationStatus: VerificationStages;
   userRole: string | null;
   usulanId: string;
-  onStatusChange?: (stage: 'adbang' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => void;
+  idAsbStatus?: number;
+  onStatusChange?: (stage: 'adbang' | 'bpkad' | 'bappeda', newStatus: VerificationStatus) => void;
 }
 
 const getStatusIcon = (status: VerificationStatus) => {
@@ -42,25 +43,42 @@ const getStatusColor = (status: VerificationStatus) => {
 export default function VerificationSequence({
   verificationStatus,
   userRole,
-  usulanId,
+  idAsbStatus,
   onStatusChange,
 }: VerificationSequenceProps) {
-  const stages = [
-    { key: 'adbang' as const, label: 'Adbang', role: 'verifikator_adbang' },
-    { key: 'bappeda' as const, label: 'BAPPEDA', role: 'verifikator_bappeda' },
-    { key: 'bpkad' as const, label: 'BPKAD', role: 'verifikator_bpkad' },
-  ];
-
-  const handleStatusChange = (stage: 'adbang' | 'bappeda' | 'bpkad', newStatus: VerificationStatus) => {
-    if (onStatusChange) {
-      onStatusChange(stage, newStatus);
+  // Compute effective verification status based on idAsbStatus
+  const getEffectiveStatus = (stageKey: 'adbang' | 'bpkad' | 'bappeda'): VerificationStatus => {
+    const originalStatus = verificationStatus?.[stageKey] || 'Belum';
+    // Override status based on idAsbStatus
+    if (idAsbStatus === 11) {
+      // BPKAD is waiting
+      if (stageKey === 'bpkad') return 'Menunggu';
+    } else if (idAsbStatus === 12) {
+      // BPKAD is approved
+      if (stageKey === 'bpkad') return 'Disetujui';
+    } else if (idAsbStatus === 13) {
+      // ADBANG is approved, BAPPEDA is waiting
+      if (stageKey === 'adbang') return 'Disetujui';
+      if (stageKey === 'bpkad') return 'Disetujui';
+      if (stageKey === 'bappeda') return 'Menunggu';
+    } else if (idAsbStatus === 8) {
+      // BAPPEDA is approved
+      if (stageKey === 'bappeda') return 'Disetujui';
+      if (stageKey === 'adbang') return 'Disetujui';
+      if (stageKey === 'bpkad') return 'Disetujui';
     }
+    else if (idAsbStatus !== undefined && idAsbStatus < 6){
+      if (stageKey === 'bappeda') return 'Belum';
+      if (stageKey === 'adbang') return 'Belum';
+      if (stageKey === 'bpkad') return 'Belum';
+    }
+    return originalStatus;
   };
-
-  const canEdit = (stageRole: string) => {
-    // Only allow editing if user has the exact role for this stage
-    return userRole !== null && userRole === stageRole;
-  };
+  const stages = [
+    { key: 'adbang' as const, label: 'ADBANG', role: 'verifikator_adbang' },
+    { key: 'bpkad' as const, label: 'BPKAD', role: 'verifikator_bpkad' },
+    { key: 'bappeda' as const, label: 'BAPPEDA', role: 'verifikator_bappeda' },
+  ];
 
   // Safety check: if verificationStatus is undefined or missing properties, don't render
   if (!verificationStatus || typeof verificationStatus !== 'object') {
@@ -74,32 +92,14 @@ export default function VerificationSequence({
   }
 
   return (
-    <div className="flex items-center gap-2">{stages.map((stage, index) => {
-        const status = verificationStatus[stage.key];
-        
-        // Safety check: if this stage's status is undefined, use 'Belum' as default
-        const safeStatus: VerificationStatus = status || 'Belum';
-        const isEditable = canEdit(stage.role);
+    <div className="flex items-center gap-2">
+      {stages.map((stage, index) => {
+        // Get effective status based on idAsbStatus overrides
+        const safeStatus: VerificationStatus = getEffectiveStatus(stage.key);
 
         return (
           <React.Fragment key={stage.key}>
-            {isEditable ? (
-              <select
-                value={safeStatus}
-                onChange={(e) => handleStatusChange(stage.key, e.target.value as VerificationStatus)}
-                className={cn(
-                  'text-xs border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer transition-colors min-w-[100px]',
-                  getStatusColor(safeStatus)
-                )}
-                title={`${stage.label} - ${safeStatus}`}
-              >
-                <option value="Belum">Belum</option>
-                <option value="Menunggu">Menunggu</option>
-                <option value="Disetujui">Disetujui</option>
-                <option value="Ditolak">Ditolak</option>
-              </select>
-            ) : (
-              <div
+            <div
                 className={cn(
                   'inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border min-w-[100px] justify-center',
                   getStatusColor(safeStatus)
@@ -108,8 +108,7 @@ export default function VerificationSequence({
               >
                 {getStatusIcon(safeStatus)}
                 <span className="text-[10px] font-semibold">{stage.label}</span>
-              </div>
-            )}
+            </div>
             
             {/* Connector line between stages */}
             {index < stages.length - 1 && (

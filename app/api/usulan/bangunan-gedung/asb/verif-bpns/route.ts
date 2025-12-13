@@ -29,8 +29,9 @@ export async function PUT(request: NextRequest) {
       verif_komponen_nonstd,
       verif_bobot_acuan_nonstd,
     } = body;
+    console.log("PUT verif-bpns body", body);
 
-    const response = await fetch(`${API_BASE_URL}/asb/verif-bpns`, {
+    const response = await fetch(`${API_BASE_URL}/asb/verify-bpns`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -42,7 +43,7 @@ export async function PUT(request: NextRequest) {
         verif_bobot_acuan_nonstd,
       }),
     });
-
+    console.log("PUT verif-bpns response", response);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(

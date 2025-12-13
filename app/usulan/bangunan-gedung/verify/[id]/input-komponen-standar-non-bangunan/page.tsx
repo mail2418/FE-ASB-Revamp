@@ -13,9 +13,12 @@ interface AsbBipekNonStd {
   calculationMethod: string;
   jumlahBobot: number;
   rincianHarga: number;
-  komponenBangunan?: {
+  asbKomponenBangunanNonstd?: {
     id: number;
     komponen: string;
+    files?: string;
+    idAsbJenis?: number;
+    idAsbTipeBangunan?: number;
   };
 }
 
@@ -327,7 +330,7 @@ export default function VerifyKomponenNonStandarPage() {
                   return (
                     <tr key={comp.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{comp.komponenBangunan?.komponen || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{comp.asbKomponenBangunanNonstd?.komponen || '-'}</td>
                       <td className="px-6 py-4 text-center">
                         <span className="inline-flex px-3 py-1 bg-gray-100 text-gray-800 rounded-lg text-sm font-medium">
                           {state.percentage}%
